@@ -25,6 +25,20 @@ The project is designed to make attendance more meaningful by turning class chec
 5. The response is saved to Google Sheets.
 6. The instructor reviews participation and responses.
 
+
+## Blog / Learning Notes
+
+Class++ can include a simple blog or notes section where instructors can publish explanations, examples, and extra details using Markdown files.
+
+This can be used for:
+
+- Explaining activity solutions
+- Posting short lesson notes
+- Sharing C++ examples
+- Providing follow-up explanations after class
+- Adding setup or usage documentation
+- Keeping project updates or teaching reflections
+
 ## Tech Stack
 
 - HTML, CSS, JavaScript
