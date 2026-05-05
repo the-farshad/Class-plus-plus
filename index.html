@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Class++ — Submit Response</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+  <header class="site">
+    <div class="inner">
+      <h1>Class++</h1>
+      <nav>
+        <a href="/">Submit</a>
+        <a href="/blog/">Notes</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section id="loading" class="card">
+      <p class="muted">Loading activity…</p>
+    </section>
+
+    <section id="picker" class="card" hidden>
+      <h2>Open activities</h2>
+      <p class="muted">Pick the activity your instructor opened.</p>
+      <ul id="picker-list" class="activity-list"></ul>
+    </section>
+
+    <section id="form-card" class="card" hidden>
+      <h2 id="prompt-text">…</h2>
+      <form id="submit-form">
+        <input type="hidden" id="activity-id" />
+        <div class="field">
+          <label for="student-id">Your identifier</label>
+          <input type="text" id="student-id" autocomplete="off" required />
+        </div>
+        <div class="field">
+          <label for="response">Your response</label>
+          <textarea id="response" required></textarea>
+        </div>
+        <button type="submit" id="submit-btn">Submit</button>
+        <div id="status" class="status" role="status"></div>
+      </form>
+    </section>
+
+    <section id="empty" class="card" hidden>
+      <h2>No open activities</h2>
+      <p class="muted">Ask your instructor to open one, then refresh this page.</p>
+    </section>
+  </main>
+
+  <script type="module" src="/js/student.js"></script>
+</body>
+</html>

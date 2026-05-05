@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Class++ — Instructor</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+  <header class="site">
+    <div class="inner">
+      <h1>Class++ · Instructor</h1>
+      <nav>
+        <a href="/">Student view</a>
+        <a href="/blog/">Notes</a>
+        <a href="#" id="signout">Sign out</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section id="auth" class="card" hidden>
+      <h2>Instructor access</h2>
+      <p class="muted">Enter the instructor token configured in Apps Script.</p>
+      <form id="auth-form">
+        <div class="field">
+          <label for="token">Instructor token</label>
+          <input type="text" id="token" autocomplete="off" required />
+        </div>
+        <button type="submit">Continue</button>
+      </form>
+    </section>
+
+    <section id="dashboard" hidden>
+      <div class="card">
+        <h2>New activity</h2>
+        <form id="new-form">
+          <div class="field">
+            <label for="prompt">Prompt</label>
+            <textarea id="prompt" required></textarea>
+          </div>
+          <button type="submit">Create &amp; open</button>
+          <div id="new-status" class="status"></div>
+        </form>
+      </div>
+
+      <div class="card">
+        <h2>Activities</h2>
+        <button id="refresh" class="secondary">Refresh</button>
+        <ul id="activities" class="activity-list" style="margin-top: 1rem;"></ul>
+      </div>
+
+      <div id="submissions-card" class="card" hidden>
+        <h2 id="submissions-title">Submissions</h2>
+        <button id="export-csv" class="secondary">Export CSV</button>
+        <div style="overflow-x: auto; margin-top: 1rem;">
+          <table id="submissions-table">
+            <thead>
+              <tr><th>Time</th><th>Student</th><th>Response</th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="/js/instructor.js"></script>
+</body>
+</html>

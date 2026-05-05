@@ -46,6 +46,38 @@ This can be used for:
 - Google Sheets
 - Google Apps Script
 
+## Project Layout
+
+```
+/                         student submission page (index.html)
+/instructor/              instructor dashboard
+/blog/                    Markdown notes (posts/*.md + index.json)
+/js/                      api.js, student.js, instructor.js, blog.js
+/css/styles.css
+/apps-script/Code.gs      backend Web App (deploy to Google Apps Script)
+```
+
+## Setup
+
+1. Follow `apps-script/README.md` to create the Google Sheet, deploy `Code.gs` as a Web App, and set the `INSTRUCTOR_TOKEN` script property.
+2. Paste the deployed `/exec` URL into `WEB_APP_URL` at the top of `js/api.js`.
+3. Push to `main` — GitHub Pages serves the static frontend at the CNAME domain.
+
+## Local Development
+
+The frontend uses ES modules with absolute paths, so it must be served — opening files via `file://` won't work.
+
+```sh
+python3 -m http.server 8000
+# then visit http://localhost:8000/
+```
+
+## Adding a Blog Post
+
+1. Add `blog/posts/<slug>.md`.
+2. Append an entry to `blog/posts/index.json` with `slug`, `title`, `date`, and `summary`.
+3. Commit and push.
+
 ## Goal
 
 Class++ helps instructors encourage active participation, collect quick feedback, and track engagement without requiring a complex backend system.

@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Class++ — Notes</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+  <header class="site">
+    <div class="inner">
+      <h1>Class++ · Notes</h1>
+      <nav>
+        <a href="/">Submit</a>
+        <a href="/blog/">Notes</a>
+      </nav>
+    </div>
+  </header>
+  <main>
+    <section id="posts" class="card">
+      <h2>Posts</h2>
+      <ul id="post-list" class="activity-list"></ul>
+    </section>
+  </main>
+  <script type="module">
+    import { renderIndex } from "/js/blog.js";
+    renderIndex(document.getElementById("post-list"));
+  </script>
+</body>
+</html>
