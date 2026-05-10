@@ -4,19 +4,34 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Class++ — Not found</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/styles.css" />
 </head>
 <body>
   <header class="site">
     <div class="inner">
-      <h1>Class++</h1>
-      <nav><a href="/">Submit</a><a href="/blog/">Notes</a></nav>
+      <a class="brand" href="/">
+        <span class="brand-mark">C++</span>
+        <span>Class<span style="color: var(--brand-1)">++</span></span>
+      </a>
+      <nav>
+        <a href="/">Submit</a>
+        <a href="/blog/">Notes</a>
+      </nav>
     </div>
   </header>
   <main>
-    <section class="card">
-      <h2>Page not found</h2>
-      <p class="muted">That link doesn't go anywhere. Try the <a href="/">submission page</a> or the <a href="/blog/">notes</a>.</p>
+    <div class="hero">
+      <h1>404</h1>
+      <p>That link doesn't go anywhere.</p>
+    </div>
+    <section class="card" style="text-align:center;">
+      <div class="row" style="justify-content:center;">
+        <a class="button" href="/">Go to submit</a>
+        <a class="button secondary" href="/blog/">Browse notes</a>
+      </div>
     </section>
   </main>
 </body>

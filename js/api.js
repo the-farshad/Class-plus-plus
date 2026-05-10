@@ -1,37 +1,121 @@
-// Single source of truth for backend access.
-// After deploying apps-script/Code.gs as a Web App, paste the URL below.
-export const WEB_APP_URL = "https://script.google.com/macros/s/REPLACE_ME/exec";
+// Frontend API client for the Class++ backend.
+// API_BASE_URL is overridable via localStorage.classpp.api_base for local dev:
+//   localStorage.setItem('classpp.api_base', 'http://localhost:3001')
 
-async function getJSON(params) {
-  const url = new URL(WEB_APP_URL);
-  Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
-  const res = await fetch(url, { method: "GET" });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
+const DEFAULT_API_BASE = "https://api.thefarshad.com";
+export const API_BASE_URL =
+  (typeof localStorage !== "undefined" && localStorage.getItem("classpp.api_base"))
+  || DEFAULT_API_BASE;
+
+const JWT_KEY = "classpp.jwt";
+const USER_KEY = "classpp.user";
+
+export const session = {
+  get token() { return localStorage.getItem(JWT_KEY) || ""; },
+  get user() {
+    try { return JSON.parse(localStorage.getItem(USER_KEY) || "null"); }
+    catch { return null; }
+  },
+  set(token, user) {
+    localStorage.setItem(JWT_KEY, token);
+    localStorage.setItem(USER_KEY, JSON.stringify(user));
+  },
+  clear() {
+    localStorage.removeItem(JWT_KEY);
+    localStorage.removeItem(USER_KEY);
+  },
+};
+
+function authHeaders() {
+  const t = session.token;
+  return t ? { Authorization: `Bearer ${t}` } : {};
 }
 
-async function postJSON(body) {
-  // text/plain avoids a CORS preflight against Apps Script.
-  const res = await fetch(WEB_APP_URL, {
+async function handle(res) {
+  const text = await res.text();
+  let data;
+  try { data = text ? JSON.parse(text) : {}; }
+  catch { throw new Error(`Bad JSON from ${res.url}: ${text.slice(0, 80)}`); }
+  if (!res.ok || data.ok === false) {
+    const msg = (data && data.error) || `HTTP ${res.status}`;
+    if (res.status === 401) session.clear();
+    throw new Error(msg);
+  }
+  return data;
+}
+
+async function get(path) {
+  const res = await fetch(`${API_BASE_URL}${path}`, { headers: authHeaders() });
+  return handle(res);
+}
+
+async function postJSON(path, body) {
+  const res = await fetch(`${API_BASE_URL}${path}`, {
     method: "POST",
-    headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify(body),
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify(body || {}),
   });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
+  return handle(res);
+}
+
+async function postForm(path, formData) {
+  const res = await fetch(`${API_BASE_URL}${path}`, {
+    method: "POST",
+    headers: authHeaders(),  // do NOT set Content-Type — browser sets boundary
+    body: formData,
+  });
+  return handle(res);
+}
+
+async function patchJSON(path, body) {
+  const res = await fetch(`${API_BASE_URL}${path}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify(body || {}),
+  });
+  return handle(res);
+}
+
+async function del(path) {
+  const res = await fetch(`${API_BASE_URL}${path}`, {
+    method: "DELETE",
+    headers: authHeaders(),
+  });
+  return handle(res);
 }
 
 export const api = {
-  listOpenActivities: () => getJSON({ action: "activities" }),
-  getActivity: (id) => getJSON({ action: "activity", id }),
-  submit: ({ activity_id, student_id, response }) =>
-    postJSON({ action: "submit", activity_id, student_id, response }),
-  listSubmissions: ({ activity_id, token }) =>
-    getJSON({ action: "submissions", activity_id, token }),
-  listAllActivities: ({ token }) =>
-    getJSON({ action: "all_activities", token }),
-  createActivity: ({ prompt, token }) =>
-    postJSON({ action: "create_activity", prompt, token }),
-  setStatus: ({ activity_id, status, token }) =>
-    postJSON({ action: "set_status", activity_id, status, token }),
+  // Auth / config
+  authConfig: () => get("/auth/config"),
+  signIn: async (idToken) => {
+    const res = await postJSON("/auth/google", { id_token: idToken });
+    if (res.ok) session.set(res.token, res.user);
+    return res;
+  },
+  signOut: () => session.clear(),
+
+  // Activities
+  listOpenActivities: () => get("/activities"),
+  getActivity: (id) => get(`/activities/${encodeURIComponent(id)}`),
+  listAllActivities: () => get("/activities/admin/all"),
+  createActivity: (prompt) => postJSON("/activities/admin", { prompt }),
+  setActivityStatus: (id, status) =>
+    patchJSON(`/activities/admin/${encodeURIComponent(id)}`, { status }),
+
+  // Submissions
+  submit: ({ activity_id, response, file }) => {
+    const fd = new FormData();
+    fd.append("activity_id", String(activity_id));
+    fd.append("response", response);
+    if (file) fd.append("file", file);
+    return postForm("/submissions", fd);
+  },
+  listSubmissions: (activityId) =>
+    get(`/submissions/by-activity/${encodeURIComponent(activityId)}`),
+
+  // Allowlist
+  listAllowlist: () => get("/admin/allowlist"),
+  addAllowlist: (email, note) => postJSON("/admin/allowlist", { email, note }),
+  removeAllowlist: (email) =>
+    del(`/admin/allowlist/${encodeURIComponent(email)}`),
 };

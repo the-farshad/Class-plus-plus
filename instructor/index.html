@@ -4,63 +4,102 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Class++ — Instructor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/styles.css" />
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
   <header class="site">
     <div class="inner">
-      <h1>Class++ · Instructor</h1>
+      <a class="brand" href="/instructor/">
+        <span class="brand-mark">C++</span>
+        <span>Class<span style="color: var(--brand-1)">++</span></span>
+        <span class="brand-tag">Instructor</span>
+      </a>
       <nav>
         <a href="/">Student view</a>
         <a href="/blog/">Notes</a>
-        <a href="#" id="signout">Sign out</a>
+        <a href="#" id="signout" hidden>Sign out</a>
       </nav>
     </div>
   </header>
 
   <main>
-    <section id="auth" class="card" hidden>
-      <h2>Instructor access</h2>
-      <p class="muted">Enter the instructor token configured in Apps Script.</p>
-      <form id="auth-form">
-        <div class="field">
-          <label for="token">Instructor token</label>
-          <input type="text" id="token" autocomplete="off" required />
-        </div>
-        <button type="submit">Continue</button>
-      </form>
+    <section id="signin-card" class="card feature" hidden>
+      <h2>Instructor sign-in</h2>
+      <p class="muted">Sign in with the Google account on the instructors list.</p>
+      <div id="g_id_signin"></div>
+      <div id="signin-status" class="status"></div>
+    </section>
+
+    <section id="forbidden-card" class="card" hidden>
+      <h2>Not authorized</h2>
+      <p class="muted">Your account is signed in but doesn't have instructor access.</p>
+      <button id="forbidden-signout" class="secondary">Sign out</button>
     </section>
 
     <section id="dashboard" hidden>
-      <div class="card">
+      <div class="hero" style="text-align:left; padding: 0.25rem 0 1.25rem;">
+        <h1>Dashboard</h1>
+        <p id="who-am-i" class="muted"></p>
+      </div>
+
+      <div class="card feature">
         <h2>New activity</h2>
         <form id="new-form">
           <div class="field">
             <label for="prompt">Prompt</label>
-            <textarea id="prompt" required></textarea>
+            <textarea id="prompt" required placeholder="What will the cout statement print?"></textarea>
           </div>
-          <button type="submit">Create &amp; open</button>
+          <button type="submit">
+            <span>Create &amp; open</span>
+            <span aria-hidden="true">＋</span>
+          </button>
           <div id="new-status" class="status"></div>
         </form>
       </div>
 
       <div class="card">
-        <h2>Activities</h2>
-        <button id="refresh" class="secondary">Refresh</button>
-        <ul id="activities" class="activity-list" style="margin-top: 1rem;"></ul>
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-bottom: 0.75rem;">
+          <h2 style="margin:0;">Activities</h2>
+          <button id="refresh" class="secondary sm">Refresh</button>
+        </div>
+        <ul id="activities" class="activity-list"></ul>
       </div>
 
       <div id="submissions-card" class="card" hidden>
-        <h2 id="submissions-title">Submissions</h2>
-        <button id="export-csv" class="secondary">Export CSV</button>
-        <div style="overflow-x: auto; margin-top: 1rem;">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-bottom: 0.75rem;">
+          <h2 id="submissions-title" style="margin:0;">Submissions</h2>
+          <button id="export-csv" class="secondary sm">Export CSV</button>
+        </div>
+        <div style="overflow-x: auto;">
           <table id="submissions-table">
             <thead>
-              <tr><th>Time</th><th>Student</th><th>Response</th></tr>
+              <tr><th>Time</th><th>Email</th><th>Response</th><th>Attachment</th></tr>
             </thead>
             <tbody></tbody>
           </table>
         </div>
+      </div>
+
+      <div class="card">
+        <h2>Allowlist</h2>
+        <p class="muted">Sign-in is open to anyone <code id="domain-hint">@uwyo.edu</code> by default. Add specific emails here to grant access to outside accounts.</p>
+        <form id="allow-form" class="row" style="align-items:flex-end; gap: 0.5rem;">
+          <div class="field" style="flex:2; min-width: 220px; margin: 0;">
+            <label for="allow-email">Email</label>
+            <input type="text" id="allow-email" placeholder="user@example.com" required />
+          </div>
+          <div class="field" style="flex:2; min-width: 220px; margin: 0;">
+            <label for="allow-note">Note (optional)</label>
+            <input type="text" id="allow-note" placeholder="why" />
+          </div>
+          <button type="submit">Add</button>
+        </form>
+        <div id="allow-status" class="status"></div>
+        <ul id="allow-list" class="activity-list" style="margin-top: 1rem;"></ul>
       </div>
     </section>
   </main>
