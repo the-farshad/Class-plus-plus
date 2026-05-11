@@ -11,6 +11,7 @@
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 </head>
 <body>
   <header class="site">
@@ -63,38 +64,42 @@
     </section>
 
     <div id="dashboard" class="dashboard-layout" hidden>
-      
+
       <!-- Sidebar Navigation -->
       <aside class="dashboard-sidebar">
         <div style="margin-bottom: 2rem;">
           <p class="muted" style="margin:0; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700;">Signed in as</p>
           <div id="who-am-i" style="font-weight: 600; line-height: 1.2;"></div>
         </div>
-
         <button class="sidebar-nav-item active" data-tab="tab-overview">
-          <span aria-hidden="true">📊</span> Overview & Stats
+          <i data-lucide="bar-chart-2" style="width: 18px; height: 18px; margin-right: 0.25rem;"></i> Overview & Stats
         </button>
         <button class="sidebar-nav-item" data-tab="tab-activities">
-          <span aria-hidden="true">⚡</span> Activities
+          <i data-lucide="zap" style="width: 18px; height: 18px; margin-right: 0.25rem;"></i> Activities
+        </button>
+        <button class="sidebar-nav-item" data-tab="tab-first-session">
+          <i data-lucide="sparkles" style="width: 18px; height: 18px; margin-right: 0.25rem;"></i> First Session
         </button>
         <button class="sidebar-nav-item" data-tab="tab-classes">
-          <span aria-hidden="true">🏫</span> Classes & Rosters
+          <i data-lucide="users" style="width: 18px; height: 18px; margin-right: 0.25rem;"></i> Classes & Rosters
         </button>
         <button class="sidebar-nav-item" data-tab="tab-access">
-          <span aria-hidden="true">🔐</span> Access Control
+          <i data-lucide="lock" style="width: 18px; height: 18px; margin-right: 0.25rem;"></i> Access Control
         </button>
       </aside>
 
       <!-- Main Content Area -->
       <div class="dashboard-content">
-        
+
         <!-- Tab: Overview -->
         <section id="tab-overview" class="active">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 1.5rem;">
             <h1 style="margin:0;">Overview</h1>
-            <button id="refresh-stats" class="secondary sm">Refresh</button>
+            <div style="display:flex; gap:0.5rem;">
+              <button id="export-csv-all" class="secondary sm" disabled>Global Statistics</button>
+              <button id="refresh-stats" class="secondary sm">Refresh</button>
+            </div>
           </div>
-
           <div class="grid-2" style="margin-bottom: 2rem;">
             <div class="card" style="margin-bottom: 0;">
               <h3 class="muted" style="margin: 0 0 0.5rem; font-size: 0.9rem;">Total Students</h3>
@@ -105,7 +110,7 @@
               <div id="stat-activities" style="font-size: 2.5rem; font-weight: 800; color: var(--warning);">--</div>
             </div>
             <div class="card" style="margin-bottom: 0; grid-column: 1 / -1;">
-              <h3 class="muted" style="margin: 0 0 1rem; font-size: 0.9rem;">Participation Trends (Coming Soon)</h3>
+              <h3 class="muted" style="margin: 0 0 1rem; font-size: 0.9rem;">Participation Trends</h3>
               <canvas id="participation-chart" height="80"></canvas>
             </div>
           </div>
@@ -130,15 +135,18 @@
                 <label for="prompt">Prompt / Question</label>
                 <textarea id="prompt" required placeholder="What will the cout statement print?"></textarea>
               </div>
-              <div class="row" style="gap:1rem; margin-bottom: 1rem;">
-                <div class="field" style="margin:0; flex: 1;">
+              <div class="row" style="gap:1rem; margin-bottom: 1rem; flex-wrap: wrap;">
+                <div class="field" style="margin:0; flex: 1; min-width: 160px;">
                   <label>Activity Type</label>
                   <select id="activity-type">
                     <option value="submission">Written Submission</option>
-                    <option value="poll">Interactive Poll</option>
+                    <option value="poll">Multiple Choice (Bar)</option>
+                    <option value="poll_pie">Multiple Choice (Pie)</option>
+                    <option value="rating">Rating Scale (1–10)</option>
+                    <option value="word_cloud">Word Cloud</option>
                   </select>
                 </div>
-                <div class="field" style="margin:0; flex: 1;">
+                <div class="field" style="margin:0; flex: 1; min-width: 140px;">
                   <label>Difficulty</label>
                   <select id="activity-difficulty">
                     <option value="easy">Easy</option>
@@ -148,10 +156,16 @@
                     <option value="ai-collab">AI-Collab</option>
                   </select>
                 </div>
-                <div id="poll-options-container" class="field" style="flex:2; margin:0;" hidden>
-                  <label>Poll Options (comma separated)</label>
+                <div id="poll-options-container" class="field" style="flex:2; margin:0; min-width: 240px;" hidden>
+                  <label>Poll Options <span class="muted">(comma-separated)</span></label>
                   <input type="text" id="poll-options" placeholder="Option A, Option B, Option C" />
                 </div>
+              </div>
+              <div id="class-selector-row" class="field" style="margin:0 0 1rem;">
+                <label>Target Class <span class="muted">(optional)</span></label>
+                <select id="class-selector">
+                  <option value="">Global / No class</option>
+                </select>
               </div>
               <button type="submit">
                 <span>Create Activity</span>
@@ -161,26 +175,146 @@
             </form>
           </div>
 
-          <div id="submissions-card" class="card" hidden>
-            <div style="display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-bottom: 1.5rem;">
-              <h2 id="submissions-title" style="margin:0;">Results</h2>
-              <div class="row">
-                 <button id="close-submissions" class="secondary sm">Back to List</button>
-                 <button id="export-csv" class="sm">Export CSV</button>
+          <!-- Live Results Panel -->
+          <div id="live-results-card" class="card" hidden>
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-bottom: 1rem;">
+              <div>
+                <h2 id="live-results-title" style="margin:0;">Live Results</h2>
+                <p id="live-results-count" class="muted" style="margin:0.25rem 0 0;"></p>
+              </div>
+              <div class="row" style="gap:0.5rem;">
+                <span id="live-badge" class="tag open" style="display:none;">● LIVE</span>
+                <button id="btn-project" class="secondary sm">📽 Project</button>
+                <button id="close-live-results" class="secondary sm">Back to List</button>
               </div>
             </div>
-            <div style="overflow-x: auto;">
+            <div id="live-chart-container" style="position:relative; max-height: 400px; margin-bottom: 1.5rem;"></div>
+            <div id="word-cloud-container" class="word-cloud" hidden></div>
+            <div id="rating-stats" hidden>
+              <div class="grid-2" style="margin-bottom:1rem;">
+                <div class="card" style="margin:0; text-align:center;">
+                  <div class="muted" style="font-size:0.85rem; margin-bottom:0.25rem;">Average</div>
+                  <div id="rating-avg" style="font-size:2.5rem; font-weight:800; color:var(--brand-1);">—</div>
+                </div>
+                <div class="card" style="margin:0; text-align:center;">
+                  <div class="muted" style="font-size:0.85rem; margin-bottom:0.25rem;">Responses</div>
+                  <div id="rating-count" style="font-size:2.5rem; font-weight:800; color:var(--brand-2);">—</div>
+                </div>
+              </div>
+              <canvas id="rating-histogram"></canvas>
+            </div>
+            <!-- Submission table (for submissions / word_cloud raw view) -->
+            <div id="submissions-table-wrapper" style="overflow-x: auto;" hidden>
               <table id="submissions-table">
-                <thead>
-                  <tr><th>Time</th><th>Student</th><th>Response</th><th>File</th></tr>
-                </thead>
+                <thead><tr><th>Time</th><th>Student</th><th>Response</th><th>File</th></tr></thead>
                 <tbody></tbody>
               </table>
+            </div>
+            <div style="text-align:right; margin-top:1rem;">
+              <button id="export-csv" class="sm">Export CSV</button>
             </div>
           </div>
 
           <div id="activities-list-container">
             <ul id="activities" class="activity-list"></ul>
+          </div>
+        </section>
+
+        <!-- Tab: First Session -->
+        <section id="tab-first-session">
+          <div style="margin-bottom:1.5rem;">
+            <h1 style="margin:0 0 0.5rem;">First Session Pack</h1>
+            <p class="muted">Inspired by Mentimeter & Slido — launch a ready-made set of icebreakers and background questions with one click. Students scan the QR code or visit the link to participate live.</p>
+          </div>
+
+          <!-- Class selector for first session -->
+          <div class="card" style="margin-bottom:1.5rem;">
+            <h2 style="margin:0 0 1rem;">Settings</h2>
+            <div class="row" style="gap:1rem; flex-wrap:wrap; align-items:flex-end;">
+              <div class="field" style="flex:1; min-width:200px; margin:0;">
+                <label>Target Class</label>
+                <select id="fs-class-selector">
+                  <option value="">Global / No class</option>
+                </select>
+              </div>
+              <button id="btn-launch-first-session" style="white-space:nowrap;">
+                <i data-lucide="rocket" style="width: 16px; height: 16px; margin-right: 0.5rem; vertical-align: text-bottom;"></i> Launch All Questions
+              </button>
+            </div>
+            <div id="fs-status" class="status"></div>
+          </div>
+
+          <!-- Preview of questions -->
+          <div class="grid-2">
+
+            <div class="first-session-card">
+              <div class="fs-type-badge">📊 Multiple Choice</div>
+              <h3>What year are you in?</h3>
+              <p class="muted">Freshman · Sophomore · Junior · Senior · Graduate</p>
+              <div class="fs-preview-pills">
+                <span>Freshman</span><span>Sophomore</span><span>Junior</span><span>Senior</span><span>Graduate</span>
+              </div>
+            </div>
+
+            <div class="first-session-card">
+              <div class="fs-type-badge">📊 Multiple Choice</div>
+              <h3>Which department are you in?</h3>
+              <p class="muted">CS · CE · EE · Math · Other</p>
+              <div class="fs-preview-pills">
+                <span>CS</span><span>CE</span><span>EE</span><span>Math</span><span>Physics</span><span>Other</span>
+              </div>
+            </div>
+
+            <div class="first-session-card">
+              <div class="fs-type-badge">⭐ Rating 1–10</div>
+              <h3>How comfortable are you with programming?</h3>
+              <p class="muted">1 = Complete beginner · 10 = Very experienced</p>
+              <div class="fs-rating-preview">
+                <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>10</span>
+              </div>
+            </div>
+
+            <div class="first-session-card">
+              <div class="fs-type-badge">📊 Multiple Choice</div>
+              <h3>Which languages have you used before?</h3>
+              <p class="muted">Pick the closest match.</p>
+              <div class="fs-preview-pills">
+                <span>Python</span><span>C</span><span>Java</span><span>JavaScript</span><span>None yet</span>
+              </div>
+            </div>
+
+            <div class="first-session-card">
+              <div class="fs-type-badge">☁️ Word Cloud</div>
+              <h3>What do you hope to learn this semester?</h3>
+              <p class="muted">One or two words — becomes a live word cloud.</p>
+              <div class="fs-word-preview">job skills · projects · OOP · algorithms · confidence</div>
+            </div>
+
+            <div class="first-session-card">
+              <div class="fs-type-badge">📊 Multiple Choice</div>
+              <h3>How do you prefer to study?</h3>
+              <p class="muted">Learning style check-in.</p>
+              <div class="fs-preview-pills">
+                <span>Alone</span><span>Study group</span><span>Tutoring</span><span>Videos</span><span>Trial & error</span>
+              </div>
+            </div>
+
+            <div class="first-session-card" style="grid-column: 1 / -1;">
+              <div class="fs-type-badge" style="background: var(--success-bg); color: var(--success);">🧊 Icebreaker</div>
+              <h3>Icebreaker Questions (2 open-ended)</h3>
+              <p class="muted">Each student shares something memorable.</p>
+              <ul style="margin:0; padding-left:1.2rem; color: var(--text);">
+                <li>If you could master one technology instantly, what would it be?</li>
+                <li>Share one fun or surprising fact about yourself.</li>
+              </ul>
+            </div>
+
+          </div>
+
+          <div style="margin-top:2rem; padding:1.25rem; background:var(--surface-2); border-radius:var(--radius); border:1px solid var(--border);">
+            <p class="muted" style="margin:0; font-size:0.9rem;">
+              <strong>How it works:</strong> Clicking "Launch All Questions" creates all 8 activities at once and opens them. Each student scans the QR code or visits the link — they'll see all open activities and can respond to each. Results appear live in the Activities tab with charts and word clouds.
+            </p>
           </div>
         </section>
 
@@ -210,9 +344,7 @@
               <h2 id="student-mgmt-title" style="margin:0;">Manage Roster</h2>
               <button id="close-student-mgmt" class="secondary sm">Close</button>
             </div>
-            
             <p class="muted">Add students individually or via Bulk CSV Upload.</p>
-            
             <div class="row" style="gap: 1.5rem; margin-bottom: 1.5rem;">
               <form id="add-student-form" class="row" style="flex:2; gap:0.5rem; align-items:flex-end;">
                 <div class="field" style="flex:2; margin:0;">
@@ -225,7 +357,6 @@
                 </div>
                 <button type="submit">Add Single</button>
               </form>
-              
               <div style="flex: 1; border-left: 1px solid var(--border); padding-left: 1.5rem;">
                 <label>Bulk CSV Upload (email, username)</label>
                 <input type="file" id="csv-upload" accept=".csv" style="margin-bottom: 0.5rem;" />
@@ -233,7 +364,6 @@
                 <div id="csv-status" class="status"></div>
               </div>
             </div>
-
             <ul id="student-list" class="activity-list" style="margin-top:1rem;"></ul>
           </div>
 
@@ -243,7 +373,6 @@
         <!-- Tab: Access Control -->
         <section id="tab-access">
           <h1 style="margin-bottom: 1.5rem;">Access Control</h1>
-
           <div class="grid-2">
             <div class="card">
               <h2>Guest Allowlist</h2>
@@ -289,7 +418,18 @@
       </div>
     </div>
 
-    <!-- Modals -->
+    <!-- QR Code Modal -->
+    <div id="modal-qr" class="card feature" style="position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:100; max-width:420px; width:100%; text-align:center; box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);" hidden>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem;">
+        <h2 style="margin:0;">Scan to Join</h2>
+        <button id="close-qr" class="secondary sm" style="padding:0.4rem; box-shadow:none;"><i data-lucide="x" style="width:16px;height:16px;"></i></button>
+      </div>
+      <div id="qr-code" style="display:inline-block; padding:1rem; background:#fff; border-radius:12px; margin-bottom:1.25rem;"></div>
+      <p id="qr-url" class="muted" style="font-size:0.8rem; word-break:break-all; margin:0 0 1rem;"></p>
+      <button id="copy-qr-link" class="secondary sm" style="width:100%;">Copy link</button>
+    </div>
+
+    <!-- Edit Class Modal -->
     <div id="modal-edit-class" class="card feature" style="position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); z-index:100; max-width:500px; width:100%; box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);" hidden>
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
         <h2 style="margin:0;">Edit Class</h2>
@@ -297,19 +437,14 @@
       </div>
       <form id="edit-class-form">
         <input type="hidden" id="edit-class-id" />
-        <div class="field">
-          <label>Class Name</label>
-          <input type="text" id="edit-class-name" required />
-        </div>
-        <div class="field">
-          <label>Code</label>
-          <input type="text" id="edit-class-code" />
-        </div>
+        <div class="field"><label>Class Name</label><input type="text" id="edit-class-name" required /></div>
+        <div class="field"><label>Code</label><input type="text" id="edit-class-code" /></div>
         <button type="submit" style="width:100%;">Save Changes</button>
         <div id="edit-class-status" class="status"></div>
       </form>
     </div>
 
+    <!-- Edit Activity Modal -->
     <div id="modal-edit-activity" class="card feature" style="position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); z-index:100; max-width:600px; width:100%; box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);" hidden>
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
         <h2 style="margin:0;">Edit Activity</h2>
@@ -317,10 +452,7 @@
       </div>
       <form id="edit-activity-form">
         <input type="hidden" id="edit-activity-id" />
-        <div class="field">
-          <label>Prompt / Question</label>
-          <textarea id="edit-activity-prompt" required rows="3"></textarea>
-        </div>
+        <div class="field"><label>Prompt / Question</label><textarea id="edit-activity-prompt" required rows="3"></textarea></div>
         <div class="row" style="gap:1rem; margin-bottom: 1rem;">
           <div class="field" style="margin:0; flex:1;">
             <label>Difficulty</label>
@@ -343,19 +475,25 @@
   </main>
 
   <script type="module" src="/js/instructor.js"></script>
-  <script>
-    lucide.createIcons();
-  </script>
+  <script>lucide.createIcons();</script>
 </body>
 </html>
-div>
+    <option value="hard">Hard</option>
+              <option value="ai-proof">AI-Proof</option>
+              <option value="ai-collab">AI-Collab</option>
+            </select>
           </div>
-        </section>
-
-      </div>
+        </div>
+        <button type="submit" style="width:100%;">Save Changes</button>
+        <div id="edit-activity-status" class="status"></div>
+      </form>
     </div>
+
+    <div id="modal-overlay" style="position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:90; backdrop-filter:blur(4px);" hidden></div>
+
   </main>
 
   <script type="module" src="/js/instructor.js"></script>
+  <script>lucide.createIcons();</script>
 </body>
 </html>

@@ -211,7 +211,7 @@ header.site .inner {
   padding: 1.25rem 1.5rem;
   display: flex;
   align-items: center;
-  gap: 1.5rem;
+  justify-content: space-between;
 }
 
 .brand {
@@ -239,6 +239,44 @@ header.site .inner {
   letter-spacing: -0.02em;
   box-shadow: var(--shadow-glow);
 }
+
+/* Theme Selector */
+.theme-selector-wrapper {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  padding: 0.4rem 0.8rem;
+  border-radius: 999px;
+  transition: all 0.2s var(--ease);
+}
+
+.theme-selector-wrapper:hover {
+  border-color: var(--brand-1);
+  box-shadow: var(--shadow-sm);
+}
+
+.theme-dropdown {
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  outline: none;
+  appearance: none;
+  padding-right: 1rem;
+  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22currentColor%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E");
+  background-repeat: no-repeat;
+  background-position: right center;
+}
+
+.theme-dropdown option {
+  background: var(--surface);
+  color: var(--text);
+}
+
 
 .brand-tag {
   font-size: 0.72rem;
