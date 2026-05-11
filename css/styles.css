@@ -947,6 +947,62 @@ tbody tr:hover { background: var(--interactive); }
 }
 .fs-word-preview { font-size: 0.84rem; color: var(--brand); }
 
+/* ---------- Activity Type Picker ---------- */
+.type-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.type-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.38rem 0.75rem;
+  font-size: 0.84rem;
+  font-weight: 500;
+  color: var(--muted);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.12s;
+}
+.type-btn:hover { border-color: var(--brand); color: var(--brand); background: var(--brand-soft); }
+.type-btn.active {
+  background: var(--brand-soft);
+  border-color: var(--brand-muted);
+  color: var(--brand);
+  font-weight: 600;
+}
+
+/* ---------- Poll Options Builder ---------- */
+.option-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.4rem;
+}
+.option-row input {
+  flex: 1;
+  padding: 0.42rem 0.65rem;
+  font-size: 0.88rem;
+}
+.option-letter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  min-width: 1.6rem;
+  border-radius: 4px;
+  background: var(--brand);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  font-family: var(--font-mono);
+  flex-shrink: 0;
+}
+
 /* ---------- Stat Cards ---------- */
 .stat-card { padding: 1.1rem 1.25rem; }
 .stat-label {

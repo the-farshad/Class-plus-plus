@@ -484,11 +484,66 @@ async function loadClassStudents() {
 
 // ---------- Activities ----------
 
-$("activity-type").addEventListener("change", (e) => {
-  const t = e.target.value;
-  if (t === "poll" || t === "poll_pie") show("poll-options-container");
-  else hide("poll-options-container");
+// ---------- Type picker ----------
+
+document.querySelectorAll(".type-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".type-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    $("activity-type").value = btn.dataset.type;
+    const isPoll = btn.dataset.type === "poll" || btn.dataset.type === "poll_pie";
+    if (isPoll) {
+      show("poll-options-container");
+      if (!$("poll-options-list").children.length) {
+        addOptionRow("poll-options-list");
+        addOptionRow("poll-options-list");
+      }
+    } else {
+      hide("poll-options-container");
+    }
+  });
 });
+
+// ---------- Poll options builder ----------
+
+const LETTERS = "ABCDEFGHIJ";
+
+function addOptionRow(containerId, value = "") {
+  const container = $(containerId);
+  const idx = container.children.length;
+  if (idx >= 8) return;
+  const row = document.createElement("div");
+  row.className = "option-row";
+  row.innerHTML = `
+    <span class="option-letter">${LETTERS[idx] || idx + 1}</span>
+    <input type="text" placeholder="Option ${LETTERS[idx] || idx + 1}" value="${escapeHTML(value)}" required />
+    <button type="button" class="icon-btn remove-option-btn" title="Remove" tabindex="-1">
+      <i data-lucide="x" style="width:13px;height:13px;"></i>
+    </button>`;
+  row.querySelector(".remove-option-btn").addEventListener("click", () => {
+    row.remove();
+    reindexOptions(containerId);
+    if (window.lucide) window.lucide.createIcons();
+  });
+  container.appendChild(row);
+  if (window.lucide) window.lucide.createIcons();
+}
+
+function reindexOptions(containerId) {
+  const rows = $(containerId).querySelectorAll(".option-row");
+  rows.forEach((row, i) => {
+    const letter = row.querySelector(".option-letter");
+    const input = row.querySelector("input");
+    if (letter) letter.textContent = LETTERS[i] || i + 1;
+    if (input) input.placeholder = `Option ${LETTERS[i] || i + 1}`;
+  });
+}
+
+function getOptionValues(containerId) {
+  return [...$(containerId).querySelectorAll("input")].map(i => i.value.trim()).filter(Boolean);
+}
+
+$("add-option-btn").addEventListener("click", () => addOptionRow("poll-options-list"));
 
 $("refresh-activities").addEventListener("click", loadActivities);
 
@@ -498,32 +553,33 @@ $("new-form").addEventListener("submit", async (e) => {
   const uiType = $("activity-type").value;
   const classId = $("class-selector").value || null;
 
-  // Normalise: poll_pie → type "poll" with a flag
   let type = uiType;
   let options = [];
 
   if (uiType === "poll" || uiType === "poll_pie") {
-    type = "poll";
-    options = $("poll-options").value.split(",").map(s => s.trim()).filter(Boolean);
+    options = getOptionValues("poll-options-list");
     if (options.length < 2) {
-      setStatus("new-status", "Poll needs at least 2 options", "error");
+      setStatus("new-status", "Add at least 2 options", "error");
       return;
     }
-    // Store chart style in prompt prefix hidden field (or a custom field)
-    // For simplicity we encode it in the type field itself for pie
-    if (uiType === "poll_pie") type = "poll_pie";
   }
 
   if (!prompt) return;
+  const btn = e.submitter || e.target.querySelector("button[type=submit]");
+  if (btn) btn.disabled = true;
   setStatus("new-status", "Creating…");
   try {
     const res = await api.createActivity(prompt, classId, type, options);
-    setStatus("new-status", `Created (#${res.activity_id})`, "success");
+    setStatus("new-status", `Launched! (#${res.activity_id})`, "success");
     $("prompt").value = "";
-    $("poll-options").value = "";
+    // Reset options list
+    $("poll-options-list").innerHTML = "";
     loadActivities();
+    setTimeout(() => setStatus("new-status", ""), 3000);
   } catch (err) {
     setStatus("new-status", err.message, "error");
+  } finally {
+    if (btn) btn.disabled = false;
   }
 });
 
@@ -586,10 +642,28 @@ function renderActivities(list_data) {
     editBtn.title = "Edit prompt / difficulty";
     editBtn.addEventListener("click", () => {
       $("edit-activity-id").value = a.activity_id;
+      $("edit-activity-type-val").value = a.type;
       $("edit-activity-prompt").value = a.prompt;
       $("edit-activity-difficulty").value = a.difficulty || "medium";
+
+      // Populate poll options if applicable
+      const isPoll = a.type === "poll" || a.type === "poll_pie";
+      const editOptContainer = $("edit-poll-options-container");
+      const editOptList = $("edit-poll-options-list");
+      editOptList.innerHTML = "";
+      if (isPoll) {
+        editOptContainer.hidden = false;
+        let opts = [];
+        try { opts = a.poll_options ? JSON.parse(a.poll_options) : []; } catch { opts = []; }
+        if (!opts.length) opts = ["", ""];
+        opts.forEach(v => addOptionRow("edit-poll-options-list", v));
+      } else {
+        editOptContainer.hidden = true;
+      }
+
       show("modal-edit-activity");
       show("modal-overlay");
+      if (window.lucide) window.lucide.createIcons();
     });
 
     const qrBtn = document.createElement("button");
@@ -1088,14 +1162,30 @@ async function loadInstructors() {
 // ---------- Edit Activity Modal ----------
 
 $("close-edit-activity").addEventListener("click", () => { hide("modal-edit-activity"); hide("modal-overlay"); });
+
+$("edit-add-option-btn").addEventListener("click", () => addOptionRow("edit-poll-options-list"));
+
 $("edit-activity-form").addEventListener("submit", async (e) => {
   e.preventDefault();
   const id = $("edit-activity-id").value;
+  const type = $("edit-activity-type-val").value;
   const prompt = $("edit-activity-prompt").value.trim();
   const difficulty = $("edit-activity-difficulty").value;
-  setStatus("edit-activity-status", "Saving...");
+
+  const payload = { prompt, difficulty };
+
+  if (type === "poll" || type === "poll_pie") {
+    const options = getOptionValues("edit-poll-options-list");
+    if (options.length < 2) {
+      setStatus("edit-activity-status", "At least 2 options required", "error");
+      return;
+    }
+    payload.poll_options = options;
+  }
+
+  setStatus("edit-activity-status", "Saving…");
   try {
-    await api.updateActivity(id, { prompt, difficulty });
+    await api.updateActivity(id, payload);
     setStatus("edit-activity-status", "Saved!", "success");
     setTimeout(() => {
       hide("modal-edit-activity"); hide("modal-overlay");

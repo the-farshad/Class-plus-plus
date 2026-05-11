@@ -132,24 +132,55 @@
           </div>
 
           <div class="card feature">
-            <h2>Launch New Activity</h2>
+            <h2 style="margin-bottom:1rem;">New Activity</h2>
             <form id="new-form">
+
+              <!-- Step 1: type picker -->
               <div class="field">
-                <label for="prompt">Prompt / Question</label>
-                <textarea id="prompt" required placeholder="What will the cout statement print?"></textarea>
-              </div>
-              <div class="row" style="gap:1rem; margin-bottom: 1rem; flex-wrap: wrap;">
-                <div class="field" style="margin:0; flex: 1; min-width: 160px;">
-                  <label>Activity Type</label>
-                  <select id="activity-type">
-                    <option value="submission">Written Submission</option>
-                    <option value="poll">Multiple Choice (Bar)</option>
-                    <option value="poll_pie">Multiple Choice (Pie)</option>
-                    <option value="rating">Rating Scale (1–10)</option>
-                    <option value="word_cloud">Word Cloud</option>
-                  </select>
+                <label>Type</label>
+                <div class="type-picker" id="type-picker">
+                  <button type="button" class="type-btn active" data-type="submission">
+                    <i data-lucide="file-text" style="width:16px;height:16px;"></i>
+                    <span>Submission</span>
+                  </button>
+                  <button type="button" class="type-btn" data-type="poll">
+                    <i data-lucide="bar-chart-2" style="width:16px;height:16px;"></i>
+                    <span>Poll</span>
+                  </button>
+                  <button type="button" class="type-btn" data-type="poll_pie">
+                    <i data-lucide="pie-chart" style="width:16px;height:16px;"></i>
+                    <span>Pie Poll</span>
+                  </button>
+                  <button type="button" class="type-btn" data-type="rating">
+                    <i data-lucide="sliders" style="width:16px;height:16px;"></i>
+                    <span>Rating</span>
+                  </button>
+                  <button type="button" class="type-btn" data-type="word_cloud">
+                    <i data-lucide="cloud" style="width:16px;height:16px;"></i>
+                    <span>Word Cloud</span>
+                  </button>
                 </div>
-                <div class="field" style="margin:0; flex: 1; min-width: 140px;">
+                <input type="hidden" id="activity-type" value="submission" />
+              </div>
+
+              <!-- Step 2: prompt -->
+              <div class="field">
+                <label for="prompt">Question</label>
+                <textarea id="prompt" required placeholder="Ask a question…" rows="2" style="min-height:72px;"></textarea>
+              </div>
+
+              <!-- Poll options builder (shown only for poll types) -->
+              <div id="poll-options-container" class="field" hidden>
+                <label>Options <span class="muted" style="font-weight:400;">(min 2)</span></label>
+                <div id="poll-options-list"></div>
+                <button type="button" id="add-option-btn" class="secondary sm" style="margin-top:0.5rem;">
+                  <i data-lucide="plus" style="width:13px;height:13px;"></i> Add option
+                </button>
+              </div>
+
+              <!-- Footer row: difficulty + class + submit -->
+              <div style="display:flex;gap:0.75rem;flex-wrap:wrap;align-items:flex-end;margin-top:0.75rem;">
+                <div class="field" style="margin:0;flex:1;min-width:120px;">
                   <label>Difficulty</label>
                   <select id="activity-difficulty">
                     <option value="easy">Easy</option>
@@ -159,21 +190,17 @@
                     <option value="ai-collab">AI-Collab</option>
                   </select>
                 </div>
-                <div id="poll-options-container" class="field" style="flex:2; margin:0; min-width: 240px;" hidden>
-                  <label>Poll Options <span class="muted">(comma-separated)</span></label>
-                  <input type="text" id="poll-options" placeholder="Option A, Option B, Option C" />
+                <div class="field" style="margin:0;flex:1.5;min-width:140px;">
+                  <label>Class <span class="muted" style="font-weight:400;">(optional)</span></label>
+                  <select id="class-selector">
+                    <option value="">Global</option>
+                  </select>
                 </div>
+                <button type="submit" style="flex-shrink:0;align-self:flex-end;">
+                  <i data-lucide="zap" style="width:15px;height:15px;"></i> Launch
+                </button>
               </div>
-              <div id="class-selector-row" class="field" style="margin:0 0 1rem;">
-                <label>Target Class <span class="muted">(optional)</span></label>
-                <select id="class-selector">
-                  <option value="">Global / No class</option>
-                </select>
-              </div>
-              <button type="submit">
-                <span>Create Activity</span>
-                <span aria-hidden="true">＋</span>
-              </button>
+
               <div id="new-status" class="status"></div>
             </form>
           </div>
@@ -187,7 +214,7 @@
               </div>
               <div class="row" style="gap:0.5rem;">
                 <span id="live-badge" class="tag open" style="display:none;">● LIVE</span>
-                <button id="btn-project" class="secondary sm">📽 Project</button>
+                <button id="btn-project" class="secondary sm"><i data-lucide="monitor" style="width:13px;height:13px;"></i> Project</button>
                 <button id="close-live-results" class="secondary sm">Back to List</button>
               </div>
             </div>
@@ -448,27 +475,37 @@
     </div>
 
     <!-- Edit Activity Modal -->
-    <div id="modal-edit-activity" class="card feature" style="position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); z-index:100; max-width:600px; width:100%; box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);" hidden>
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+    <div id="modal-edit-activity" class="card feature" style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:100;max-width:560px;width:calc(100% - 2rem);box-shadow:0 20px 40px rgba(0,0,0,.35);" hidden>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
         <h2 style="margin:0;">Edit Activity</h2>
-        <button id="close-edit-activity" class="secondary sm" style="padding:0.4rem; box-shadow:none;"><i data-lucide="x" style="width:16px;height:16px;"></i></button>
+        <button id="close-edit-activity" class="icon-btn"><i data-lucide="x" style="width:16px;height:16px;"></i></button>
       </div>
       <form id="edit-activity-form">
         <input type="hidden" id="edit-activity-id" />
-        <div class="field"><label>Prompt / Question</label><textarea id="edit-activity-prompt" required rows="3"></textarea></div>
-        <div class="row" style="gap:1rem; margin-bottom: 1rem;">
-          <div class="field" style="margin:0; flex:1;">
-            <label>Difficulty</label>
-            <select id="edit-activity-difficulty">
-              <option value="easy">Easy</option>
-              <option value="medium">Medium</option>
-              <option value="hard">Hard</option>
-              <option value="ai-proof">AI-Proof</option>
-              <option value="ai-collab">AI-Collab</option>
-            </select>
-          </div>
+        <input type="hidden" id="edit-activity-type-val" />
+        <div class="field">
+          <label>Question</label>
+          <textarea id="edit-activity-prompt" required rows="3"></textarea>
         </div>
-        <button type="submit" style="width:100%;">Save Changes</button>
+        <!-- Editable poll options (shown only for poll types) -->
+        <div id="edit-poll-options-container" class="field" hidden>
+          <label>Options <span class="muted" style="font-weight:400;">(min 2)</span></label>
+          <div id="edit-poll-options-list"></div>
+          <button type="button" id="edit-add-option-btn" class="secondary sm" style="margin-top:0.5rem;">
+            <i data-lucide="plus" style="width:13px;height:13px;"></i> Add option
+          </button>
+        </div>
+        <div class="field" style="margin-top:0.75rem;">
+          <label>Difficulty</label>
+          <select id="edit-activity-difficulty">
+            <option value="easy">Easy</option>
+            <option value="medium">Medium</option>
+            <option value="hard">Hard</option>
+            <option value="ai-proof">AI-Proof</option>
+            <option value="ai-collab">AI-Collab</option>
+          </select>
+        </div>
+        <button type="submit" style="width:100%;margin-top:0.25rem;">Save</button>
         <div id="edit-activity-status" class="status"></div>
       </form>
     </div>
