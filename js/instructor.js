@@ -18,6 +18,10 @@ let ratingHistChart = null;
 
 async function showSignIn() {
   hide("dashboard"); hide("forbidden-card");
+  // The dedicated sign-in card is already visible here, so the duplicate
+  // "Sign in" CTA in the navbar is just noise.
+  const navSignin = $("nav-signin");
+  if (navSignin) navSignin.hidden = true;
   show("signin-card");
   try {
     const cfg = await api.authConfig();
@@ -27,7 +31,15 @@ async function showSignIn() {
   }
 }
 
+// Pick a Google button theme that visually matches the active site theme.
+function pickGoogleTheme() {
+  const t = document.documentElement.getAttribute("data-theme") || "light";
+  if (t === "dark" || t === "high-contrast") return "filled_black";
+  return "outline"; // light / sepia / uwyo — blends into the card
+}
+
 function renderGoogleButton(clientId) {
+  const target = $("g_id_signin");
   const tryRender = () => {
     if (!window.google?.accounts?.id) { setTimeout(tryRender, 200); return; }
     window.google.accounts.id.initialize({
@@ -41,8 +53,24 @@ function renderGoogleButton(clientId) {
         }
       },
     });
-    window.google.accounts.id.renderButton($("g_id_signin"), {
-      theme: "filled_blue", size: "large", shape: "pill", text: "signin_with",
+
+    const draw = () => {
+      if (!target) return;
+      target.innerHTML = "";
+      window.google.accounts.id.renderButton(target, {
+        theme: pickGoogleTheme(),
+        size: "large",
+        shape: "pill",
+        text: "signin_with",
+        width: 280,
+      });
+    };
+    draw();
+
+    // Re-render when the user switches themes from the settings drawer.
+    new MutationObserver(draw).observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-theme"],
     });
   };
   tryRender();

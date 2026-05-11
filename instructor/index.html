@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@600;700;800&family=Lora:wght@400;500;600&family=Ubuntu:wght@400;500;700&family=Roboto+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/styles.css?v=50" />
+  <link rel="stylesheet" href="/css/styles.css?v=51" />
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -52,10 +52,11 @@
   <main style="max-width:100%;padding:0;flex:1;">
 
     <!-- Sign-in -->
-    <section id="signin-card" class="card" style="max-width:480px;margin:3rem auto 1rem;" hidden>
-      <h2 style="margin:0 0 0.35rem;">Instructor Sign-in</h2>
-      <p class="muted" style="margin:0 0 1.25rem;">Sign in with an authorized Google account.</p>
-      <div id="g_id_signin"></div>
+    <section id="signin-card" class="signin-hero" hidden>
+      <div class="signin-hero-mark">C++</div>
+      <h2>Instructor sign-in</h2>
+      <p>Sign in with an authorized Google account.</p>
+      <div class="g-button-wrap" id="g_id_signin"></div>
       <div id="signin-status" class="status"></div>
     </section>
 
@@ -473,9 +474,9 @@
 
   <div class="build-chip" data-version></div>
 
-  <script type="module" src="/js/instructor.js?v=50"></script>
+  <script type="module" src="/js/instructor.js?v=51"></script>
   <script type="module">
-    import { bootPage } from "/js/ui.js?v=50";
+    import { bootPage } from "/js/ui.js?v=51";
     bootPage();
   </script>
 </body>
