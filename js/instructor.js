@@ -2,6 +2,7 @@ import { api, session, API_BASE_URL } from "/js/api.js";
 import {
   $, show, hide, escapeHTML, setStatus,
   mountSettingsDrawer, updateUserPill, setupMicrosoftSignIn,
+  toast, confirmDialog,
 } from "/js/ui.js";
 
 api.initTheme();
@@ -246,7 +247,7 @@ $("export-csv-all").addEventListener("click", async () => {
   btn.disabled = true;
   try {
     const res = await api.exportGlobalRoster();
-    if (!res.roster.length) { alert("No students in database."); return; }
+    if (!res.roster.length) { toast("No students in database.", "warning"); return; }
     const rows = [["Student Email", "Student ID", "Class Code", "Class Name"]];
     res.roster.forEach(r => rows.push([r.student_email, r.student_id || "", r.class_code || "", r.class_name || ""]));
     const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
@@ -258,7 +259,7 @@ $("export-csv-all").addEventListener("click", async () => {
     a.click();
     URL.revokeObjectURL(url);
   } catch (err) {
-    alert("Export failed: " + err.message);
+    toast("Export failed: " + err.message, "error");
   } finally {
     btn.textContent = "Download CSV";
     btn.disabled = false;
@@ -373,7 +374,7 @@ $("new-class-form").addEventListener("submit", async (e) => {
     $("class-code").value = "";
     loadClasses();
   } catch (err) {
-    alert(err.message);
+    toast(err.message, "error");
   }
 });
 
@@ -415,9 +416,16 @@ function renderClassList() {
     delBtn.title = "Delete class";
     delBtn.setAttribute("aria-label", `Delete class ${c.name}`);
     delBtn.addEventListener("click", async () => {
-      if (!confirm("Delete class and all its data?")) return;
-      await api.deleteClass(c.id);
-      loadClasses();
+      const ok = await confirmDialog({
+        title: "Delete this class?",
+        message: `<strong>${escapeHTML(c.code || "")} ${escapeHTML(c.name)}</strong><br>This removes the class plus its students and activities. <strong>Cannot be undone.</strong>`,
+        confirmLabel: "Delete class",
+        cancelLabel: "Keep",
+        danger: true,
+      });
+      if (!ok) return;
+      try { await api.deleteClass(c.id); loadClasses(); }
+      catch (err) { toast(err.message, "error"); }
     });
 
     actions.append(rosterBtn, editBtn, delBtn);
@@ -461,16 +469,20 @@ function showStudentMgmt(c) {
 $("close-student-mgmt").addEventListener("click", () => hide("student-management"));
 
 // Bulk password generation for everyone in the active class.
-$("btn-bulk-passwords").addEventListener("click", async () => {
+$("btn-bulk-passwords").addEventListener("click", async (ev) => {
   if (!activeMgmtClass) return;
-  const rotate = confirm(
-    "Generate passwords for every student in this class.\n\n" +
-    "OK = only for students without a password yet (recommended)\n" +
-    "Cancel = abort\n\n" +
-    "(To force-rotate everyone's password, hold Shift while clicking instead.)"
-  );
-  if (!rotate) return;
-  const force = window.event && window.event.shiftKey;
+  // Shift-click bypasses the confirm and forces rotation of everyone's
+  // existing password too. Plain click only fills in missing ones.
+  const force = !!(ev && ev.shiftKey);
+  const ok = await confirmDialog({
+    title: force ? "Rotate every password?" : "Generate passwords for the class?",
+    message: force
+      ? `This will <strong>overwrite the existing password</strong> for every student in <strong>${escapeHTML(activeMgmtClass.name)}</strong>. Old passwords will stop working immediately.`
+      : `Generate a password for every student in <strong>${escapeHTML(activeMgmtClass.name)}</strong> who doesn't already have one. Existing passwords are left alone. <em>Hold Shift while clicking to force-rotate everyone instead.</em>`,
+    confirmLabel: force ? "Rotate all" : "Generate",
+    danger: force,
+  });
+  if (!ok) return;
   const btn = $("btn-bulk-passwords");
   btn.disabled = true;
   btn.textContent = "Generating…";
@@ -478,7 +490,7 @@ $("btn-bulk-passwords").addEventListener("click", async () => {
     const res = await api.bulkGeneratePasswords(activeMgmtClass.id, force);
     showBulkPasswordsResult(res.generated, res.skipped, activeMgmtClass);
   } catch (err) {
-    alert("Bulk password generation failed: " + err.message);
+    toast("Bulk password generation failed: " + err.message, "error");
   } finally {
     btn.disabled = false;
     btn.innerHTML = `<i data-lucide="key-round" style="width:13px;height:13px;"></i> Passwords for all`;
@@ -580,7 +592,7 @@ $("add-student-form").addEventListener("submit", async (e) => {
     $("student-id-field").value = "";
     loadClassStudents();
   } catch (err) {
-    alert(err.message);
+    toast(err.message, "error");
   }
 });
 
@@ -671,7 +683,7 @@ async function loadClassStudents() {
           const res = await api.generateStudentPassword(activeMgmtClass.id, s.student_email);
           showGeneratedPassword(s.student_email, res.password);
         } catch (err) {
-          alert("Could not generate password: " + err.message);
+          toast("Could not generate password: " + err.message, "error");
         } finally {
           pwBtn.disabled = false;
         }
@@ -683,9 +695,15 @@ async function loadClassStudents() {
       delBtn.title = `Remove ${s.student_email}`;
       delBtn.setAttribute("aria-label", `Remove student ${s.student_email}`);
       delBtn.addEventListener("click", async () => {
-        if (!confirm(`Remove ${s.student_email}?`)) return;
-        await api.removeClassStudent(activeMgmtClass.id, s.student_email);
-        loadClassStudents();
+        const ok = await confirmDialog({
+          title: "Remove student?",
+          message: `Remove <strong>${escapeHTML(s.student_email)}</strong> from <strong>${escapeHTML(activeMgmtClass.name)}</strong>?`,
+          confirmLabel: "Remove",
+          danger: true,
+        });
+        if (!ok) return;
+        try { await api.removeClassStudent(activeMgmtClass.id, s.student_email); loadClassStudents(); }
+        catch (err) { toast(err.message, "error"); }
       });
 
       actions.append(pwBtn, delBtn);
@@ -1018,12 +1036,18 @@ function renderActivities(list_data) {
     delBtn2.title = "Delete activity";
     delBtn2.setAttribute("aria-label", `Delete activity: ${a.prompt}`);
     delBtn2.addEventListener("click", async () => {
-      if (!confirm(`Delete "${a.prompt}"?\nThis also removes all submissions and votes.`)) return;
+      const ok = await confirmDialog({
+        title: "Delete activity?",
+        message: `<strong>${escapeHTML(a.prompt.slice(0, 140))}${a.prompt.length > 140 ? "…" : ""}</strong><br>All student answers and submissions for this activity will be deleted too. <strong>Cannot be undone.</strong>`,
+        confirmLabel: "Delete activity",
+        danger: true,
+      });
+      if (!ok) return;
       try {
         await api.deleteActivity(a.activity_id);
         loadActivities();
       } catch (err) {
-        alert("Delete failed: " + err.message);
+        toast("Delete failed: " + err.message, "error");
       }
     });
 
@@ -1044,7 +1068,7 @@ async function toggleStatus(a) {
     await api.setActivityStatus(a.activity_id, next);
     loadActivities();
   } catch (err) {
-    alert(err.message);
+    toast(err.message, "error");
   }
 }
 
@@ -1465,9 +1489,15 @@ async function loadAllowlist() {
       remove.className = "secondary sm";
       remove.textContent = "Remove";
       remove.addEventListener("click", async () => {
-        if (!confirm(`Remove ${row.email}?`)) return;
+        const ok = await confirmDialog({
+          title: "Remove from allowlist?",
+          message: `Revoke access for <strong>${escapeHTML(row.email)}</strong>?`,
+          confirmLabel: "Remove",
+          danger: true,
+        });
+        if (!ok) return;
         try { await api.removeAllowlist(row.email); loadAllowlist(); }
-        catch (err) { alert(err.message); }
+        catch (err) { toast(err.message, "error"); }
       });
       li.append(left, remove);
       list.appendChild(li);
@@ -1518,9 +1548,15 @@ async function loadInstructors() {
         remove.title = "Cannot remove yourself";
       }
       remove.addEventListener("click", async () => {
-        if (!confirm(`Remove ${row.email}?`)) return;
+        const ok = await confirmDialog({
+          title: "Remove instructor?",
+          message: `Revoke instructor / superadmin access for <strong>${escapeHTML(row.email)}</strong>?`,
+          confirmLabel: "Remove",
+          danger: true,
+        });
+        if (!ok) return;
         try { await api.removeInstructor(row.email); loadInstructors(); }
-        catch (err) { alert(err.message); }
+        catch (err) { toast(err.message, "error"); }
       });
       li.append(left, remove);
       list.appendChild(li);

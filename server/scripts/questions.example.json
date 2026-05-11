@@ -20,8 +20,17 @@
       "Compute the sum",
       "Output the result"
     ] },
-  { "session_tag": "prog01", "type": "submission",
-    "prompt": "**Prog 01 · AI-resistant.** Submit a **photo of your handwritten pseudocode** for Prog 01 (with your name and the date). No typed text, no AI-generated images — handwriting is graded." },
+  { "session_tag": "prog01", "type": "ordering",
+    "prompt": "**Prog 01 · AI-resistant.** *Drag these C++ statements into the **shortest valid order** that compiles, reads four ints from the user, prints their sum, and returns 0. There is exactly one correct order.*",
+    "options": [
+      "`#include <iostream>`",
+      "`int main() {`",
+      "    `int a, b, c, d;`",
+      "    `std::cin >> a >> b >> c >> d;`",
+      "    `std::cout << a + b + c + d << std::endl;`",
+      "    `return 0;`",
+      "`}`"
+    ] },
 
   { "session_tag": "prog02", "type": "poll",
     "prompt": "**Prog 02 · Easy.** A `while` loop tests its condition…",
@@ -49,8 +58,9 @@
       "While `value1 < value2`: increment `value1`, then `accumulator *= value1`",
       "Output `accumulator`"
     ] },
-  { "session_tag": "prog02", "type": "submission",
-    "prompt": "**Prog 02 · AI-resistant.** With **value1 = 3** and **value2 = 6**, write out the table of `value1`, `accumulator` after each loop iteration **on paper, by hand**. Photograph and submit.\n\n*Submissions where the table is typed or where iterations don't match a real trace receive zero.*" },
+  { "session_tag": "prog02", "type": "poll",
+    "prompt": "**Prog 02 · AI-resistant.** With `value1 = 3` and `value2 = 6`, the loop runs:\n```text\nwhile value1 < value2:\n    value1 = value1 + 1\n    accumulator = accumulator * value1\n```\nstarting with `accumulator = 3`. **What is the final value of `accumulator`?**",
+    "options": ["`360`", "`120`", "`90`", "`72`"] },
 
   { "session_tag": "prog03", "type": "poll",
     "prompt": "**Prog 03 · Easy.** Which loop **always** executes its body at least once?",
@@ -74,8 +84,17 @@
       "    `loopctl  = loopctl + 1`",
       "Output `counter`"
     ] },
-  { "session_tag": "prog03", "type": "submission",
-    "prompt": "**Prog 03 · AI-resistant.** Pick **one** of `for` / `while` / `do-while`. On paper, **rewrite the same** counting algorithm using the **other two** loop forms. Photograph all three side-by-side." },
+  { "session_tag": "prog03", "type": "ordering",
+    "prompt": "**Prog 03 · AI-resistant.** *Drag the lines into a correct **`do-while`** version of the strictly-between-endpoints counter (`lo = 4`, `hi = 9`). Mind the off-by-one — `do-while` always runs the body once, so the initialization differs.*",
+    "options": [
+      "`int counter = 0;`",
+      "`int loopctl = lo;`",
+      "`do {`",
+      "    `loopctl = loopctl + 1;`",
+      "    `if (loopctl < hi) counter = counter + 1;`",
+      "`} while (loopctl < hi);`",
+      "`std::cout << counter;`"
+    ] },
 
   { "session_tag": "prog04", "type": "poll",
     "prompt": "**Prog 04 · Easy.** What's the simplest return type for a `prompt()` function that loops until the user enters a non-negative integer?",
@@ -97,8 +116,17 @@
       "    `return n * factorial(n - 1);`",
       "`}`"
     ] },
-  { "session_tag": "prog04", "type": "submission",
-    "prompt": "**Prog 04 · AI-resistant.** On paper, draw the **call stack** for `factorial(4)` step by step. Show every frame as it's pushed, and the return value bubbling back up. Photograph and submit. *Typed or AI-generated diagrams will receive zero.*" },
+  { "session_tag": "prog04", "type": "ordering",
+    "prompt": "**Prog 04 · AI-resistant.** *Drag the call-stack events for `factorial(4)` into the order they happen at runtime — pushes first, then returns bubbling up.*",
+    "options": [
+      "Push frame `factorial(4)`",
+      "Push frame `factorial(3)`",
+      "Push frame `factorial(2)`",
+      "Push frame `factorial(1)` — base case, returns `1`",
+      "`factorial(2)` returns `2 * 1 = 2`",
+      "`factorial(3)` returns `3 * 2 = 6`",
+      "`factorial(4)` returns `4 * 6 = 24`"
+    ] },
 
   { "session_tag": "prog05", "type": "poll",
     "prompt": "**Prog 05 · Easy.** The Madhava–Leibniz series for `π/4` is `1 − 1/3 + 1/5 − 1/7 + …`. The **next** term after `+1/9` is:",
@@ -125,8 +153,14 @@
       "    `return 4.0 * sum;`",
       "`}`"
     ] },
-  { "session_tag": "prog05", "type": "submission",
-    "prompt": "**Prog 05 · AI-resistant.** Run your finished Prog 05 with `n = 10`, `n = 1000`, `n = 100000`. **On paper**, write the printed `π` for each, and circle the digit at which it first deviates from `3.14159…`. Photograph and submit." },
+  { "session_tag": "prog05", "type": "poll",
+    "prompt": "**Prog 05 · AI-resistant.** With the alternating-sign Madhava–Leibniz loop and `n = 4` terms, the partial sum is:\n```text\n1 − 1/3 + 1/5 − 1/7\n```\n**Multiplying by 4 (which is what the algorithm does), the printed value of π ≈ ?**",
+    "options": [
+      "`3.3397…` (4 × 0.83492…)",
+      "`3.14159…`",
+      "`2.8951…`",
+      "`4.0000…`"
+    ] },
 
   { "session_tag": "prog06", "type": "poll",
     "prompt": "**Prog 06 · Easy.** The cylinder wall thickness `t` must satisfy `t ≤ ½·min(d, h)`. With `d = 10`, `h = 6`, what is the maximum allowed `t`?",
@@ -149,8 +183,15 @@
       "If `t > ½·min(d, h)`, print error and re-prompt",
       "Return `t`"
     ] },
-  { "session_tag": "prog06", "type": "submission",
-    "prompt": "**Prog 06 · AI-resistant.** **Hand-sketch** a cylinder cross-section showing height `h`, diameter `d`, and wall thickness `t`. Label the constraint `t ≤ ½·min(d, h)` directly on the drawing. Photograph and submit. *No CAD, no AI.*" },
+  { "session_tag": "prog06", "type": "ordering",
+    "prompt": "**Prog 06 · AI-resistant.** *Drag these `validateThickness` steps into the right execution order — input first, then **per-input** checks in the right order, then the return.*",
+    "options": [
+      "Prompt `\"Enter wall thickness: \"`",
+      "Read `t` from the user",
+      "While `t < 0`: print `\"Thickness must be non-negative\"`, re-prompt, re-read",
+      "While `t > 0.5 * std::min(d, h)`: print `\"Thickness exceeds half the smaller of d and h\"`, re-prompt, re-read",
+      "Return `t`"
+    ] },
 
   { "session_tag": "prog07", "type": "poll",
     "prompt": "**Prog 07 · Easy.** Given `int a[5];`, the valid index range for `a[i]` is:",
@@ -174,8 +215,16 @@
       "    `in >> a[i];`",
       "`}`"
     ] },
-  { "session_tag": "prog07", "type": "submission",
-    "prompt": "**Prog 07 · AI-resistant.** Pick any one of the four `data*.info` files. **By hand**, write the first 6 numbers and the running sum after each. Submit a photo of the page." },
+  { "session_tag": "prog07", "type": "poll_multi",
+    "prompt": "**Prog 07 · AI-resistant.** Given:\n```cpp\nint a[5] = {3, 1, 4, 1, 5};\nint *p = a;\n```\n*Select **all** expressions whose value is `4`.*",
+    "options": [
+      "`a[2]`",
+      "`*(a + 2)`",
+      "`p[2]`",
+      "`*(p + 2)`",
+      "`*p + 2`  *(this is `(*p) + 2 = 3 + 2 = 5`)*",
+      "`p[1] + 3`  *(this is `1 + 3 = 4`)*"
+    ] },
 
   { "session_tag": "prog08", "type": "poll",
     "prompt": "**Prog 08 · Easy.** Declaring `int grid[3][4];` reserves how many `int` slots in memory?",
@@ -199,8 +248,9 @@
       "    `}`",
       "`}`"
     ] },
-  { "session_tag": "prog08", "type": "submission",
-    "prompt": "**Prog 08 · AI-resistant.** **On graph paper or hand-drawn cells**, draw a 3×4 grid filled with the numbers 1..12 in row-major order, then circle each row sum next to its row. Submit a photo." },
+  { "session_tag": "prog08", "type": "poll",
+    "prompt": "**Prog 08 · AI-resistant.** A 3×4 grid is filled with the numbers 1..12 in **row-major** order:\n```text\n  1  2  3  4\n  5  6  7  8\n  9 10 11 12\n```\n**What is the sum of column 2** (i.e. `g[0][1] + g[1][1] + g[2][1]`)?",
+    "options": ["`18`", "`15`", "`24`", "`21`"] },
 
   { "session_tag": "prog09", "type": "poll",
     "prompt": "**Prog 09 · Easy.** In the `LLParams(...)` declaration, `double &m` and `double &b` are…",
@@ -228,8 +278,14 @@
       "Call `LLParams(x, y, n, m, b)`",
       "Print `m` and `b`"
     ] },
-  { "session_tag": "prog09", "type": "submission",
-    "prompt": "**Prog 09 · AI-resistant.** With **5 of your own data points** (chosen so the fit isn't perfectly linear), compute `m` and `b` *by hand* using the least-squares formulas. Show the intermediate sums (`Σx`, `Σy`, `Σxy`, `Σx²`). Photograph the worksheet." },
+  { "session_tag": "prog09", "type": "poll",
+    "prompt": "**Prog 09 · AI-resistant.** Best-fit line through the points `(1,1), (2,3), (3,5), (4,7)`. Using the least-squares formulas:\n```text\nm = (n·Σxy − Σx·Σy) / (n·Σx² − (Σx)²)\nb = (Σy − m·Σx) / n\n```\n**What are `m` and `b`?**",
+    "options": [
+      "`m = 2,    b = -1`",
+      "`m = 1.5,  b = 0`",
+      "`m = 1,    b = 1`",
+      "`m = 2.5,  b = -2`"
+    ] },
 
   { "session_tag": "prog10", "type": "poll",
     "prompt": "**Prog 10 · Easy.** A class's *destructor* is invoked…",
@@ -257,8 +313,15 @@
       "Each coefficient is copied from `p1` to `p2`",
       "`p2` is now a fully independent object"
     ] },
-  { "session_tag": "prog10", "type": "submission",
-    "prompt": "**Prog 10 · AI-resistant.** **On paper**, draw two memory diagrams side by side: one for `Polynomial a` (constructed with `[1, 2, 3]`) and one for `Polynomial b = a;`. Show that each owns a *separate* coefficients array (deep copy). Photograph and submit." },
+  { "session_tag": "prog10", "type": "poll_multi",
+    "prompt": "**Prog 10 · AI-resistant.** A correct *deep-copy* `Polynomial` copy constructor `Polynomial(const Polynomial& other)` must do **all** of the following. *Pick every required step.*",
+    "options": [
+      "Copy `other.degree_` into `this->degree_`",
+      "Allocate a **new** coefficients array of the right size",
+      "Loop and copy each coefficient value from `other` into the new array",
+      "Just write `this->coeffs_ = other.coeffs_;`  *(this is the BUG — shallow copy)*",
+      "Leave `this->coeffs_` uninitialized and let the compiler handle it"
+    ] },
 
   { "session_tag": "prog11", "type": "poll",
     "prompt": "**Prog 11 · Easy.** In the `String1030` class, the in-storage sentinel that marks the end of a string is…",
@@ -281,8 +344,14 @@
       "    `for (int i = 0; i <= len_; ++i) data_[i] = other.data_[i];`",
       "`}`"
     ] },
-  { "session_tag": "prog11", "type": "submission",
-    "prompt": "**Prog 11 · AI-resistant.** **On paper**, write a one-page explanation (in your own handwriting) of the bug that would occur if `String1030` had a copy constructor that did `data_ = other.data_;` instead of allocating new storage. Mention 'shallow copy' and what happens when one string is destroyed. Photograph and submit." },
+  { "session_tag": "prog11", "type": "poll",
+    "prompt": "**Prog 11 · AI-resistant.** A `String1030` has a buggy copy constructor that does `data_ = other.data_;`  Then:\n```cpp\nString1030 a(\"hi\");\n{\n    String1030 b = a;        // shallow copy\n}                            // b's destructor frees data_\nstd::cout << a;              // ???\n```\n**What's the most likely consequence on the marked line?**",
+    "options": [
+      "Use-after-free (undefined behavior — could segfault, garbage, or crash later)",
+      "Compile error — references can't be reused",
+      "Prints `\"hi\"` correctly because `a` still owns its own buffer",
+      "Memory leak only; output is fine"
+    ] },
 
   { "session_tag": "prog12", "type": "poll",
     "prompt": "**Prog 12 · Easy.** Which call allocates a single `int` on the heap?",
@@ -305,8 +374,16 @@
       "`delete[] a;`",
       "`a = nullptr;`  *(optional but defensive)*"
     ] },
-  { "session_tag": "prog12", "type": "submission",
-    "prompt": "**Prog 12 · AI-resistant.** **By hand**, draw the heap before and after `int* a = new int[5]; a[2] = 99; delete[] a;`. Show which slots are reachable, and label the dangling pointer state at the end. Photograph and submit." },
+  { "session_tag": "prog12", "type": "ordering",
+    "prompt": "**Prog 12 · AI-resistant.** *Drag the heap-state events into the order they happen at runtime for this code:*\n```cpp\nint* a = new int[5];\na[2] = 99;\ndelete[] a;\nstd::cout << a[2];   // ⚠ undefined\n```",
+    "options": [
+      "Heap allocates 5 contiguous `int` slots",
+      "`a` points at the start of that block; the 5 slots have unspecified contents",
+      "Slot `a[2]` is set to 99",
+      "`delete[] a` returns the 5-int block to the heap",
+      "`a` is now a **dangling pointer** — it still holds the old address but the memory is no longer owned",
+      "Reading `a[2]` is undefined behavior — may print 99, garbage, or crash"
+    ] },
 
   { "session_tag": "prog13", "type": "poll",
     "prompt": "**Prog 13 · Easy.** A virtual function is dispatched based on…",
@@ -341,8 +418,15 @@
       "    `double r_;`",
       "`};`"
     ] },
-  { "session_tag": "prog13", "type": "submission",
-    "prompt": "**Prog 13 · AI-resistant.** **On paper**, draw a UML-style diagram of `Shape ← Circle, Rectangle`. Mark which member is pure virtual, which destructor is virtual, and which overrides happen. Photograph and submit." },
+  { "session_tag": "prog13", "type": "poll_multi",
+    "prompt": "**Prog 13 · AI-resistant.** Given:\n```cpp\nstruct Animal { virtual void speak() const { std::cout << \"...\"; } virtual ~Animal() = default; };\nstruct Dog : Animal { void speak() const override { std::cout << \"woof\"; } };\nAnimal* a = new Dog();\nDog d;\nAnimal& r = d;\n```\n*Which calls print `\"woof\"`? Pick all that do.*",
+    "options": [
+      "`a->speak();`  *(virtual via base pointer)*",
+      "`r.speak();`  *(virtual via base reference)*",
+      "`d.speak();`  *(direct call on Dog)*",
+      "`((Animal)d).speak();`  *(slicing — copy of Animal portion)*",
+      "`static_cast<Animal>(d).speak();`  *(also slicing)*"
+    ] },
 
   { "session_tag": "prog14", "type": "poll",
     "prompt": "**Prog 14 · Easy.** Which STL container provides O(1) random access by index?",
@@ -370,6 +454,11 @@
       "    `for (int n : v) std::cout << n << ' ';`",
       "`}`"
     ] },
-  { "session_tag": "prog14", "type": "submission",
-    "prompt": "**Prog 14 · AI-resistant.** Compile your Prog 14 with `-std=c++17 -Wall -Wextra -Werror`. Take a **screenshot of your terminal** showing a clean compile + a successful run with your own input. Annotate the screenshot (by drawing or in a caption) with what each warning would have meant if any had appeared." }
+  { "session_tag": "prog14", "type": "ordering",
+    "prompt": "**Prog 14 · AI-resistant.** *Drag these STL operations into the order needed to **deduplicate** a `std::vector<int> v` while preserving the smallest values first.*",
+    "options": [
+      "`std::sort(v.begin(), v.end());`",
+      "`auto last = std::unique(v.begin(), v.end());`",
+      "`v.erase(last, v.end());`"
+    ] }
 ]

@@ -278,6 +278,86 @@ export async function setupMicrosoftSignIn({ cfg, onSuccess, onError, statusEl }
   });
 }
 
+// ---------- Toast (replaces alert) ----------
+// Tiny themed message that pops in at the bottom of the viewport and
+// auto-dismisses. kind: "info" | "success" | "error" | "warning".
+export function toast(message, kind = "info", durationMs = 4000) {
+  let host = document.getElementById("toast-host");
+  if (!host) {
+    host = document.createElement("div");
+    host.id = "toast-host";
+    host.className = "toast-host";
+    document.body.appendChild(host);
+  }
+  const el = document.createElement("div");
+  el.className = "toast toast-" + kind;
+  el.setAttribute("role", "status");
+  el.setAttribute("aria-live", "polite");
+  el.innerHTML = String(message);
+  host.appendChild(el);
+  // entrance animation
+  requestAnimationFrame(() => el.classList.add("toast-in"));
+  const close = () => {
+    el.classList.remove("toast-in");
+    el.classList.add("toast-out");
+    setTimeout(() => el.remove(), 200);
+  };
+  el.addEventListener("click", close);
+  setTimeout(close, durationMs);
+}
+
+// ---------- Themed confirm (replaces window.confirm) ----------
+// Returns a Promise<boolean>: resolves to true on confirm, false on cancel.
+// opts: { title, message, confirmLabel, cancelLabel, danger? }
+export function confirmDialog(opts = {}) {
+  const {
+    title = "Confirm",
+    message = "Are you sure?",
+    confirmLabel = "Confirm",
+    cancelLabel = "Cancel",
+    danger = false,
+  } = opts;
+
+  return new Promise((resolve) => {
+    let overlay = document.getElementById("confirm-overlay");
+    if (!overlay) {
+      overlay = document.createElement("div");
+      overlay.id = "confirm-overlay";
+      overlay.className = "modal-overlay";
+      document.body.appendChild(overlay);
+    }
+    const modal = document.createElement("div");
+    modal.className = "modal-center confirm-modal";
+    modal.setAttribute("role", "dialog");
+    modal.setAttribute("aria-modal", "true");
+    modal.style.maxWidth = "440px";
+    modal.innerHTML = `
+      <h3 style="margin:0 0 0.5rem;font-size:1.05rem;">${escapeHTML(title)}</h3>
+      <p style="margin:0 0 1.25rem;color:var(--muted);font-size:0.92rem;line-height:1.5;">${message}</p>
+      <div style="display:flex;justify-content:flex-end;gap:0.5rem;">
+        <button type="button" class="secondary sm" data-confirm-cancel>${escapeHTML(cancelLabel)}</button>
+        <button type="button" class="${danger ? "danger" : ""}" data-confirm-ok>${escapeHTML(confirmLabel)}</button>
+      </div>`;
+    document.body.appendChild(modal);
+    overlay.hidden = false;
+
+    const done = (v) => {
+      overlay.hidden = true;
+      modal.remove();
+      cleanup();
+      resolve(v);
+    };
+    const onKey = (e) => { if (e.key === "Escape") done(false); else if (e.key === "Enter") done(true); };
+    const cleanup = () => document.removeEventListener("keydown", onKey);
+    document.addEventListener("keydown", onKey);
+
+    modal.querySelector("[data-confirm-ok]").addEventListener("click", () => done(true));
+    modal.querySelector("[data-confirm-cancel]").addEventListener("click", () => done(false));
+    overlay.addEventListener("click", () => done(false), { once: true });
+    modal.querySelector("[data-confirm-ok]").focus();
+  });
+}
+
 // Mount the settings drawer (theme switcher + signed-in email + sign-out).
 // Assumes the markup with these IDs exists somewhere on the page.
 export function mountSettingsDrawer({ api, session, onSignOut } = {}) {
