@@ -3,23 +3,138 @@
     "session_tag": "prog01",
     "prompt": "Prog 01 — Which header is required for std::cin and std::cout?",
     "type": "poll",
-    "options": ["<iostream>", "<stdio.h>", "<cstdlib>", "<string>"],
-    "release_at": "2026-09-01T08:00:00",
-    "due_at":     "2026-09-01T18:00:00"
+    "options": ["<iostream>", "<stdio.h>", "<cstdlib>", "<string>"]
+  },
+  {
+    "session_tag": "prog01",
+    "prompt": "Prog 01 — In `cin >> a >> b >> c >> d;` if the user types `5 10 abc 20`, what's in `c` after the read?",
+    "type": "poll",
+    "options": [
+      "0 — the failed read leaves c unchanged at its default-init value",
+      "c is unchanged AND the stream goes into fail state (subsequent reads do nothing)",
+      "'a' — the first character of the bad token",
+      "20 — it skips the bad token and grabs the next int"
+    ]
+  },
+  {
+    "session_tag": "prog01",
+    "prompt": "Prog 01 — Submit a PHOTO of your HAND-WRITTEN pseudocode for Prog 01 BEFORE looking at the solution. Include your name and the date on the page. Typed answers and AI-generated images will receive zero credit — the assignment is about your handwriting.",
+    "type": "submission"
+  },
+
+  {
+    "session_tag": "prog02",
+    "prompt": "Prog 02 — The pseudocode interchanges value1 and value2 when value1 > value2. Why?",
+    "type": "poll",
+    "options": [
+      "So the while loop is guaranteed to execute and the smaller value drives the loop counter",
+      "Because C++ requires the left operand of < to be smaller",
+      "To avoid integer overflow when multiplying",
+      "Stylistic only — the code works either way"
+    ]
   },
   {
     "session_tag": "prog02",
-    "prompt": "Prog 02 — User enters value1=3 and value2=5. Following the accumulator loop, what is printed?",
+    "prompt": "Prog 02 — User enters value1 = 3 and value2 = 5. The accumulator starts at value1, then the while loop increments value1 by 1 and multiplies the accumulator by it. What is printed?",
     "type": "poll",
-    "options": ["15", "60", "120", "20"],
-    "release_at": "2026-09-08T08:00:00",
-    "due_at":     "2026-09-08T18:00:00"
+    "options": ["15", "60", "120", "20"]
+  },
+  {
+    "session_tag": "prog02",
+    "prompt": "Prog 02 — On a 1–10 scale, how confident do you feel with `while` loops AFTER finishing this program?",
+    "type": "rating"
+  },
+
+  {
+    "session_tag": "prog03",
+    "prompt": "Prog 03 — Which loop is GUARANTEED to execute its body at least once, even when the condition is false on entry?",
+    "type": "poll",
+    "options": ["for", "while", "do-while", "range-based for"]
+  },
+  {
+    "session_tag": "prog03",
+    "prompt": "Prog 03 — Counting integers strictly between two values (endpoints excluded). The user gives 4 and 9. The while loop initializes the counter to 0 and loop control to smaller+1, looping while loop control < larger. What is the final counter value?",
+    "type": "poll",
+    "options": ["3", "4", "5", "6"]
+  },
+  {
+    "session_tag": "prog03",
+    "prompt": "Prog 03 — One word: which C++ keyword exits a loop immediately?",
+    "type": "word_cloud"
+  },
+
+  {
+    "session_tag": "prog04",
+    "prompt": "Prog 04 — The prompt function loops until the input is non-negative. What is the simplest return type for that function?",
+    "type": "poll",
+    "options": ["int", "bool", "void", "std::string"]
   },
   {
     "session_tag": "prog04",
-    "prompt": "Prog 04 — In your own handwriting, draw the call stack for factorial(4) using a recursive implementation. Show each frame and the return value bubbling up. Photograph and submit.",
-    "type": "submission",
-    "release_at": "2026-09-22T08:00:00",
-    "due_at":     "2026-09-22T23:59:00"
+    "prompt": "Prog 04 — What does a correct factorial(5) return?",
+    "type": "poll",
+    "options": ["25", "120", "720", "Stack overflow"]
+  },
+  {
+    "session_tag": "prog04",
+    "prompt": "Prog 04 — On PAPER, draw the call stack for factorial(4) using a recursive implementation. Show every frame and the return value bubbling up. Photograph or scan and submit. Typed or AI-generated diagrams get zero — the layout conventions you use in class are what's being graded.",
+    "type": "submission"
+  },
+
+  {
+    "session_tag": "prog05",
+    "prompt": "Prog 05 — The Madhava–Leibniz series for π/4 is 1 − 1/3 + 1/5 − 1/7 + …  Which loop pattern best fits computing terms with alternating signs?",
+    "type": "poll",
+    "options": [
+      "for-loop with sign = -sign each iteration",
+      "while-loop and recompute pow(-1, k) every iteration",
+      "do-while with a switch on k % 4",
+      "Use std::accumulate over a vector of pre-computed signs"
+    ]
+  },
+  {
+    "session_tag": "prog05",
+    "prompt": "Prog 05 — A student's first run with n = 100 prints 3.13159… and they think it's accurate. What's actually true about the Madhava–Leibniz series?",
+    "type": "poll",
+    "options": [
+      "It converges quickly — n=100 is already accurate to 6 digits",
+      "It converges slowly — you need ~10⁶ terms for 6-digit accuracy",
+      "It diverges; the partial sums oscillate forever",
+      "Accuracy depends on whether n is even or odd"
+    ]
+  },
+  {
+    "session_tag": "prog05",
+    "prompt": "Prog 05 — Which function-decomposition is cleanest for this program?",
+    "type": "poll_pie",
+    "options": [
+      "promptForN() • computePi(n) • displayResult(pi)",
+      "Everything in main()",
+      "One big function that reads, computes, and prints",
+      "promptForN() • computePi(n, &output) — pass result by pointer"
+    ]
+  },
+
+  {
+    "session_tag": "prog06",
+    "prompt": "Prog 06 — Wall thickness t must satisfy t ≤ ½ · min(d, h). User gives d = 10, h = 6, t = 4. Is this valid?",
+    "type": "poll",
+    "options": [
+      "Valid — 4 ≤ ½ · min(10, 6) = 3? No wait — recompute: ½·6 = 3, so 4 > 3, INVALID",
+      "Valid — t just has to be positive",
+      "Valid — 4 ≤ ½ · max(10, 6) = 5",
+      "Invalid — ½ · min(10, 6) = 3, and 4 > 3"
+    ]
+  },
+  {
+    "session_tag": "prog06",
+    "prompt": "Prog 06 — In your validation loop, the user enters a negative diameter three times then a valid one. Roughly how many times should your prompt function print the prompt string?",
+    "type": "poll",
+    "options": ["1", "3", "4", "5"]
+  },
+  {
+    "session_tag": "prog06",
+    "prompt": "Prog 06 — Photograph YOUR hand-sketched cross-section of the cylinder showing height, diameter, and wall thickness, with the constraint t ≤ ½·min(d,h) labeled. Submit the image. No CAD, no AI — pencil-on-paper only.",
+    "type": "submission"
   }
 ]

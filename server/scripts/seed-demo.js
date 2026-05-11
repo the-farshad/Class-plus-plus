@@ -6,6 +6,9 @@
 //   node scripts/seed-demo.js <instructor_email>
 
 import "dotenv/config";
+import fs from "node:fs";
+import path from "node:path";
+import url from "node:url";
 import { db } from "../src/db.js";
 
 const instructor = (process.argv[2] || "").toLowerCase();
@@ -49,5 +52,37 @@ const insertStudent = db.prepare(
 students.forEach(s => insertStudent.run(cls.id, s.email, s.id, s.name));
 console.log(`Seeded ${students.length} students.`);
 
-console.log("\nNow add activities via the dashboard (Activities → New) OR run:");
-console.log("  node scripts/seed-activities.js " + instructor + " <path-to-questions.json>");
+// ---- Optional: load the example questions on a fresh / empty class ----
+const existing = db.prepare("SELECT COUNT(*) AS n FROM activities WHERE class_id = ?").get(cls.id);
+if (existing.n === 0) {
+  const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
+  const examplePath = path.join(__dirname, "questions.example.json");
+  if (fs.existsSync(examplePath)) {
+    const list = JSON.parse(fs.readFileSync(examplePath, "utf8"));
+    const insertActivity = db.prepare(`
+      INSERT INTO activities
+        (prompt, type, status, poll_options, class_id, session_tag, release_at, due_at, created_at)
+      VALUES (?, ?, 'open', ?, ?, ?, ?, ?, ?)
+    `);
+    list.forEach((a, idx) => {
+      const opts = a.options ? JSON.stringify(a.options) : null;
+      const toMs = v => {
+        if (v == null) return null;
+        if (typeof v === "number") return v;
+        const t = new Date(v).getTime();
+        return Number.isNaN(t) ? null : t;
+      };
+      insertActivity.run(
+        a.prompt, a.type, opts, cls.id,
+        a.session_tag || null, toMs(a.release_at), toMs(a.due_at),
+        now + idx
+      );
+    });
+    console.log(`Seeded ${list.length} example questions from questions.example.json.`);
+    console.log("Replace these with your own content via:");
+    console.log(`  node scripts/seed-activities.js ${instructor} <your-questions.json> --wipe`);
+  }
+} else {
+  console.log(`Class already has ${existing.n} activities — leaving them as-is.`);
+  console.log("To reset: node scripts/seed-activities.js " + instructor + " <questions.json> --wipe");
+}

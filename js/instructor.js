@@ -658,17 +658,48 @@ $("add-option-btn").addEventListener("click", () => addOptionRow("poll-options-l
 
 $("refresh-activities").addEventListener("click", loadActivities);
 
+// Initialize Flatpickr on every .datetime-input once the library loads.
+// Stores the picked timestamp on input.dataset.epochMs so we read it
+// directly without re-parsing the visible string.
+(function initFlatpickr() {
+  const apply = () => {
+    if (!window.flatpickr) { setTimeout(apply, 150); return; }
+    document.querySelectorAll(".datetime-input").forEach(el => {
+      if (el.dataset.fpReady) return;
+      el.dataset.fpReady = "1";
+      window.flatpickr(el, {
+        enableTime: true,
+        time_24hr: true,
+        minuteIncrement: 5,
+        dateFormat: "Y-m-d H:i",
+        altInput: false,
+        defaultDate: null,
+        onChange: (selected) => {
+          el.dataset.epochMs = selected && selected[0] ? selected[0].getTime() : "";
+        },
+      });
+    });
+  };
+  apply();
+})();
+
 $("new-form").addEventListener("submit", async (e) => {
   e.preventDefault();
   const prompt = $("prompt").value.trim();
   const uiType = $("activity-type").value;
   const classId = $("class-selector").value || null;
   const sessionTag = $("session-tag")?.value || null;
-  // datetime-local inputs return e.g. "2026-09-01T08:00" with NO timezone;
-  // we treat that as local time and convert to ms. Empty string -> null.
-  const toMs = (v) => v ? new Date(v).getTime() : null;
-  const releaseAt = toMs($("release-at")?.value);
-  const dueAt     = toMs($("due-at")?.value);
+  // Flatpickr stored the chosen Date on .dataset.epochMs. Fall back to
+  // parsing .value for safety (e.g. if user types manually).
+  const readMs = (id) => {
+    const el = $(id);
+    if (!el) return null;
+    if (el.dataset.epochMs) return parseInt(el.dataset.epochMs, 10) || null;
+    const t = new Date(el.value).getTime();
+    return Number.isNaN(t) ? null : t;
+  };
+  const releaseAt = readMs("release-at");
+  const dueAt     = readMs("due-at");
 
   let type = uiType;
   let options = [];
@@ -689,8 +720,14 @@ $("new-form").addEventListener("submit", async (e) => {
     const res = await api.createActivity(prompt, classId, type, options, sessionTag, releaseAt, dueAt);
     setStatus("new-status", `Launched! (#${res.activity_id})`, "success");
     $("prompt").value = "";
-    $("release-at").value = "";
-    $("due-at").value = "";
+    // Reset Flatpickr fields too — clear the visible value and our stored ms.
+    ["release-at", "due-at"].forEach(id => {
+      const el = $(id);
+      if (!el) return;
+      if (el._flatpickr) el._flatpickr.clear();
+      else el.value = "";
+      delete el.dataset.epochMs;
+    });
     // Reset options list
     $("poll-options-list").innerHTML = "";
     loadActivities();
