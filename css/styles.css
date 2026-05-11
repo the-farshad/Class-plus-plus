@@ -1353,6 +1353,55 @@ tbody tr:hover { background: var(--interactive); }
   font-size: 0.85rem;
 }
 
+/* Microsoft Sign-in button (matches Microsoft brand guidelines:
+   white background, dark text, four-color logo). Primary CTA for
+   UWYO students whose accounts live in Microsoft 365.  */
+.ms-signin-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  width: 100%;
+  max-width: 320px;
+  padding: 0.7rem 1.1rem;
+  background: #ffffff;
+  color: #5e5e5e;
+  border: 1px solid #8c8c8c;
+  border-radius: var(--radius-sm);
+  font-family: "Segoe UI", "Inter", -apple-system, sans-serif;
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin: 0 auto;
+  transition: background 0.12s, box-shadow 0.12s, border-color 0.12s;
+}
+.ms-signin-btn:hover  { background: #f4f4f4; box-shadow: var(--shadow-sm); }
+.ms-signin-btn:active { background: #e7e7e7; }
+.ms-signin-btn:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+.ms-signin-btn:disabled { opacity: 0.6; cursor: progress; }
+
+/* Subtle "or" separator between Microsoft and Google buttons */
+.signin-or {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0.6rem 0;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--subtle);
+}
+.signin-or::before,
+.signin-or::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
 /* ---------- Activity Picker ---------- */
 .activity-picker-grid {
   display: grid;

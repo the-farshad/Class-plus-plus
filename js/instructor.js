@@ -1,5 +1,8 @@
 import { api, session, API_BASE_URL } from "/js/api.js";
-import { $, show, hide, escapeHTML, setStatus, mountSettingsDrawer, updateUserPill } from "/js/ui.js";
+import {
+  $, show, hide, escapeHTML, setStatus,
+  mountSettingsDrawer, updateUserPill, setupMicrosoftSignIn,
+} from "/js/ui.js";
 
 api.initTheme();
 
@@ -18,13 +21,21 @@ let ratingHistChart = null;
 
 async function showSignIn() {
   hide("dashboard"); hide("forbidden-card");
-  // The dedicated sign-in card is already visible here, so the duplicate
-  // "Sign in" CTA in the navbar is just noise.
   const navSignin = $("nav-signin");
   if (navSignin) navSignin.hidden = true;
   show("signin-card");
   try {
     const cfg = await api.authConfig();
+
+    await setupMicrosoftSignIn({
+      cfg,
+      statusEl: "signin-status",
+      onSuccess: async (idToken) => {
+        await api.signInWithMicrosoft(idToken);
+        enterDashboard();
+      },
+    });
+
     renderGoogleButton(cfg.google_client_id);
   } catch (err) {
     setStatus("signin-status", `Couldn't reach server: ${err.message}`, "error");

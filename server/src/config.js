@@ -28,6 +28,13 @@ export const config = {
   allowedOrigins: list("ALLOWED_ORIGINS", ["http://localhost:8000"]),
 
   googleClientId: required("GOOGLE_CLIENT_ID"),
+  // Microsoft / Azure AD OAuth (optional — only enabled when both vars are set)
+  // MICROSOFT_CLIENT_ID = the Application (client) ID of your Azure AD app
+  // MICROSOFT_TENANT_ID = your tenant GUID (or "common" for any work/school
+  // account, or "organizations" for any work/school tenant). For UWYO, use
+  // their tenant GUID for tighter security.
+  microsoftClientId: process.env.MICROSOFT_CLIENT_ID || "",
+  microsoftTenantId: process.env.MICROSOFT_TENANT_ID || "common",
   allowedDomain: process.env.ALLOWED_DOMAIN || "uwyo.edu",
   jwtSecret: required("JWT_SECRET"),
 

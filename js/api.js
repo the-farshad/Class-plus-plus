@@ -125,6 +125,11 @@ export const api = {
     if (res.ok) session.set(res.token, res.user);
     return res;
   },
+  signInWithMicrosoft: async (idToken) => {
+    const res = await postJSON("/auth/microsoft", { id_token: idToken });
+    if (res.ok) session.set(res.token, res.user);
+    return res;
+  },
   signOut: () => session.clear(),
 
   // Activities

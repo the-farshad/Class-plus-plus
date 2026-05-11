@@ -189,6 +189,76 @@ export function showSigninCtaIfNeeded() {
   cta.hidden = false;
 }
 
+// Wire the "Sign in with UWYO/Microsoft" button using MSAL (loaded via the
+// alcdn.msauth.net script tag in each page's <head>). Activates only when
+// the server's /auth/config exposes a microsoft_client_id. On success,
+// passes the Microsoft ID token to onSuccess(idToken) which is expected
+// to post it to /auth/microsoft and complete the session.
+//
+// Returns a Promise that resolves once the button is wired (or no-op'd).
+export async function setupMicrosoftSignIn({ cfg, onSuccess, onError, statusEl } = {}) {
+  const btn = $("btn-ms-signin");
+  const sep = $("signin-or");
+  if (!btn) return;
+
+  if (!cfg || !cfg.microsoft_client_id) {
+    btn.hidden = true;
+    if (sep) sep.hidden = true;
+    return;
+  }
+
+  // Wait for MSAL to finish loading (the <script> is deferred). Cap retries.
+  const waitForMsal = async () => {
+    for (let i = 0; i < 50 && !(window.msal && window.msal.PublicClientApplication); i++) {
+      await new Promise(r => setTimeout(r, 100));
+    }
+    return !!(window.msal && window.msal.PublicClientApplication);
+  };
+  const ok = await waitForMsal();
+  if (!ok) {
+    if (statusEl) setStatus(statusEl, "Microsoft sign-in failed to load — try Google.", "error");
+    return;
+  }
+
+  const tenant = cfg.microsoft_tenant_id || "common";
+  const msalInstance = new window.msal.PublicClientApplication({
+    auth: {
+      clientId: cfg.microsoft_client_id,
+      authority: `https://login.microsoftonline.com/${tenant}`,
+      redirectUri: window.location.origin,
+    },
+    cache: { cacheLocation: "sessionStorage", storeAuthStateInCookie: false },
+  });
+  await msalInstance.initialize();
+
+  btn.hidden = false;
+  if (sep) sep.hidden = false;
+
+  btn.addEventListener("click", async () => {
+    btn.disabled = true;
+    if (statusEl) setStatus(statusEl, "Opening Microsoft sign-in…");
+    try {
+      const result = await msalInstance.loginPopup({
+        scopes: ["openid", "profile", "email"],
+        prompt: "select_account",
+      });
+      const idToken = result && result.idToken;
+      if (!idToken) throw new Error("No id_token returned from Microsoft");
+      await onSuccess(idToken);
+    } catch (err) {
+      // User-cancelled popup throws BrowserAuthError(user_cancelled) — quiet that.
+      const cancelled = err && (err.errorCode === "user_cancelled" || /cancel/i.test(err.message || ""));
+      if (!cancelled) {
+        const msg = (err && err.message) || "Microsoft sign-in failed";
+        if (statusEl) setStatus(statusEl, msg, "error");
+        if (typeof onError === "function") onError(err);
+      }
+    } finally {
+      btn.disabled = false;
+    }
+  });
+}
+
 // Mount the settings drawer (theme switcher + signed-in email + sign-out).
 // Assumes the markup with these IDs exists somewhere on the page.
 export function mountSettingsDrawer({ api, session, onSignOut } = {}) {

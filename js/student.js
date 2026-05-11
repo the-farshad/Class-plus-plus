@@ -1,5 +1,8 @@
 import { api, session, API_BASE_URL } from "/js/api.js";
-import { $, show, hide, escapeHTML, setStatus as setStatusEl, mountSettingsDrawer, updateUserPill } from "/js/ui.js";
+import {
+  $, show, hide, escapeHTML, setStatus as setStatusEl,
+  mountSettingsDrawer, updateUserPill, setupMicrosoftSignIn,
+} from "/js/ui.js";
 
 const TYPE_LABELS = {
   poll: "Poll", poll_pie: "Poll", rating: "Rating", word_cloud: "Word Cloud", submission: "Submission",
@@ -338,6 +341,19 @@ async function showSignInState() {
     const cfg = await api.authConfig();
     const hint = $("domain-hint");
     if (hint) hint.textContent = `@${cfg.allowed_domain}`;
+
+    // Microsoft (UWYO) — primary path since UWYO is on Microsoft 365.
+    await setupMicrosoftSignIn({
+      cfg,
+      statusEl: "signin-status",
+      onSuccess: async (idToken) => {
+        await api.signInWithMicrosoft(idToken);
+        hide("signin-card");
+        await showSignedInState();
+      },
+    });
+
+    // Google — secondary fallback for instructors / guests with Google accounts.
     renderGoogleButton(cfg.google_client_id);
   } catch (err) {
     setStatusEl("signin-status", `Couldn't reach server: ${err.message}`, "error");
