@@ -17,18 +17,31 @@
     <div class="inner">
       <a class="brand" href="/">
         <span class="brand-mark">C++</span>
-        <span>Class++</span>
-        <span class="brand-tag">Live</span>
+        <span class="brand-name">Class++</span>
       </a>
-      <nav>
-        <a href="/" id="nav-submit">Submit</a>
-        <a href="/blog/" id="nav-notes">Notes</a>
-        <a href="/instructor/" id="nav-admin" class="button sm" style="text-decoration:none;" hidden>Dashboard</a>
-        <!-- Settings button: only shown when signed in -->
-        <button id="btn-settings" class="icon-btn" title="Settings" hidden aria-label="Settings">
-          <i data-lucide="settings" style="width:17px;height:17px;"></i>
-        </button>
+
+      <nav class="primary-nav" aria-label="Primary navigation">
+        <a href="/" id="nav-submit" class="nav-link">
+          <i data-lucide="zap"></i><span>Live</span>
+        </a>
+        <a href="/blog/" id="nav-notes" class="nav-link">
+          <i data-lucide="book-open"></i><span>Notes</span>
+        </a>
+        <a href="/instructor/" id="nav-admin" class="nav-link" hidden>
+          <i data-lucide="layout-dashboard"></i><span>Dashboard</span>
+        </a>
       </nav>
+
+      <div class="nav-actions">
+        <button id="btn-settings" class="user-pill" aria-label="Account menu" aria-haspopup="dialog" aria-expanded="false" hidden>
+          <span class="user-avatar" id="user-avatar" aria-hidden="true">?</span>
+          <span class="user-meta">
+            <span class="user-email" id="user-pill-email">…</span>
+            <span class="user-role" id="user-pill-role">Student</span>
+          </span>
+          <i data-lucide="chevron-down" class="user-pill-chev"></i>
+        </button>
+      </div>
     </div>
   </header>
 
@@ -158,6 +171,7 @@
       <span class="waiting-pill"><span class="live-dot"></span> Listening for live updates</span>
     </section>
 
+    <div class="build-chip" data-version></div>
   </main>
 
   <!-- Settings modal (requires login) -->
@@ -199,50 +213,6 @@
       </button>
     </div>
   </div>
-
-  <footer class="site">
-    <div class="inner">
-      <div>
-        <a class="footer-brand" href="/">
-          <span class="footer-brand-mark">C++</span>
-          Class++
-        </a>
-        <p class="footer-tagline">A live classroom layer for in-person lectures — built for the University of Wyoming.</p>
-      </div>
-      <div>
-        <p class="footer-col-title">Use it</p>
-        <ul class="footer-col-links">
-          <li><a href="/">Submit a response</a></li>
-          <li><a href="/blog/">Browse notes</a></li>
-          <li><a href="/instructor/">Instructor dashboard</a></li>
-        </ul>
-      </div>
-      <div>
-        <p class="footer-col-title">Activity types</p>
-        <ul class="footer-col-links">
-          <li><a href="/">Polls &amp; pies</a></li>
-          <li><a href="/">Ratings (1–10)</a></li>
-          <li><a href="/">Word clouds</a></li>
-          <li><a href="/">Submissions</a></li>
-        </ul>
-      </div>
-      <div>
-        <p class="footer-col-title">Made by</p>
-        <ul class="footer-col-links">
-          <li><a href="https://thefarshad.com" target="_blank" rel="noopener">Farshad Ghorbanishovaneh</a></li>
-          <li><a href="/blog/">Course notes</a></li>
-        </ul>
-      </div>
-      <div class="footer-bottom">
-        <p class="footer-copy">© 2026 Class++. University of Wyoming.</p>
-        <div class="footer-meta">
-          <span>Live updates via SSE</span>
-          <span>·</span>
-          <span data-version></span>
-        </div>
-      </div>
-    </div>
-  </footer>
 
   <script type="module" src="/js/student.js"></script>
   <script type="module">

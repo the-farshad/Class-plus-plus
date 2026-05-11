@@ -25,16 +25,31 @@
     <div class="inner">
       <a class="brand" href="/">
         <span class="brand-mark">C++</span>
-        <span>Class++</span>
-        <span class="brand-tag">Notes</span>
+        <span class="brand-name">Class++</span>
       </a>
-      <nav>
-        <a href="/" id="nav-submit">Submit</a>
-        <a href="/blog/" id="nav-notes">Notes</a>
-        <button id="btn-settings" class="icon-btn" title="Theme" aria-label="Theme settings">
-          <i data-lucide="settings" style="width:17px;height:17px;"></i>
-        </button>
+
+      <nav class="primary-nav" aria-label="Primary navigation">
+        <a href="/" id="nav-submit" class="nav-link">
+          <i data-lucide="zap"></i><span>Live</span>
+        </a>
+        <a href="/blog/" id="nav-notes" class="nav-link nav-active">
+          <i data-lucide="book-open"></i><span>Notes</span>
+        </a>
+        <a href="/instructor/" class="nav-link">
+          <i data-lucide="layout-dashboard"></i><span>Dashboard</span>
+        </a>
       </nav>
+
+      <div class="nav-actions">
+        <button id="btn-settings" class="user-pill" aria-label="Theme settings" aria-haspopup="dialog" aria-expanded="false">
+          <span class="user-avatar" id="user-avatar" aria-hidden="true">?</span>
+          <span class="user-meta">
+            <span class="user-email" id="user-pill-email">Guest</span>
+            <span class="user-role">Theme</span>
+          </span>
+          <i data-lucide="chevron-down" class="user-pill-chev"></i>
+        </button>
+      </div>
     </div>
   </header>
 
@@ -60,42 +75,8 @@
         <div class="skeleton skeleton-line short" style="height:0.9rem;"></div>
       </div>
     </div>
+    <div class="build-chip" data-version></div>
   </article>
-
-  <footer class="site">
-    <div class="inner">
-      <div>
-        <a class="footer-brand" href="/">
-          <span class="footer-brand-mark">C++</span>
-          Class++
-        </a>
-        <p class="footer-tagline">A live classroom layer for in-person lectures — built for the University of Wyoming.</p>
-      </div>
-      <div>
-        <p class="footer-col-title">Use it</p>
-        <ul class="footer-col-links">
-          <li><a href="/">Submit a response</a></li>
-          <li><a href="/blog/">Browse notes</a></li>
-          <li><a href="/instructor/">Instructor dashboard</a></li>
-        </ul>
-      </div>
-      <div>
-        <p class="footer-col-title">Notes</p>
-        <ul class="footer-col-links">
-          <li><a href="/blog/">All weekly notes</a></li>
-        </ul>
-      </div>
-      <div>
-        <p class="footer-col-title">Made by</p>
-        <ul class="footer-col-links">
-          <li><a href="https://thefarshad.com" target="_blank" rel="noopener">Farshad Ghorbanishovaneh</a></li>
-        </ul>
-      </div>
-      <div class="footer-bottom">
-        <p class="footer-copy">© 2026 Class++. University of Wyoming.</p>
-      </div>
-    </div>
-  </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/marked@12/marked.min.js"></script>
   <script type="module">

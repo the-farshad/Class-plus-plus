@@ -18,17 +18,31 @@
     <div class="inner">
       <a class="brand" href="/instructor/">
         <span class="brand-mark">C++</span>
-        <span>Class++</span>
-        <span class="brand-tag">Instructor</span>
+        <span class="brand-name">Class++</span>
       </a>
-      <nav>
-        <a href="/">Student view</a>
-        <a href="/blog/">Notes</a>
-        <!-- hidden until signed in -->
-        <button id="btn-settings" class="icon-btn" title="Settings" aria-label="Settings" hidden>
-          <i data-lucide="settings" style="width:17px;height:17px;"></i>
-        </button>
+
+      <nav class="primary-nav" aria-label="Primary navigation">
+        <a href="/" class="nav-link">
+          <i data-lucide="zap"></i><span>Live</span>
+        </a>
+        <a href="/blog/" class="nav-link">
+          <i data-lucide="book-open"></i><span>Notes</span>
+        </a>
+        <a href="/instructor/" class="nav-link nav-active">
+          <i data-lucide="layout-dashboard"></i><span>Dashboard</span>
+        </a>
       </nav>
+
+      <div class="nav-actions">
+        <button id="btn-settings" class="user-pill" aria-label="Account menu" aria-haspopup="dialog" aria-expanded="false" hidden>
+          <span class="user-avatar" id="user-avatar" aria-hidden="true">?</span>
+          <span class="user-meta">
+            <span class="user-email" id="user-pill-email">…</span>
+            <span class="user-role" id="user-pill-role">Instructor</span>
+          </span>
+          <i data-lucide="chevron-down" class="user-pill-chev"></i>
+        </button>
+      </div>
     </div>
   </header>
 
@@ -454,41 +468,7 @@
     </div>
   </div>
 
-  <footer class="site">
-    <div class="inner">
-      <div>
-        <a class="footer-brand" href="/">
-          <span class="footer-brand-mark">C++</span> Class++
-        </a>
-        <p class="footer-tagline">Instructor console — manage classes, launch live activities, view results.</p>
-      </div>
-      <div>
-        <p class="footer-col-title">Navigate</p>
-        <ul class="footer-col-links">
-          <li><a href="/">Student view</a></li>
-          <li><a href="/blog/">Notes</a></li>
-          <li><a href="/instructor/">Dashboard</a></li>
-        </ul>
-      </div>
-      <div>
-        <p class="footer-col-title">Tips</p>
-        <ul class="footer-col-links">
-          <li>Tap QR icon on any activity to share</li>
-          <li>Results refresh every 4s while open</li>
-        </ul>
-      </div>
-      <div>
-        <p class="footer-col-title">Made by</p>
-        <ul class="footer-col-links">
-          <li><a href="https://thefarshad.com" target="_blank" rel="noopener">Farshad Ghorbanishovaneh</a></li>
-        </ul>
-      </div>
-      <div class="footer-bottom">
-        <p class="footer-copy">© 2026 Class++. University of Wyoming.</p>
-        <div class="footer-meta"><span>Live updates via SSE</span></div>
-      </div>
-    </div>
-  </footer>
+  <div class="build-chip" data-version></div>
 
   <script type="module" src="/js/instructor.js"></script>
   <script type="module">

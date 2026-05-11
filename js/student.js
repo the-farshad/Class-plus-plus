@@ -1,5 +1,5 @@
 import { api, session, API_BASE_URL } from "/js/api.js";
-import { $, show, hide, escapeHTML, setStatus as setStatusEl, mountSettingsDrawer } from "/js/ui.js";
+import { $, show, hide, escapeHTML, setStatus as setStatusEl, mountSettingsDrawer, updateUserPill } from "/js/ui.js";
 
 const TYPE_LABELS = {
   poll: "Poll", poll_pie: "Poll", rating: "Rating", word_cloud: "Word Cloud", submission: "Submission",
@@ -208,11 +208,12 @@ async function showSignedInState() {
   hide("landing-hero");
   show("session-hero");
 
+  updateUserPill(u);
+
   const metaEl = $("hero-meta");
   const whoEl = $("who-am-i");
   if (whoEl) whoEl.textContent = u.email;
   if (metaEl) metaEl.hidden = false;
-  show("btn-settings"); // show gear icon now that user is signed in
 
   if (u.role === "instructor" || u.role === "superadmin") {
     show("nav-admin");

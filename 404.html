@@ -16,13 +16,22 @@
     <div class="inner">
       <a class="brand" href="/">
         <span class="brand-mark">C++</span>
-        <span>Class++</span>
+        <span class="brand-name">Class++</span>
       </a>
-      <nav>
-        <a href="/">Submit</a>
-        <a href="/blog/">Notes</a>
-        <a href="/instructor/">Instructor</a>
+
+      <nav class="primary-nav" aria-label="Primary navigation">
+        <a href="/" class="nav-link">
+          <i data-lucide="zap"></i><span>Live</span>
+        </a>
+        <a href="/blog/" class="nav-link">
+          <i data-lucide="book-open"></i><span>Notes</span>
+        </a>
+        <a href="/instructor/" class="nav-link">
+          <i data-lucide="layout-dashboard"></i><span>Dashboard</span>
+        </a>
       </nav>
+
+      <div class="nav-actions"></div>
     </div>
   </header>
 
@@ -51,30 +60,8 @@
         <a class="button secondary" href="/instructor/">Dashboard</a>
       </div>
     </div>
+    <div class="build-chip" data-version></div>
   </main>
-
-  <footer class="site">
-    <div class="inner">
-      <div>
-        <a class="footer-brand" href="/">
-          <span class="footer-brand-mark">C++</span>
-          Class++
-        </a>
-        <p class="footer-tagline">A live classroom layer for in-person lectures.</p>
-      </div>
-      <div>
-        <p class="footer-col-title">Take me back</p>
-        <ul class="footer-col-links">
-          <li><a href="/">Submit a response</a></li>
-          <li><a href="/blog/">Browse notes</a></li>
-          <li><a href="/instructor/">Instructor dashboard</a></li>
-        </ul>
-      </div>
-      <div class="footer-bottom">
-        <p class="footer-copy">© 2026 Class++. University of Wyoming.</p>
-      </div>
-    </div>
-  </footer>
 
   <script type="module">
     import { bootPage } from "/js/ui.js";

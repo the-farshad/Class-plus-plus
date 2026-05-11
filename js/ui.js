@@ -122,6 +122,29 @@ export function bootPage() {
   decorateStatusRegions();
 }
 
+// Populate the navbar user pill from the current session user.
+// Sets the avatar initial, truncated email, and a role badge.
+export function updateUserPill(user) {
+  const pill = $("btn-settings");
+  const avatar = $("user-avatar");
+  const emailEl = $("user-pill-email");
+  const roleEl = $("user-pill-role");
+
+  if (!user || !user.email) return;
+
+  const email = user.email;
+  const initial = (email[0] || "?").toUpperCase();
+  if (avatar) avatar.textContent = initial;
+  if (emailEl) emailEl.textContent = email;
+  if (roleEl) {
+    const role = user.role || "student";
+    const label = role === "superadmin" ? "Superadmin" : role === "instructor" ? "Instructor" : "Student";
+    roleEl.textContent = label;
+    roleEl.className = "user-role " + role;
+  }
+  if (pill) pill.hidden = false;
+}
+
 // Mount the settings drawer (theme switcher + signed-in email + sign-out).
 // Assumes the markup with these IDs exists somewhere on the page.
 export function mountSettingsDrawer({ api, session, onSignOut } = {}) {
@@ -144,11 +167,13 @@ export function mountSettingsDrawer({ api, session, onSignOut } = {}) {
     if (emailEl && session?.user) emailEl.textContent = session.user.email;
     modal.hidden = false;
     overlay.hidden = false;
+    btn.setAttribute("aria-expanded", "true");
     closeBtn?.focus();
   }
   function close() {
     modal.hidden = true;
     overlay.hidden = true;
+    btn.setAttribute("aria-expanded", "false");
     if (lastFocus && typeof lastFocus.focus === "function") lastFocus.focus();
   }
 

@@ -1,5 +1,5 @@
 import { api, session, API_BASE_URL } from "/js/api.js";
-import { $, show, hide, escapeHTML, setStatus, mountSettingsDrawer } from "/js/ui.js";
+import { $, show, hide, escapeHTML, setStatus, mountSettingsDrawer, updateUserPill } from "/js/ui.js";
 
 api.initTheme();
 
@@ -58,7 +58,7 @@ function enterDashboard() {
   }
   hide("signin-card"); hide("forbidden-card");
   show("dashboard");
-  show("btn-settings");
+  updateUserPill(u);
   $("who-am-i").textContent = u.email;
   show("signout");
 
@@ -101,15 +101,26 @@ function buildParticipationDataset(activities) {
   return { labels, counts };
 }
 
+function markStatUnavailable(id, err) {
+  const el = $(id);
+  if (!el) return;
+  el.textContent = "—";
+  el.classList.add("stat-unavailable");
+  const card = el.closest(".stat-card");
+  if (card) card.title = `Could not load: ${err?.message || err}`;
+}
+
 async function loadStats() {
   // Load basic counters — must not fail silently
   try {
     const statsRes = await api.getStats();
     $("stat-students").textContent = statsRes.stats.students;
     $("stat-activities").textContent = statsRes.stats.activities;
+    $("stat-students").classList.remove("stat-unavailable");
+    $("stat-activities").classList.remove("stat-unavailable");
   } catch (err) {
-    $("stat-students").textContent = "err";
-    $("stat-activities").textContent = "err";
+    markStatUnavailable("stat-students", err);
+    markStatUnavailable("stat-activities", err);
     console.error("getStats failed", err);
   }
 
@@ -120,7 +131,10 @@ async function loadStats() {
 
     const totalCreated = activitiesRes.activities.length;
     const statTotalEl = $("stat-total-activities");
-    if (statTotalEl) statTotalEl.textContent = totalCreated;
+    if (statTotalEl) {
+      statTotalEl.textContent = totalCreated;
+      statTotalEl.classList.remove("stat-unavailable");
+    }
 
     $("export-csv-all").disabled = false;
 
@@ -168,8 +182,7 @@ async function loadStats() {
       },
     });
   } catch (err) {
-    const statTotalEl = $("stat-total-activities");
-    if (statTotalEl) statTotalEl.textContent = "err";
+    markStatUnavailable("stat-total-activities", err);
     console.error("listAllActivities failed", err);
   }
 }
@@ -254,12 +267,14 @@ async function loadClasses() {
     const res = await api.listClasses();
     classesCache = res.classes;
     const statClasses = $("stat-classes");
-    if (statClasses) statClasses.textContent = classesCache.length;
+    if (statClasses) {
+      statClasses.textContent = classesCache.length;
+      statClasses.classList.remove("stat-unavailable");
+    }
     renderClassSelectors();
     renderClassList();
   } catch (err) {
-    const statClasses = $("stat-classes");
-    if (statClasses) statClasses.textContent = "err";
+    markStatUnavailable("stat-classes", err);
     console.error("Failed to load classes", err);
   }
 }
