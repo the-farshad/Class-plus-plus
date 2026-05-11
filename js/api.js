@@ -182,6 +182,8 @@ export const api = {
     postJSON(`/admin/classes/${encodeURIComponent(id)}/students/${encodeURIComponent(email)}/password`, {}),
   studentPasswordStatus: (id, email) =>
     get(`/admin/classes/${encodeURIComponent(id)}/students/${encodeURIComponent(email)}/password-status`),
+  bulkGeneratePasswords: (id, rotate = false) =>
+    postJSON(`/admin/classes/${encodeURIComponent(id)}/students/bulk-passwords${rotate ? "?rotate=1" : ""}`, {}),
   exportGlobalRoster: () => get("/admin/classes/admin/global-roster"),
 
   // Allowlist

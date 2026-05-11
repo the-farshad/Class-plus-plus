@@ -351,12 +351,17 @@ $("class-selector").addEventListener("change", (e) => {
   loadActivities();
 });
 
-$("activity-class-filter").addEventListener("change", (e) => {
-  const filtered = e.target.value
-    ? activitiesCache.filter(a => String(a.class_id) === e.target.value)
-    : activitiesCache;
-  renderActivities(filtered);
-});
+function applyActivityFilters() {
+  const cls = $("activity-class-filter")?.value || "";
+  const ses = $("activity-session-filter")?.value || "";
+  let out = activitiesCache;
+  if (cls) out = out.filter(a => String(a.class_id) === cls);
+  if (ses) out = out.filter(a => a.session_tag === ses);
+  renderActivities(out);
+}
+
+$("activity-class-filter").addEventListener("change", applyActivityFilters);
+$("activity-session-filter")?.addEventListener("change", applyActivityFilters);
 
 $("new-class-form").addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -454,6 +459,91 @@ function showStudentMgmt(c) {
 }
 
 $("close-student-mgmt").addEventListener("click", () => hide("student-management"));
+
+// Bulk password generation for everyone in the active class.
+$("btn-bulk-passwords").addEventListener("click", async () => {
+  if (!activeMgmtClass) return;
+  const rotate = confirm(
+    "Generate passwords for every student in this class.\n\n" +
+    "OK = only for students without a password yet (recommended)\n" +
+    "Cancel = abort\n\n" +
+    "(To force-rotate everyone's password, hold Shift while clicking instead.)"
+  );
+  if (!rotate) return;
+  const force = window.event && window.event.shiftKey;
+  const btn = $("btn-bulk-passwords");
+  btn.disabled = true;
+  btn.textContent = "Generating…";
+  try {
+    const res = await api.bulkGeneratePasswords(activeMgmtClass.id, force);
+    showBulkPasswordsResult(res.generated, res.skipped, activeMgmtClass);
+  } catch (err) {
+    alert("Bulk password generation failed: " + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = `<i data-lucide="key-round" style="width:13px;height:13px;"></i> Passwords for all`;
+    if (window.lucide) window.lucide.createIcons();
+  }
+});
+
+function showBulkPasswordsResult(generated, skipped, cls) {
+  let modal = document.getElementById("modal-bulk-pw");
+  if (!modal) {
+    modal = document.createElement("div");
+    modal.id = "modal-bulk-pw";
+    modal.className = "modal-center";
+    modal.setAttribute("role", "dialog");
+    modal.setAttribute("aria-modal", "true");
+    modal.style.maxWidth = "640px";
+    document.body.appendChild(modal);
+  }
+  const rows = generated.map(g =>
+    `<tr><td>${escapeHTML(g.email)}</td><td>${escapeHTML(g.name)}</td><td style="font-family:var(--font-mono);font-weight:600;">${escapeHTML(g.password)}</td></tr>`
+  ).join("");
+  modal.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.85rem;">
+      <h2 style="margin:0;">Passwords for ${escapeHTML(cls.name)}</h2>
+      <button id="close-bulkpw" class="icon-btn" aria-label="Close"><i data-lucide="x" style="width:16px;height:16px;"></i></button>
+    </div>
+    <p class="muted" style="font-size:0.85rem;margin:0 0 0.85rem;">
+      Generated <strong>${generated.length}</strong> password${generated.length === 1 ? "" : "s"}.
+      ${skipped ? `Skipped <strong>${skipped}</strong> (already had one).` : ""}
+      Shown ONCE — download or copy now.
+    </p>
+    <div style="max-height:300px;overflow:auto;border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:0.85rem;">
+      ${generated.length ? `<table style="margin:0;font-size:0.82rem;">
+        <thead><tr><th>Email</th><th>Name</th><th>Password</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>` : `<p class="muted" style="padding:1rem;">No new passwords generated.</p>`}
+    </div>
+    <div style="display:flex;gap:0.4rem;justify-content:flex-end;">
+      <button id="bulkpw-copy" class="secondary sm"><i data-lucide="copy" style="width:13px;height:13px;"></i> Copy as CSV</button>
+      <button id="bulkpw-download" class="secondary sm"><i data-lucide="download" style="width:13px;height:13px;"></i> Download CSV</button>
+    </div>`;
+  show("modal-overlay");
+  modal.hidden = false;
+  if (window.lucide) window.lucide.createIcons();
+
+  const close = () => { hide("modal-overlay"); modal.hidden = true; };
+  document.getElementById("close-bulkpw").addEventListener("click", close);
+
+  const csvFor = () => "email,name,password\n" + generated.map(g =>
+    [g.email, g.name, g.password].map(v => `"${String(v).replace(/"/g, '""')}"`).join(",")
+  ).join("\n");
+
+  document.getElementById("bulkpw-copy").addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText(csvFor()); } catch {}
+  });
+  document.getElementById("bulkpw-download").addEventListener("click", () => {
+    const blob = new Blob([csvFor()], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${(cls.code || cls.name || "class").replace(/\s+/g, "_")}-passwords-${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+}
 
 $("btn-csv-upload").addEventListener("click", async () => {
   const file = $("csv-upload").files[0];

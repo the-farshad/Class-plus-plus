@@ -90,6 +90,36 @@ classesRouter.post("/:id/students/bulk", (req, res) => {
   }
 });
 
+// Bulk-generate passwords for every student in the class. By default only
+// students who don't already have a password get a new one (so re-running
+// is safe). Pass ?rotate=1 to overwrite every existing password.
+// Returns the plaintext passwords ONCE — instructor must copy/distribute now.
+classesRouter.post("/:id/students/bulk-passwords", (req, res) => {
+  try {
+    const rotate = req.query && req.query.rotate === "1";
+    const students = db.prepare(
+      "SELECT student_email, student_name FROM class_students WHERE class_id = ?"
+    ).all(req.params.id);
+    if (!students.length) return res.json({ ok: true, generated: [], skipped: 0 });
+
+    const generated = [];
+    let skipped = 0;
+    for (const s of students) {
+      if (!rotate && hasPassword(s.student_email)) { skipped++; continue; }
+      const password = generateTempPassword(12);
+      setPassword(s.student_email, password, req.user.email, /* must_change */ 0);
+      generated.push({
+        email: s.student_email,
+        name: s.student_name || "",
+        password,
+      });
+    }
+    res.json({ ok: true, generated, skipped });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
 // Generate (or rotate) a temporary password for a student in this class.
 // Returns the plaintext password ONCE — the admin must copy it now.
 classesRouter.post("/:id/students/:email/password", (req, res) => {
