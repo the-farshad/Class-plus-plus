@@ -53,12 +53,18 @@
 
     <section class="card">
       <div class="blog-toolbar">
-        <label class="blog-field">
+        <label class="blog-field" style="flex:2;">
           <span class="sr-only">Search notes</span>
-          <input type="search" id="post-search" placeholder="Search title, summary, tags…" autocomplete="off" />
+          <input type="search" id="post-search" placeholder="Search title or summary…" autocomplete="off" />
         </label>
-        <label class="blog-field" style="flex:0 0 auto;min-width:140px;">
-          <span class="muted blog-field-label">Sort by</span>
+        <label class="blog-field" style="flex:0 0 auto;min-width:130px;">
+          <span class="muted blog-field-label">Topic</span>
+          <select id="tag-filter">
+            <option value="">All topics</option>
+          </select>
+        </label>
+        <label class="blog-field" style="flex:0 0 auto;min-width:130px;">
+          <span class="muted blog-field-label">Sort</span>
           <select id="post-sort">
             <option value="week">Week order</option>
             <option value="date">Newest first</option>
@@ -67,12 +73,10 @@
         </label>
       </div>
 
-      <div id="tag-chips" class="tag-chips"></div>
+      <ul id="post-list" class="activity-list" style="margin-top:0.25rem;"></ul>
 
-      <ul id="post-list" class="activity-list" style="margin-top:0.5rem;"></ul>
-
-      <p id="no-results" class="muted" style="text-align:center;padding:2rem 0;display:none;">
-        No notes match your search. <button class="secondary sm" id="clear-search" style="margin-left:0.5rem;">Clear filters</button>
+      <p id="no-results" class="muted" style="padding:2rem 0;display:none;">
+        No notes match your filters. <button class="secondary sm" id="clear-search" style="margin-left:0.5rem;">Clear</button>
       </p>
     </section>
   </main>
@@ -95,12 +99,12 @@
   <script type="module">
     import { renderIndex } from "/js/blog.js";
     renderIndex(document.getElementById("post-list"), {
-      searchEl:  document.getElementById("post-search"),
-      sortEl:    document.getElementById("post-sort"),
-      chipsEl:   document.getElementById("tag-chips"),
-      countEl:   document.getElementById("notes-count"),
-      noResults: document.getElementById("no-results"),
-      clearBtn:  document.getElementById("clear-search"),
+      searchEl:     document.getElementById("post-search"),
+      sortEl:       document.getElementById("post-sort"),
+      tagFilterEl:  document.getElementById("tag-filter"),
+      countEl:      document.getElementById("notes-count"),
+      noResults:    document.getElementById("no-results"),
+      clearBtn:     document.getElementById("clear-search"),
     });
   </script>
   <script>lucide.createIcons();</script>

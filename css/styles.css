@@ -643,27 +643,6 @@ tbody tr:hover { background: var(--interactive); }
   padding: 0.45rem 0.7rem;
 }
 
-/* Tag chips */
-.tag-chips { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-bottom: 0.85rem; }
-.tag-chip {
-  padding: 0.2rem 0.6rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background: var(--surface);
-  color: var(--muted);
-  font-size: 0.76rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.12s;
-}
-.tag-chip:hover { border-color: var(--brand); color: var(--brand); }
-.tag-chip.active {
-  background: var(--brand-soft);
-  border-color: var(--brand-muted);
-  color: var(--brand);
-  font-weight: 600;
-}
-
 .tags-line { margin-top: 0.3rem; font-size: 0.78rem !important; }
 
 /* ---------- Blog Post ---------- */

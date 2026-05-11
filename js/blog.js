@@ -93,32 +93,26 @@ function renderPostList(listEl, posts, noResultsEl) {
 
   posts.forEach((p) => {
     const li = document.createElement("li");
-    li.setAttribute("data-type", "submission"); // for left-border via css (reusing)
 
     const badge = p.week != null
-      ? `<span class="week-badge">Week ${escapeHTML(String(p.week))}</span>`
+      ? `<span class="week-badge">Week ${p.week}</span>`
       : "";
-
-    const tagPills = (p.tags || []).slice(0, 5).map(t =>
-      `<span style="font-size:0.75rem;color:var(--subtle);">#${escapeHTML(t)}</span>`
-    ).join(" ");
 
     const rt = readingTime([p.title, p.summary].join(" "));
 
     li.innerHTML = `
       <div>
-        <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.35rem;">
+        <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.25rem;">
           ${badge}
-          <a href="/blog/post.html?slug=${encodeURIComponent(p.slug)}" style="font-weight:600;font-size:1rem;">${escapeHTML(p.title)}</a>
+          <a href="/blog/post.html?slug=${encodeURIComponent(p.slug)}" style="font-weight:600;font-size:0.97rem;">${escapeHTML(p.title)}</a>
         </div>
         <div class="meta">${escapeHTML(p.summary || "")}</div>
-        <div style="display:flex;align-items:center;gap:0.85rem;margin-top:0.4rem;flex-wrap:wrap;">
-          <span class="reading-time"><i data-lucide="clock" style="width:11px;height:11px;"></i> ${escapeHTML(rt)}</span>
-          ${tagPills}
-        </div>
+        <span class="reading-time" style="margin-top:0.3rem;display:inline-flex;">
+          <i data-lucide="clock" style="width:11px;height:11px;"></i> ${escapeHTML(rt)}
+        </span>
       </div>
       <div style="display:flex;align-items:center;gap:0.5rem;flex-shrink:0;">
-        <span class="muted" style="font-size:0.78rem;">${escapeHTML(p.date || "")}</span>
+        <span class="muted" style="font-size:0.78rem;white-space:nowrap;">${escapeHTML(p.date || "")}</span>
         <a href="/blog/post.html?slug=${encodeURIComponent(p.slug)}" class="button sm secondary" style="text-decoration:none;">Read →</a>
       </div>`;
 
@@ -129,31 +123,36 @@ function renderPostList(listEl, posts, noResultsEl) {
   if (window.lucide) window.lucide.createIcons();
 }
 
-// ---------- Tag chip builder ----------
+// ---------- Tag select builder ----------
 
-function buildTagChips(chipsEl, posts, getActiveTag, setActiveTag, refresh) {
-  if (!chipsEl) return;
-  const allTags = [...new Set(posts.flatMap(p => p.tags || []))].sort();
-  chipsEl.innerHTML = "";
+function buildTagSelect(selectEl, posts, getActiveTag, setActiveTag, refresh) {
+  if (!selectEl) return;
 
-  if (!allTags.length) return;
+  // Count frequency of each tag
+  const freq = {};
+  posts.forEach(p => (p.tags || []).forEach(t => { freq[t] = (freq[t] || 0) + 1; }));
 
-  const allChip = document.createElement("button");
-  allChip.className = "tag-chip" + (!getActiveTag() ? " active" : "");
-  allChip.textContent = "All";
-  allChip.addEventListener("click", () => { setActiveTag(null); refresh(); buildTagChips(chipsEl, posts, getActiveTag, setActiveTag, refresh); });
-  chipsEl.appendChild(allChip);
+  // Sort by frequency desc, then alpha; keep only tags that appear 2+ times
+  // plus a broad list of conceptual groupings always shown regardless of count
+  const pinned = new Set(["classes","memory","functions","loops","pointers","inheritance","polymorphism","file-io","vector","stl","oop","recursion","templates","exceptions"]);
+  const tags = Object.entries(freq)
+    .filter(([t, c]) => c >= 2 || pinned.has(t))
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .map(([t]) => t);
 
-  allTags.forEach(tag => {
-    const chip = document.createElement("button");
-    chip.className = "tag-chip" + (getActiveTag() === tag ? " active" : "");
-    chip.textContent = tag;
-    chip.addEventListener("click", () => {
-      setActiveTag(getActiveTag() === tag ? null : tag);
-      refresh();
-      buildTagChips(chipsEl, posts, getActiveTag, setActiveTag, refresh);
-    });
-    chipsEl.appendChild(chip);
+  // Rebuild options
+  selectEl.innerHTML = `<option value="">All topics</option>`;
+  tags.forEach(tag => {
+    const opt = document.createElement("option");
+    opt.value = tag;
+    opt.textContent = tag + (freq[tag] > 1 ? ` (${freq[tag]})` : "");
+    if (getActiveTag() === tag) opt.selected = true;
+    selectEl.appendChild(opt);
+  });
+
+  selectEl.addEventListener("change", () => {
+    setActiveTag(selectEl.value || null);
+    refresh();
   });
 }
 
@@ -162,10 +161,10 @@ function buildTagChips(chipsEl, posts, getActiveTag, setActiveTag, refresh) {
 let cachedPosts = null;
 
 export async function renderIndex(listEl, options = {}) {
-  const { searchEl, sortEl, chipsEl, countEl, noResults, clearBtn } = options;
+  const { searchEl, sortEl, tagFilterEl, countEl, noResults, clearBtn } = options;
   let activeTag = null;
 
-  listEl.innerHTML = `<li class="muted" style="padding:1.5rem 0;text-align:center;">Loading…</li>`;
+  listEl.innerHTML = `<li class="muted" style="padding:1.5rem 0;">Loading…</li>`;
 
   try {
     const res = await fetch(`${POSTS_DIR}/index.json`, { cache: "no-cache" });
@@ -174,7 +173,7 @@ export async function renderIndex(listEl, options = {}) {
 
     if (countEl) {
       const weekly = posts.filter(p => p.week != null).length;
-      countEl.textContent = `${posts.length} notes · ${weekly} weekly`;
+      countEl.textContent = `— ${posts.length} notes, ${weekly} weekly`;
     }
 
     function refresh() {
@@ -191,12 +190,12 @@ export async function renderIndex(listEl, options = {}) {
       clearBtn.addEventListener("click", () => {
         if (searchEl) searchEl.value = "";
         activeTag = null;
+        if (tagFilterEl) tagFilterEl.value = "";
         refresh();
-        buildTagChips(chipsEl, posts, () => activeTag, t => { activeTag = t; }, refresh);
       });
     }
 
-    buildTagChips(chipsEl, posts, () => activeTag, t => { activeTag = t; }, refresh);
+    buildTagSelect(tagFilterEl, posts, () => activeTag, t => { activeTag = t; }, refresh);
     refresh();
   } catch (err) {
     listEl.innerHTML = `<li class="muted">Could not load posts: ${escapeHTML(err.message)}</li>`;
