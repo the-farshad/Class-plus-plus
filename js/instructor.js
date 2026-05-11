@@ -663,6 +663,7 @@ $("new-form").addEventListener("submit", async (e) => {
   const prompt = $("prompt").value.trim();
   const uiType = $("activity-type").value;
   const classId = $("class-selector").value || null;
+  const sessionTag = $("session-tag")?.value || null;
 
   let type = uiType;
   let options = [];
@@ -680,7 +681,7 @@ $("new-form").addEventListener("submit", async (e) => {
   if (btn) btn.disabled = true;
   setStatus("new-status", "Creating…");
   try {
-    const res = await api.createActivity(prompt, classId, type, options);
+    const res = await api.createActivity(prompt, classId, type, options, sessionTag);
     setStatus("new-status", `Launched! (#${res.activity_id})`, "success");
     $("prompt").value = "";
     // Reset options list
@@ -742,11 +743,15 @@ function renderActivities(list_data) {
     const icon = TYPE_ICONS[a.type] || "file-text";
     const label = TYPE_LABELS[a.type] || a.type;
     const isOpen = a.status === "open";
+    const sessionBadge = a.session_tag
+      ? `<span class="type-badge" style="background:var(--surface-2);color:var(--text);"><i data-lucide="${a.session_tag.startsWith("prog") ? "code-2" : "flask-conical"}" style="width:11px;height:11px;"></i> ${a.session_tag.replace(/^prog/, "Prog ").replace(/^lab/, "Lab ")}</span>`
+      : "";
     left.innerHTML = `
-      <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.25rem;">
+      <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.25rem;flex-wrap:wrap;">
         <span class="type-badge type-badge--${a.type}">
           <i data-lucide="${icon}" style="width:11px;height:11px;"></i> ${label}
         </span>
+        ${sessionBadge}
         <span class="status-pill ${isOpen ? "open" : "closed"}">
           ${isOpen
             ? `<i data-lucide="circle" style="width:7px;height:7px;fill:currentColor;"></i> Live`

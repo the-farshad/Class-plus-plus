@@ -82,11 +82,14 @@ activitiesRouter.post("/admin", requireInstructor, (req, res) => {
   const pollOptions = (type === "poll" || type === "poll_pie") ? JSON.stringify(req.body.poll_options || []) : null;
   const difficulty = req.body && req.body.difficulty ? req.body.difficulty : 'easy';
   const scheduledAt = req.body && req.body.scheduled_at ? parseInt(req.body.scheduled_at, 10) : null;
+  // Session tag = "prog01".."prog14", "lab01".."lab14", or null.
+  const rawTag = req.body && typeof req.body.session_tag === "string" ? req.body.session_tag.trim().toLowerCase() : "";
+  const sessionTag = /^(prog|lab)(0[1-9]|1[0-4])$/.test(rawTag) ? rawTag : null;
 
   if (!prompt) return res.status(400).json({ ok: false, error: "Missing prompt" });
   const info = db.prepare(
-    "INSERT INTO activities (prompt, status, asset_url, class_id, type, poll_options, difficulty, scheduled_at, created_at) VALUES (?, 'open', ?, ?, ?, ?, ?, ?, ?)"
-  ).run(prompt, assetUrl, classId, type, pollOptions, difficulty, scheduledAt, Date.now());
+    "INSERT INTO activities (prompt, status, asset_url, class_id, type, poll_options, difficulty, scheduled_at, session_tag, created_at) VALUES (?, 'open', ?, ?, ?, ?, ?, ?, ?, ?)"
+  ).run(prompt, assetUrl, classId, type, pollOptions, difficulty, scheduledAt, sessionTag, Date.now());
   res.json({ ok: true, activity_id: info.lastInsertRowid });
   notifySSE();
 });
