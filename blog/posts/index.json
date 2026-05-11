@@ -10,5 +10,89 @@
     "title": "Understanding Pointers in C++",
     "date": "2026-05-11",
     "summary": "A quick guide to pointers, memory addresses, and common pitfalls in C++."
+  },
+  {
+    "slug": "week-1-notes",
+    "title": "Week 1: Introduction to C++",
+    "date": "2026-05-11",
+    "summary": "Essential concepts for Lab 01 and Program 01."
+  },
+  {
+    "slug": "week-2-notes",
+    "title": "Week 2: Variables & Control Flow",
+    "date": "2026-05-12",
+    "summary": "Essential concepts for Lab 02 and Program 02."
+  },
+  {
+    "slug": "week-3-notes",
+    "title": "Week 3: Structs & Classes",
+    "date": "2026-05-13",
+    "summary": "Essential concepts for Lab 03 and Program 03."
+  },
+  {
+    "slug": "week-4-notes",
+    "title": "Week 4: Loops & Iteration",
+    "date": "2026-05-14",
+    "summary": "Essential concepts for Lab 04 and Program 04."
+  },
+  {
+    "slug": "week-5-notes",
+    "title": "Week 5: Functions",
+    "date": "2026-05-15",
+    "summary": "Essential concepts for Lab 05 and Program 05."
+  },
+  {
+    "slug": "week-6-notes",
+    "title": "Week 6: Arrays",
+    "date": "2026-05-16",
+    "summary": "Essential concepts for Lab 06 and Program 06."
+  },
+  {
+    "slug": "week-7-notes",
+    "title": "Week 7: Pointers Basics",
+    "date": "2026-05-17",
+    "summary": "Essential concepts for Lab 07 and Program 07."
+  },
+  {
+    "slug": "week-8-notes",
+    "title": "Week 8: Dynamic Memory",
+    "date": "2026-05-18",
+    "summary": "Essential concepts for Lab 08 and Program 08."
+  },
+  {
+    "slug": "week-9-notes",
+    "title": "Week 9: File I/O",
+    "date": "2026-05-19",
+    "summary": "Essential concepts for Lab 09 and Program 09."
+  },
+  {
+    "slug": "week-10-notes",
+    "title": "Week 10: Advanced Classes",
+    "date": "2026-05-20",
+    "summary": "Essential concepts for Lab 10 and Program 10."
+  },
+  {
+    "slug": "week-11-notes",
+    "title": "Week 11: Inheritance",
+    "date": "2026-05-21",
+    "summary": "Essential concepts for Lab 11 and Program 11."
+  },
+  {
+    "slug": "week-12-notes",
+    "title": "Week 12: Polymorphism",
+    "date": "2026-05-22",
+    "summary": "Essential concepts for Lab 12 and Program 12."
+  },
+  {
+    "slug": "week-13-notes",
+    "title": "Week 13: Templates",
+    "date": "2026-05-23",
+    "summary": "Essential concepts for Lab 13 and Program 13."
+  },
+  {
+    "slug": "week-14-notes",
+    "title": "Week 14: Exceptions & STL",
+    "date": "2026-05-24",
+    "summary": "Essential concepts for Lab 14 and Program 14."
   }
 ]
