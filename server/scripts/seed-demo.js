@@ -59,10 +59,12 @@ if (existing.n === 0) {
   const examplePath = path.join(__dirname, "questions.example.json");
   if (fs.existsSync(examplePath)) {
     const list = JSON.parse(fs.readFileSync(examplePath, "utf8"));
+    // Seeded activities are CLOSED so they don't auto-release to students.
+    // The instructor explicitly clicks 'Open' on each one when ready.
     const insertActivity = db.prepare(`
       INSERT INTO activities
         (prompt, type, status, poll_options, class_id, session_tag, release_at, due_at, created_at)
-      VALUES (?, ?, 'open', ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, 'closed', ?, ?, ?, ?, ?, ?)
     `);
     list.forEach((a, idx) => {
       const opts = a.options ? JSON.stringify(a.options) : null;

@@ -5,7 +5,8 @@ import {
 } from "/js/ui.js";
 
 const TYPE_LABELS = {
-  poll: "Poll", poll_pie: "Poll", rating: "Rating", word_cloud: "Word Cloud", submission: "Submission",
+  poll: "Poll", poll_pie: "Poll", rating: "Rating",
+  word_cloud: "Word Cloud", submission: "Submission", ordering: "Order",
 };
 
 // ---- SSE live updates ----
@@ -55,16 +56,30 @@ function showActivity(a) {
   if (oldResults) oldResults.remove();
   $("activity-id").value = a.activity_id;
 
-  // Header in form-card
+  // Header in form-card — render the prompt as sanitized Markdown so
+  // instructors can author with code fences, **bold**, lists, etc.
   const heading = document.createElement("div");
   heading.style.marginBottom = "1.25rem";
   heading.innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;">
-      <div style="flex:1;">
-        <h2 id="prompt-text" style="margin:0;font-size:1.4rem;line-height:1.3;">${escapeHTML(a.prompt)}</h2>
-      </div>
-      <span class="tag poll" id="activity-type-tag">${TYPE_LABELS[a.type] || a.type}</span>
+      <div class="prompt-md" style="flex:1;font-size:1.05rem;line-height:1.55;"></div>
+      <span class="tag poll" id="activity-type-tag" style="flex-shrink:0;">${TYPE_LABELS[a.type] || a.type}</span>
     </div>`;
+  // Render prompt: marked → DOMPurify. Falls back to plain escaped text
+  // until both libraries finish loading.
+  const promptEl = heading.querySelector(".prompt-md");
+  const renderPrompt = () => {
+    const rawHTML = window.marked ? window.marked.parse(a.prompt || "") : `<p>${escapeHTML(a.prompt)}</p>`;
+    promptEl.innerHTML = window.DOMPurify ? window.DOMPurify.sanitize(rawHTML) : rawHTML;
+    if (window.Prism) {
+      promptEl.querySelectorAll("pre code").forEach(b => {
+        if (!b.className) b.className = "language-cpp";
+        window.Prism.highlightElement(b);
+      });
+    }
+  };
+  if (window.marked) renderPrompt();
+  else window.addEventListener("load", renderPrompt, { once: true });
 
   const fc = $("form-card");
   // Remove previous heading if any
@@ -74,16 +89,25 @@ function showActivity(a) {
   fc.insertBefore(heading, fc.firstChild);
 
   hide("loading"); hide("picker"); hide("empty"); hide("confirm-card");
-  hide("poll-card"); hide("rating-card"); hide("rating-form"); hide("submit-form");
+  hide("poll-card"); hide("rating-card"); hide("rating-form"); hide("submit-form"); hide("order-form");
 
   // If the user has already submitted/voted on this activity, jump straight
   // to the confirmation panel instead of re-showing the form.
   const alreadyVoted = (a.type === "poll" || a.type === "poll_pie") && localStorage.getItem(VOTE_KEY(a.activity_id)) !== null;
   const alreadySubmitted = (a.type !== "poll" && a.type !== "poll_pie") && localStorage.getItem(SUBMIT_KEY(a.activity_id));
+  void alreadyVoted; // suppress lint — read below for poll branch
 
   if (a.type === "poll" || a.type === "poll_pie") {
     show("poll-card");
     renderPoll(a);
+  } else if (a.type === "ordering") {
+    if (alreadySubmitted) {
+      show("confirm-card");
+      show("form-card");
+      return;
+    }
+    show("order-form");
+    renderOrdering(a);
   } else if (a.type === "rating") {
     if (alreadySubmitted) {
       show("confirm-card");
@@ -221,6 +245,64 @@ async function refreshPollResults(a, panel) {
   } catch (err) {
     panel.innerHTML = `<p class="muted" style="font-size:0.85rem;">Couldn't load results: ${escapeHTML(err.message)}</p>`;
   }
+}
+
+// Fisher-Yates shuffle that's seeded by the activity id + user email so a
+// given student always gets the same shuffle for a given activity (avoids
+// the "wait, where did my item go" jump if the page refreshes).
+function shuffleStable(arr, seed) {
+  const out = arr.slice();
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < seed.length; i++) {
+    h ^= seed.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  for (let i = out.length - 1; i > 0; i--) {
+    h = (Math.imul(h, 16807) + 1) >>> 0;
+    const j = h % (i + 1);
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
+let orderSortable = null;
+function renderOrdering(a) {
+  const items = JSON.parse(a.poll_options || "[]");
+  const seed = a.activity_id + "::" + ((session.user && session.user.email) || "anon");
+  // shuffled is an array of { item, originalIndex }
+  const shuffled = shuffleStable(items.map((item, idx) => ({ item, originalIndex: idx })), seed);
+
+  const list = $("order-items");
+  list.innerHTML = "";
+  shuffled.forEach((entry, displayIdx) => {
+    const li = document.createElement("li");
+    li.className = "order-item";
+    li.dataset.originalIndex = entry.originalIndex;
+    li.innerHTML = `
+      <span class="order-handle" aria-hidden="true"><i data-lucide="grip-vertical"></i></span>
+      <span class="order-num">${displayIdx + 1}</span>
+      <span class="order-text">${escapeHTML(entry.item)}</span>`;
+    list.appendChild(li);
+  });
+  if (window.lucide) window.lucide.createIcons();
+
+  // Wire SortableJS (loaded via CDN). Update the visible numbers after every drop.
+  if (orderSortable) { orderSortable.destroy(); orderSortable = null; }
+  const wireSort = () => {
+    if (!window.Sortable) { setTimeout(wireSort, 100); return; }
+    orderSortable = window.Sortable.create(list, {
+      animation: 160,
+      handle: ".order-handle",
+      ghostClass: "order-item-ghost",
+      chosenClass: "order-item-chosen",
+      onSort: () => {
+        list.querySelectorAll(".order-item").forEach((el, i) => {
+          el.querySelector(".order-num").textContent = String(i + 1);
+        });
+      },
+    });
+  };
+  wireSort();
 }
 
 function renderRating(a) {
@@ -439,6 +521,25 @@ $("rating-form").addEventListener("submit", async (e) => {
     $("rating-hidden").value = "";
   } catch (err) {
     setStatusEl("rating-status", err.message, "error");
+    if (btn) btn.disabled = false;
+  }
+});
+
+$("order-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const list = $("order-items");
+  const order = [...list.querySelectorAll(".order-item")].map(el => el.dataset.originalIndex).join(",");
+  const btn = $("order-submit-btn");
+  if (btn) btn.disabled = true;
+  setStatusEl("order-status", "Submitting your order…");
+  try {
+    const id = $("activity-id").value;
+    await api.submit({ activity_id: id, response: order });
+    localStorage.setItem(SUBMIT_KEY(id), "1");
+    hide("order-form");
+    show("confirm-card");
+  } catch (err) {
+    setStatusEl("order-status", err.message, "error");
     if (btn) btn.disabled = false;
   }
 });

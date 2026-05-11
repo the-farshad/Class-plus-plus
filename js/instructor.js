@@ -665,7 +665,7 @@ async function loadClassStudents() {
 
       const delBtn = document.createElement("button");
       delBtn.className = "secondary sm danger";
-      delBtn.innerHTML = `<i data-lucide="user-minus" style="width:13px;height:13px;"></i>`;
+      delBtn.innerHTML = `<i data-lucide="user-minus" style="width:13px;height:13px;"></i> Remove`;
       delBtn.title = `Remove ${s.student_email}`;
       delBtn.setAttribute("aria-label", `Remove student ${s.student_email}`);
       delBtn.addEventListener("click", async () => {
@@ -691,10 +691,19 @@ document.querySelectorAll(".type-btn").forEach(btn => {
   btn.addEventListener("click", () => {
     document.querySelectorAll(".type-btn").forEach(b => b.classList.remove("active"));
     btn.classList.add("active");
-    $("activity-type").value = btn.dataset.type;
-    const isPoll = btn.dataset.type === "poll" || btn.dataset.type === "poll_pie";
-    if (isPoll) {
+    const t = btn.dataset.type;
+    $("activity-type").value = t;
+    // Poll, pie, and ordering all use the options builder.
+    const needsOptions = t === "poll" || t === "poll_pie" || t === "ordering";
+    if (needsOptions) {
       show("poll-options-container");
+      // Relabel hint based on type
+      const label = $("poll-options-container").querySelector("label");
+      if (label) {
+        label.innerHTML = t === "ordering"
+          ? `Items in <strong>correct order</strong> <span class="muted" style="font-weight:400;">(students will see them shuffled)</span>`
+          : `Options <span class="muted" style="font-weight:400;">(min 2, max 8)</span>`;
+      }
       if (!$("poll-options-list").children.length) {
         addOptionRow("poll-options-list");
         addOptionRow("poll-options-list");
@@ -794,10 +803,12 @@ $("new-form").addEventListener("submit", async (e) => {
   let type = uiType;
   let options = [];
 
-  if (uiType === "poll" || uiType === "poll_pie") {
+  if (uiType === "poll" || uiType === "poll_pie" || uiType === "ordering") {
     options = getOptionValues("poll-options-list");
     if (options.length < 2) {
-      setStatus("new-status", "Add at least 2 options", "error");
+      setStatus("new-status", uiType === "ordering"
+        ? "Add at least 2 items to order"
+        : "Add at least 2 options", "error");
       return;
     }
   }

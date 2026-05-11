@@ -68,7 +68,9 @@ entries.forEach((a, idx) => {
   if (!a.prompt || !a.type) {
     console.error(`Skipping entry ${idx}: missing prompt or type`); return;
   }
-  const status = a.status === "closed" ? "closed" : "open";
+  // Default to "closed" — the instructor releases each one explicitly.
+  // Pass {"status": "open"} in the JSON to override.
+  const status = a.status === "open" ? "open" : "closed";
   const opts = a.options ? JSON.stringify(a.options) : null;
   insertActivity.run(
     a.prompt,

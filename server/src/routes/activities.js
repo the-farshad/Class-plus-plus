@@ -92,9 +92,13 @@ activitiesRouter.post("/admin", requireInstructor, (req, res) => {
   const prompt = String(req.body && req.body.prompt || "").trim();
   const assetUrl = req.body && req.body.asset_url ? String(req.body.asset_url) : null;
   const classId = req.body && req.body.class_id ? parseInt(req.body.class_id, 10) : null;
-  const VALID_TYPES = new Set(["submission", "poll", "poll_pie", "rating", "word_cloud"]);
+  const VALID_TYPES = new Set(["submission", "poll", "poll_pie", "rating", "word_cloud", "ordering"]);
   const type = VALID_TYPES.has(req.body?.type) ? req.body.type : "submission";
-  const pollOptions = (type === "poll" || type === "poll_pie") ? JSON.stringify(req.body.poll_options || []) : null;
+  // poll_options stores: poll choices for poll/poll_pie, OR the canonical
+  // (correct) order for ordering activities. Stored as JSON either way.
+  const pollOptions = ["poll", "poll_pie", "ordering"].includes(type)
+    ? JSON.stringify(req.body.poll_options || [])
+    : null;
   const difficulty = req.body && req.body.difficulty ? req.body.difficulty : 'easy';
   const scheduledAt = req.body && req.body.scheduled_at ? parseInt(req.body.scheduled_at, 10) : null;
   // Session tag = "prog01".."prog14", "lab01".."lab14", or null.

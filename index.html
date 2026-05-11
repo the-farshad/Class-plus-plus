@@ -8,10 +8,20 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@600;700;800&family=Lora:wght@400;500;600&family=Ubuntu:wght@400;500;700&family=Roboto+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/styles.css?v=64" />
+  <link rel="stylesheet" href="/css/styles.css?v=65" />
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js" defer></script>
   <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Drag-and-drop for ordering activities -->
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js" defer></script>
+  <!-- Markdown rendering for prompts (allows fenced code blocks, lists, **bold**, …) -->
+  <script src="https://cdn.jsdelivr.net/npm/marked@12/marked.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.9/dist/purify.min.js" defer></script>
+  <!-- Prism for inline code highlighting inside prompts -->
+  <link href="https://cdn.jsdelivr.net/npm/prism-themes@1.9.0/themes/prism-vsc-dark-plus.min.css" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-c.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-cpp.min.js" defer></script>
 </head>
 <body>
   <header class="site">
@@ -50,7 +60,7 @@
   </header>
 
   <script type="module">
-    import { api } from "/js/api.js?v=64";
+    import { api } from "/js/api.js?v=65";
     api.initTheme();
     document.getElementById("nav-submit")?.classList.add("nav-active");
   </script>
@@ -140,6 +150,17 @@
         <div id="rating-status" class="status" role="status"></div>
       </form>
 
+      <!-- Ordering (drag to sort) -->
+      <form id="order-form" hidden>
+        <p class="muted" style="font-size:0.88rem;margin:0 0 0.75rem;">
+          <i data-lucide="move" style="width:13px;height:13px;vertical-align:middle;"></i>
+          Drag the items into what you think is the correct order.
+        </p>
+        <ul id="order-items" class="order-list"></ul>
+        <button type="submit" id="order-submit-btn" style="width:100%;margin-top:1rem;">Submit order</button>
+        <div id="order-status" class="status" role="status"></div>
+      </form>
+
       <!-- Submission / word cloud -->
       <form id="submit-form" hidden>
         <div class="field">
@@ -213,9 +234,9 @@
     </div>
   </div>
 
-  <script type="module" src="/js/student.js?v=64"></script>
+  <script type="module" src="/js/student.js?v=65"></script>
   <script type="module">
-    import { bootPage } from "/js/ui.js?v=64";
+    import { bootPage } from "/js/ui.js?v=65";
     bootPage();
   </script>
 </body>
