@@ -34,6 +34,62 @@ function splitMarkdownPost(raw) {
   return { meta, body };
 }
 
+// ---------- Code block decoration (editor chrome) ----------
+const LANG_LABELS = {
+  cpp: "C++", c: "C", bash: "Bash", sh: "Shell", js: "JavaScript",
+  javascript: "JavaScript", py: "Python", python: "Python", json: "JSON",
+  html: "HTML", css: "CSS", text: "Text", plaintext: "Text",
+};
+
+function decorateCodeBlocks(container) {
+  container.querySelectorAll("pre").forEach(pre => {
+    const code = pre.querySelector("code");
+    if (!code) return;
+
+    // Detect language from existing class (markdown sets class="language-cpp")
+    let lang = "cpp";
+    const m = (code.className || "").match(/language-(\w+)/);
+    if (m) lang = m[1].toLowerCase();
+    if (!code.className) code.className = `language-${lang}`;
+    code.dataset.lang = LANG_LABELS[lang] || lang.toUpperCase();
+
+    // Opt the <pre> into the line-numbers plugin
+    pre.classList.add("line-numbers");
+
+    // Add a copy button (idempotent — re-runs safely)
+    if (!pre.querySelector(".code-copy-btn")) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "code-copy-btn";
+      btn.textContent = "Copy";
+      btn.setAttribute("aria-label", "Copy code to clipboard");
+      btn.addEventListener("click", async () => {
+        try {
+          await navigator.clipboard.writeText(code.textContent);
+          btn.textContent = "Copied!";
+          btn.classList.add("copied");
+          setTimeout(() => {
+            btn.textContent = "Copy";
+            btn.classList.remove("copied");
+          }, 1400);
+        } catch {
+          btn.textContent = "Failed";
+          setTimeout(() => { btn.textContent = "Copy"; }, 1400);
+        }
+      });
+      pre.appendChild(btn);
+    }
+  });
+
+  // Run Prism (now or once loaded)
+  const highlight = () => {
+    if (!window.Prism) return;
+    container.querySelectorAll("pre code").forEach(b => window.Prism.highlightElement(b));
+  };
+  if (window.Prism) highlight();
+  else window.addEventListener("load", highlight, { once: true });
+}
+
 function ensureMarkedConfigured() {
   if (!window.marked || window.__markedClassPlusConfigured) return;
   try {
@@ -80,6 +136,71 @@ function sortPosts(posts, mode) {
 }
 
 // ---------- Render post list ----------
+
+const PAGE_SIZE = 8;
+
+function renderPagination(container, totalCount, currentPage, onChange) {
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+  container.innerHTML = "";
+  if (totalPages <= 1) return;
+
+  const start = (currentPage - 1) * PAGE_SIZE + 1;
+  const end = Math.min(currentPage * PAGE_SIZE, totalCount);
+
+  const info = document.createElement("span");
+  info.className = "pagination-info";
+  info.textContent = `Showing ${start}–${end} of ${totalCount}`;
+
+  const controls = document.createElement("div");
+  controls.className = "pagination-controls";
+
+  const prev = document.createElement("button");
+  prev.className = "secondary sm";
+  prev.innerHTML = `<i data-lucide="chevron-left" style="width:13px;height:13px;"></i> Prev`;
+  prev.disabled = currentPage === 1;
+  prev.addEventListener("click", () => onChange(currentPage - 1));
+
+  const next = document.createElement("button");
+  next.className = "secondary sm";
+  next.innerHTML = `Next <i data-lucide="chevron-right" style="width:13px;height:13px;"></i>`;
+  next.disabled = currentPage === totalPages;
+  next.addEventListener("click", () => onChange(currentPage + 1));
+
+  // Compact page-number buttons (max 7 visible, with ellipses)
+  const pageNums = document.createElement("div");
+  pageNums.className = "pagination-pages";
+
+  function pageBtn(n) {
+    const b = document.createElement("button");
+    b.className = "pagination-page" + (n === currentPage ? " active" : "");
+    b.textContent = n;
+    b.addEventListener("click", () => onChange(n));
+    return b;
+  }
+  function ellipsis() {
+    const s = document.createElement("span");
+    s.className = "pagination-ellipsis";
+    s.textContent = "…";
+    return s;
+  }
+
+  const pages = [];
+  if (totalPages <= 7) {
+    for (let i = 1; i <= totalPages; i++) pages.push(i);
+  } else {
+    pages.push(1);
+    if (currentPage > 4) pages.push("…");
+    for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) pages.push(i);
+    if (currentPage < totalPages - 3) pages.push("…");
+    pages.push(totalPages);
+  }
+  pages.forEach(p => pageNums.appendChild(p === "…" ? ellipsis() : pageBtn(p)));
+
+  controls.append(prev, pageNums, next);
+  container.append(info, controls);
+
+  if (window.lucide) window.lucide.createIcons();
+}
 
 function renderPostList(listEl, posts, noResultsEl) {
   listEl.innerHTML = "";
@@ -157,8 +278,9 @@ function buildTagSelect(selectEl, posts, getActiveTag, setActiveTag, refresh) {
 let cachedPosts = null;
 
 export async function renderIndex(listEl, options = {}) {
-  const { searchEl, sortEl, tagFilterEl, countEl, noResults, clearBtn } = options;
+  const { searchEl, sortEl, tagFilterEl, countEl, noResults, clearBtn, paginationEl } = options;
   let activeTag = null;
+  let currentPage = 1;
 
   listEl.innerHTML = `<li class="muted" style="padding:1.5rem 0;">Loading…</li>`;
 
@@ -172,27 +294,39 @@ export async function renderIndex(listEl, options = {}) {
       countEl.textContent = `— ${posts.length} notes, ${weekly} weekly`;
     }
 
-    function refresh() {
+    function refresh(resetPage = true) {
+      if (resetPage) currentPage = 1;
       const q = searchEl ? searchEl.value.trim() : "";
       const mode = sortEl ? sortEl.value : "week";
       const filtered = cachedPosts.filter(p => postMatchesSearch(p, q, activeTag));
       const sorted = sortPosts(filtered, mode);
-      renderPostList(listEl, sorted, noResults || null);
+      // Slice by page
+      const startIdx = (currentPage - 1) * PAGE_SIZE;
+      const pageSlice = sorted.slice(startIdx, startIdx + PAGE_SIZE);
+      renderPostList(listEl, pageSlice, noResults || null);
+      if (paginationEl) {
+        renderPagination(paginationEl, sorted.length, currentPage, (p) => {
+          currentPage = p;
+          refresh(false);
+          // Scroll to top of list for orientation
+          listEl.scrollIntoView({ behavior: "smooth", block: "start" });
+        });
+      }
     }
 
-    if (searchEl) searchEl.addEventListener("input", refresh);
-    if (sortEl)   sortEl.addEventListener("change", refresh);
+    if (searchEl) searchEl.addEventListener("input", () => refresh(true));
+    if (sortEl)   sortEl.addEventListener("change", () => refresh(true));
     if (clearBtn) {
       clearBtn.addEventListener("click", () => {
         if (searchEl) searchEl.value = "";
         activeTag = null;
         if (tagFilterEl) tagFilterEl.value = "";
-        refresh();
+        refresh(true);
       });
     }
 
-    buildTagSelect(tagFilterEl, posts, () => activeTag, t => { activeTag = t; }, refresh);
-    refresh();
+    buildTagSelect(tagFilterEl, posts, () => activeTag, t => { activeTag = t; }, () => refresh(true));
+    refresh(true);
   } catch (err) {
     listEl.innerHTML = `<li class="muted">Could not load posts: ${escapeHTML(err.message)}</li>`;
   }
@@ -236,23 +370,9 @@ export async function renderPost(container) {
 
     container.innerHTML = metaLine + html;
 
-    // Apply Prism.js highlighting after content is in DOM
-    if (window.Prism) {
-      container.querySelectorAll("pre code").forEach(block => {
-        // Detect language from fence class or default to cpp
-        if (!block.className) block.className = "language-cpp";
-        Prism.highlightElement(block);
-      });
-    } else {
-      // Wait for Prism to load then highlight
-      window.addEventListener("load", () => {
-        if (!window.Prism) return;
-        container.querySelectorAll("pre code").forEach(block => {
-          if (!block.className) block.className = "language-cpp";
-          Prism.highlightElement(block);
-        });
-      });
-    }
+    // Apply Prism.js highlighting + decorate every <pre> with editor chrome
+    // (line numbers, copy button, language label).
+    decorateCodeBlocks(container);
 
     if (window.lucide) window.lucide.createIcons();
   } catch (err) {

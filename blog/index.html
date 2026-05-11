@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@600;700;800&family=Lora:wght@400;500;600&family=Ubuntu:wght@400;500;700&family=Roboto+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/styles.css" />
+  <link rel="stylesheet" href="/css/styles.css?v=46" />
   <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
@@ -45,7 +45,7 @@
   </header>
 
   <script type="module">
-    import { api } from "/js/api.js";
+    import { api } from "/js/api.js?v=46";
     api.initTheme();
     document.getElementById("nav-notes")?.classList.add("nav-active");
   </script>
@@ -80,6 +80,8 @@
 
       <ul id="post-list" class="activity-list post-list" style="margin-top:0.25rem;"></ul>
 
+      <div id="pagination" class="pagination"></div>
+
       <p id="no-results" class="muted" style="padding:2rem 0;display:none;">
         No notes match your filters. <button class="secondary sm" id="clear-search" style="margin-left:0.5rem;">Clear</button>
       </p>
@@ -88,7 +90,7 @@
   </main>
 
   <script type="module">
-    import { renderIndex } from "/js/blog.js";
+    import { renderIndex } from "/js/blog.js?v=46";
     renderIndex(document.getElementById("post-list"), {
       searchEl:     document.getElementById("post-search"),
       sortEl:       document.getElementById("post-sort"),
@@ -96,6 +98,7 @@
       countEl:      document.getElementById("notes-count"),
       noResults:    document.getElementById("no-results"),
       clearBtn:     document.getElementById("clear-search"),
+      paginationEl: document.getElementById("pagination"),
     });
   </script>
   <div id="modal-overlay-settings" class="modal-overlay" hidden></div>
@@ -119,8 +122,8 @@
   </div>
 
   <script type="module">
-    import { bootPage, mountSettingsDrawer } from "/js/ui.js";
-    import { api, session } from "/js/api.js";
+    import { bootPage, mountSettingsDrawer } from "/js/ui.js?v=46";
+    import { api, session } from "/js/api.js?v=46";
     bootPage();
     mountSettingsDrawer({ api, session });
   </script>

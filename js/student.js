@@ -69,13 +69,28 @@ function showActivity(a) {
   hide("loading"); hide("picker"); hide("empty"); hide("confirm-card");
   hide("poll-card"); hide("rating-card"); hide("rating-form"); hide("submit-form");
 
+  // If the user has already submitted/voted on this activity, jump straight
+  // to the confirmation panel instead of re-showing the form.
+  const alreadyVoted = (a.type === "poll" || a.type === "poll_pie") && localStorage.getItem(VOTE_KEY(a.activity_id)) !== null;
+  const alreadySubmitted = (a.type !== "poll" && a.type !== "poll_pie") && localStorage.getItem(SUBMIT_KEY(a.activity_id));
+
   if (a.type === "poll" || a.type === "poll_pie") {
     show("poll-card");
     renderPoll(a);
   } else if (a.type === "rating") {
+    if (alreadySubmitted) {
+      show("confirm-card");
+      show("form-card");
+      return;
+    }
     show("rating-form");
     renderRating(a);
   } else {
+    if (alreadySubmitted) {
+      show("confirm-card");
+      show("form-card");
+      return;
+    }
     const lbl = $("response-label");
     if (lbl) lbl.textContent = a.type === "word_cloud" ? "Your answer (1–3 words)" : "Your Response";
     const ta = $("response");
@@ -88,11 +103,19 @@ function showActivity(a) {
   show("form-card");
 }
 
+// localStorage keys for client-side one-vote-per-user persistence.
+// The server already enforces UNIQUE(activity_id, email), so this is purely UX:
+// it stops the user from clicking other tiles after they've voted and
+// remembers their choice across page reloads.
+const VOTE_KEY = (id) => `classpp.voted.${id}`;
+const SUBMIT_KEY = (id) => `classpp.submitted.${id}`;
+
 function renderPoll(a) {
   const container = $("poll-options-list");
   container.innerHTML = "";
   const options = JSON.parse(a.poll_options || "[]");
   const letters = "ABCDEFGHIJKLMNOP";
+  const priorVote = localStorage.getItem(VOTE_KEY(a.activity_id));
 
   options.forEach((opt, idx) => {
     const tile = document.createElement("button");
@@ -100,13 +123,19 @@ function renderPoll(a) {
     tile.type = "button";
     tile.innerHTML = `<span class="poll-tile-letter">${letters[idx] || idx + 1}</span><span class="poll-tile-text">${escapeHTML(opt)}</span>`;
 
+    if (priorVote !== null && String(idx) === priorVote) {
+      tile.classList.add("selected");
+    }
+
     tile.addEventListener("click", async () => {
       setStatusEl("poll-status", "Recording your vote…");
       container.querySelectorAll(".poll-tile").forEach(b => b.disabled = true);
       try {
         await api.vote(a.activity_id, idx);
+        container.querySelectorAll(".poll-tile").forEach(b => b.classList.remove("selected"));
         tile.classList.add("selected");
-        setStatusEl("poll-status", "Vote recorded — thanks!", "success");
+        localStorage.setItem(VOTE_KEY(a.activity_id), String(idx));
+        setStatusEl("poll-status", "Vote recorded — locked in for this poll.", "success");
       } catch (err) {
         container.querySelectorAll(".poll-tile").forEach(b => b.disabled = false);
         setStatusEl("poll-status", err.message, "error");
@@ -115,6 +144,11 @@ function renderPoll(a) {
 
     container.appendChild(tile);
   });
+
+  if (priorVote !== null) {
+    container.querySelectorAll(".poll-tile").forEach(b => b.disabled = true);
+    setStatusEl("poll-status", "You already voted on this poll.", "success");
+  }
 }
 
 function renderRating(a) {
@@ -268,8 +302,9 @@ $("rating-form").addEventListener("submit", async (e) => {
   if (btn) btn.disabled = true;
   setStatusEl("rating-status", "Submitting…");
   try {
-    await api.submit({ activity_id: $("activity-id").value, response: val });
-    // Show confirmation
+    const id = $("activity-id").value;
+    await api.submit({ activity_id: id, response: val });
+    localStorage.setItem(SUBMIT_KEY(id), "1");
     hide("rating-form");
     show("confirm-card");
     $("rating-hidden").value = "";
@@ -285,13 +320,14 @@ $("submit-form").addEventListener("submit", async (e) => {
   if (btn) btn.disabled = true;
   setStatusEl("status", "Submitting…");
   try {
+    const id = $("activity-id").value;
     const file = $("file").files[0] || null;
     await api.submit({
-      activity_id: $("activity-id").value,
+      activity_id: id,
       response: $("response").value.trim(),
       file,
     });
-    // Show confirmation
+    localStorage.setItem(SUBMIT_KEY(id), "1");
     hide("submit-form");
     show("confirm-card");
     $("response").value = "";

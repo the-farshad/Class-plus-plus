@@ -788,6 +788,32 @@ async function refreshLiveResults() {
   }
 }
 
+// Build a vertical gradient fill for a bar chart segment.
+// Returns a CanvasGradient that animates from full brand → faded toward the base.
+function makeBarGradient(ctx, baseHex) {
+  const h = ctx.canvas.height || 380;
+  const g = ctx.createLinearGradient(0, 0, 0, h);
+  g.addColorStop(0, baseHex);
+  g.addColorStop(1, `${baseHex}cc`);
+  return g;
+}
+
+// Read theme-aware colors at call time so the chart restyles when the theme changes.
+function themePalette() {
+  const cs = getComputedStyle(document.documentElement);
+  const brand = cs.getPropertyValue("--brand").trim() || "#2563eb";
+  const success = cs.getPropertyValue("--success").trim() || "#16a34a";
+  const warning = cs.getPropertyValue("--warning").trim() || "#d97706";
+  const error = cs.getPropertyValue("--error").trim() || "#dc2626";
+  const muted = cs.getPropertyValue("--muted").trim() || "#6b7280";
+  const text = cs.getPropertyValue("--text").trim() || "#111827";
+  const border = cs.getPropertyValue("--border").trim() || "#e5e7eb";
+  return {
+    series: [brand, success, warning, error, "#7c3aed", "#0891b2", "#f43f5e", "#65a30d"],
+    muted, text, border, brand,
+  };
+}
+
 async function renderPollChart(a) {
   const res = await api.getResults(a.activity_id);
   const options = res.options || [];
@@ -800,49 +826,85 @@ async function renderPollChart(a) {
   let canvas = container.querySelector("canvas");
   if (!canvas) {
     canvas = document.createElement("canvas");
-    canvas.style.maxHeight = "380px";
+    canvas.style.maxHeight = "420px";
     container.appendChild(canvas);
   }
 
-  const palette = [
-    "rgba(99,102,241,0.8)", "rgba(236,72,153,0.8)", "rgba(34,197,94,0.8)",
-    "rgba(251,191,36,0.8)", "rgba(59,130,246,0.8)", "rgba(239,68,68,0.8)",
-    "rgba(16,185,129,0.8)", "rgba(245,158,11,0.8)",
-  ];
-
   const isPie = a.type === "poll_pie";
+  const palette = themePalette();
+  const ctx = canvas.getContext("2d");
+  const colors = palette.series.slice(0, options.length).map(c => isPie ? c : makeBarGradient(ctx, c));
+
+  // In-place update path: when the chart already exists AND the structure
+  // (option labels) hasn't changed, just mutate data + colors and call
+  // .update() — Chart.js animates the bars smoothly instead of flashing.
+  const sameShape =
+    liveChart &&
+    liveChart.config.type === (isPie ? "doughnut" : "bar") &&
+    liveChart.data.labels.length === options.length &&
+    liveChart.data.labels.every((l, i) => l === options[i]);
+
+  if (sameShape) {
+    liveChart.data.datasets[0].data = counts;
+    liveChart.data.datasets[0].backgroundColor = colors;
+    liveChart.update("none"); // no animation on the refresh tick to avoid jank
+    return;
+  }
 
   if (liveChart) liveChart.destroy();
-  liveChart = new Chart(canvas.getContext("2d"), {
+  liveChart = new Chart(ctx, {
     type: isPie ? "doughnut" : "bar",
     data: {
       labels: options,
       datasets: [{
         label: "Votes",
         data: counts,
-        backgroundColor: palette.slice(0, options.length),
-        borderRadius: isPie ? 0 : 6,
+        backgroundColor: colors,
+        borderRadius: isPie ? 0 : 8,
         borderWidth: isPie ? 2 : 0,
-        borderColor: "#fff",
+        borderColor: isPie ? (getComputedStyle(document.documentElement).getPropertyValue("--surface").trim() || "#fff") : "transparent",
+        borderSkipped: false,
+        hoverOffset: isPie ? 8 : 0,
       }],
     },
     options: {
       indexAxis: isPie ? undefined : "y",
       responsive: true,
       maintainAspectRatio: false,
+      animation: { duration: 600, easing: "easeOutQuart" },
       plugins: {
-        legend: { display: isPie },
+        legend: {
+          display: isPie,
+          position: "right",
+          labels: { color: palette.text, font: { size: 12, weight: "500" }, padding: 12, boxWidth: 14, boxHeight: 14 },
+        },
         tooltip: {
+          backgroundColor: palette.text,
+          titleColor: "#fff",
+          bodyColor: "#fff",
+          padding: 10,
+          cornerRadius: 6,
+          displayColors: false,
           callbacks: {
+            title: (items) => items[0]?.label || "",
             label: (ctx) => {
-              const pct = totalVotes ? Math.round((ctx.parsed / totalVotes) * 100) : 0;
-              return ` ${ctx.parsed} votes (${pct}%)`;
+              const val = ctx.parsed.y ?? ctx.parsed ?? 0;
+              const pct = totalVotes ? Math.round((val / totalVotes) * 100) : 0;
+              return `${val} vote${val !== 1 ? "s" : ""} · ${pct}%`;
             },
           },
         },
       },
       scales: isPie ? {} : {
-        x: { beginAtZero: true, ticks: { stepSize: 1 } },
+        x: {
+          beginAtZero: true,
+          ticks: { stepSize: 1, color: palette.muted, font: { size: 11 } },
+          grid: { color: palette.border, drawBorder: false },
+        },
+        y: {
+          ticks: { color: palette.text, font: { size: 12, weight: "500" } },
+          grid: { display: false, drawBorder: false },
+        },
       },
     },
   });
@@ -863,24 +925,59 @@ async function renderRatingResults(a) {
   nums.forEach(n => { const i = Math.min(9, Math.max(0, Math.round(n) - 1)); buckets[i]++; });
 
   const canvas = $("rating-histogram");
-  if (ratingHistChart) ratingHistChart.destroy();
-  ratingHistChart = new Chart(canvas.getContext("2d"), {
+  const ctx = canvas.getContext("2d");
+  const palette = themePalette();
+
+  if (ratingHistChart) {
+    ratingHistChart.data.datasets[0].data = buckets;
+    ratingHistChart.update("none");
+    return;
+  }
+
+  ratingHistChart = new Chart(ctx, {
     type: "bar",
     data: {
       labels: ["1","2","3","4","5","6","7","8","9","10"],
       datasets: [{
         label: "Responses",
         data: buckets,
-        backgroundColor: "rgba(99,102,241,0.7)",
-        borderRadius: 4,
+        backgroundColor: makeBarGradient(ctx, palette.brand),
+        borderRadius: 6,
         borderWidth: 0,
+        borderSkipped: false,
       }],
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
+      animation: { duration: 600, easing: "easeOutQuart" },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: palette.text,
+          titleColor: "#fff",
+          bodyColor: "#fff",
+          displayColors: false,
+          padding: 10,
+          cornerRadius: 6,
+          callbacks: {
+            title: (items) => `Rating ${items[0]?.label}`,
+            label: (c) => `${c.parsed.y} response${c.parsed.y !== 1 ? "s" : ""}`,
+          },
+        },
+      },
+      scales: {
+        x: {
+          ticks: { color: palette.muted, font: { size: 11 } },
+          grid: { display: false, drawBorder: false },
+          title: { display: true, text: "Rating (1–10)", color: palette.muted, font: { size: 11, weight: "600" } },
+        },
+        y: {
+          beginAtZero: true,
+          ticks: { stepSize: 1, color: palette.muted, font: { size: 11 } },
+          grid: { color: palette.border, drawBorder: false },
+        },
+      },
     },
   });
 }

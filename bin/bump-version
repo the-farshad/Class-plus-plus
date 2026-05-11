@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# Bumps js/version.js — increments build number, rewrites version string
-# (YYYY.MM.build), and stamps builtAt to the current UTC time.
+# Bumps js/version.js (build number, version string, builtAt) AND rewrites
+# `?v=BUILD` cache-busters on every <link> / <script src> in every HTML file
+# under the repo. This guarantees browsers always pull the fresh CSS/JS for
+# the current build instead of serving stale cached copies.
 #
 # Usage:  ./bin/bump-version
 #
-# Run this before each commit you want users to see as a new deploy.
-# The build number is monotonically increasing; the YYYY.MM prefix gives a
-# rough sense of when the build was cut.
+# Wired into bin/hooks/pre-commit so it runs automatically on every commit.
 
 set -euo pipefail
 
@@ -40,4 +40,26 @@ export const VERSION = {
 };
 EOF
 
-echo "Bumped build ${current} → ${next}  (v${new_version})"
+# --- HTML cache-busting --------------------------------------------------
+# Rewrite `?v=NN` (or insert it) on every internal CSS / JS reference inside
+# the project's HTML files. We deliberately leave external CDN URLs alone.
+
+# Files: every *.html in the repo, excluding node_modules and .git.
+mapfile -t html_files < <(
+  find . \
+    -path './server/node_modules' -prune -o \
+    -path './.git' -prune -o \
+    -name '*.html' -print
+)
+
+# Patterns we touch: hrefs/srcs that start with "/css/...css" or "/js/...js"
+# inside double quotes. Captures the path up to the extension, then any
+# existing query, and replaces with `?v=$next`.
+for f in "${html_files[@]}"; do
+  # /css/foo.css(?v=anything|"") -> /css/foo.css?v=NEXT
+  sed -i -E "s|(\"/css/[^\"?]+\\.css)(\\?v=[^\"]*)?\"|\\1?v=${next}\"|g" "$f"
+  # /js/foo.js(?v=anything|"")  -> /js/foo.js?v=NEXT
+  sed -i -E "s|(\"/js/[^\"?]+\\.js)(\\?v=[^\"]*)?\"|\\1?v=${next}\"|g" "$f"
+done
+
+echo "Bumped build ${current} → ${next}  (v${new_version})  — cache-busters updated in ${#html_files[@]} HTML files"
