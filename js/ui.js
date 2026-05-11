@@ -169,6 +169,10 @@ export function updateUserPill(user) {
   if (navAdmin) {
     navAdmin.hidden = !(user.role === "instructor" || user.role === "superadmin");
   }
+  // Reveal the Live link to any signed-in user (it was hidden by default
+  // on the Notes pages so guests see "just Notes").
+  const navSubmit = $("nav-submit");
+  if (navSubmit) navSubmit.hidden = false;
 }
 
 // On every page boot, reveal the navbar Sign-in CTA when no session token

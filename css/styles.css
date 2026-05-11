@@ -1090,139 +1090,66 @@ tbody tr:hover { background: var(--interactive); }
 }
 .post-content li { margin-bottom: 0.25rem; }
 
-/* ---------- Code blocks (VS Code Dark+ inspired) ---------- */
-.post-content pre {
+/* ---------- Code blocks ----------
+   Token colors and line numbers come from CDN-loaded Prism CSS
+   (prism-vsc-dark-plus + prism-line-numbers). We only touch the
+   chrome around them: border, shadow, language badge, copy button.
+   Selectors are deliberately scoped to .post-content to avoid
+   conflicting with the Prism theme's own pre/code rules.        */
+
+.post-content pre[class*="language-"] {
   position: relative;
-  background: #1e1e1e;
-  color: #d4d4d4;
-  padding: 2.5rem 1rem 1rem 1rem;
   border-radius: var(--radius);
-  overflow: hidden;
-  font-family: "Cascadia Code", "Fira Code", "JetBrains Mono", "SF Mono", var(--font-mono);
-  font-size: 0.86rem;
-  line-height: 1.65;
-  margin: 0 0 1.25rem;
   border: 1px solid #2d2d30;
   box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+  margin: 0 0 1.25rem;
+  font-family: "Cascadia Code", "Fira Code", "JetBrains Mono", "SF Mono", var(--font-mono);
   font-variant-ligatures: contextual;
   tab-size: 4;
-}
-.post-content pre[class*="language-"] { background: #1e1e1e; }
-.post-content code[class*="language-"] {
   font-size: 0.86rem;
-  background: transparent;
-  color: inherit;
-  text-shadow: none;
-  font-family: inherit;
 }
 
-/* Window-chrome bar across the top of every code block (with 3 dots + lang) */
-.post-content pre::before {
-  content: "";
+/* Small uppercase language badge in the top-right corner of every code
+   block. data-lang comes from blog.js based on the markdown fence. */
+.post-content pre[data-lang]::after {
+  content: attr(data-lang);
   position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 30px;
-  background: linear-gradient(to bottom, #252526, #1e1e1e);
-  border-bottom: 1px solid #333;
-}
-.post-content pre::after {
-  content: "● ● ●";
-  position: absolute;
-  top: 7px;
-  left: 12px;
-  font-size: 0.7rem;
-  letter-spacing: 0.15rem;
-  color: #555;
+  top: 8px;
+  right: 14px;
+  font-family: "Inter", sans-serif;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #858585;
+  background: rgba(0,0,0,0.35);
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  pointer-events: none;
   z-index: 1;
 }
 
-/* Language label in the top bar */
-.post-content pre[class*="language-"] > code::before {
-  content: attr(data-lang);
-  position: absolute;
-  top: 6px;
-  right: 14px;
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: #858585;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-family: "Inter", sans-serif;
-}
-
-/* Scrollable content (only the code itself, not the chrome bar) */
-.post-content pre > code {
-  display: block;
-  overflow-x: auto;
-  padding: 0;
-  scrollbar-color: #444 transparent;
-  scrollbar-width: thin;
-}
-.post-content pre > code::-webkit-scrollbar { height: 8px; }
-.post-content pre > code::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
-
-/* Copy button */
+/* Copy button — sits next to the language badge, top-right. */
 .code-copy-btn {
   position: absolute;
-  top: 5px;
+  top: 6px;
   right: 70px;
-  background: transparent;
-  color: #858585;
-  border: 1px solid #333;
+  background: rgba(0,0,0,0.3);
+  color: #d4d4d4;
+  border: 1px solid #3c3c3c;
   border-radius: 4px;
+  font-family: "Inter", sans-serif;
   font-size: 0.7rem;
   font-weight: 600;
   padding: 2px 8px;
   cursor: pointer;
   transition: color 0.12s, background 0.12s, border-color 0.12s;
-  font-family: "Inter", sans-serif;
   z-index: 2;
 }
-.code-copy-btn:hover {
-  color: #fff;
-  background: #2a2d2e;
-  border-color: #555;
-}
+.code-copy-btn:hover { color: #fff; background: #2a2d2e; border-color: #555; }
 .code-copy-btn.copied { color: #4ec9b0; border-color: #4ec9b0; }
 
-/* ---- VS Code Dark+ token palette ---- */
-.token.comment, .token.prolog, .token.cdata { color: #6a9955; font-style: italic; }
-.token.doc-comment, .token.documentation { color: #6a9955; font-style: italic; }
-.token.punctuation { color: #d4d4d4; }
-.token.namespace { color: #4ec9b0; }
-.token.property, .token.tag, .token.constant, .token.symbol, .token.deleted { color: #9cdcfe; }
-.token.boolean, .token.number { color: #b5cea8; }
-.token.selector, .token.attr-name, .token.string, .token.char, .token.builtin, .token.inserted { color: #ce9178; }
-.token.operator, .token.entity, .token.url, .language-css .token.string, .style .token.string { color: #d4d4d4; }
-.token.atrule, .token.attr-value, .token.keyword { color: #569cd6; }
-.token.function { color: #dcdcaa; }
-.token.class-name { color: #4ec9b0; }
-.token.regex, .token.important, .token.variable { color: #d16969; }
-.token.macro, .token.preprocessor { color: #c586c0; }
-.token.directive-hash, .token.directive { color: #c586c0; }
-.token.parameter { color: #9cdcfe; }
-.token.important, .token.bold { font-weight: bold; }
-.token.italic { font-style: italic; }
-
-/* ---- Line numbers plugin: layout comes from prism-line-numbers.min.css
-       on CDN. We only override colors here, plus push the gutter below
-       our 30px chrome bar so numbers don't overlap the three-dots header. */
-.post-content pre[class*="language-"].line-numbers {
-  /* Extra top padding so the first code line clears the chrome bar. */
-  padding-top: 2.5rem;
-}
-.post-content pre.line-numbers > .line-numbers-rows {
-  top: 2.5rem;                    /* align with code (which starts below chrome bar) */
-  border-right-color: #2d2d30;    /* dark separator on dark code block */
-}
-.post-content pre.line-numbers > .line-numbers-rows > span:before {
-  color: #858585;                 /* muted gray numbers, like VS Code */
-}
-
-.post-content code {
-  font-family: var(--font-mono);
-  font-size: 0.86em;
-}
+/* Inline code (not inside a code block) keeps the brand-soft chip look */
 .post-content :not(pre) > code {
   background: var(--brand-soft);
   color: var(--brand);
@@ -1230,6 +1157,7 @@ tbody tr:hover { background: var(--interactive); }
   border-radius: 4px;
   border: 1px solid var(--brand-muted);
 }
+
 .post-content blockquote {
   border-left: 3px solid var(--border-strong);
   margin: 1rem 0;

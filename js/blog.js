@@ -51,7 +51,13 @@ function decorateCodeBlocks(container) {
     const m = (code.className || "").match(/language-(\w+)/);
     if (m) lang = m[1].toLowerCase();
     if (!code.className) code.className = `language-${lang}`;
-    code.dataset.lang = LANG_LABELS[lang] || lang.toUpperCase();
+
+    // Put data-lang on the <pre> (not <code>) so the CSS badge isn't
+    // inside the scrollable code area.
+    pre.dataset.lang = LANG_LABELS[lang] || lang.toUpperCase();
+    // Mirror language class on <pre> so Prism's theme rules (which target
+    // pre[class*="language-"]) apply consistently.
+    if (!/language-/.test(pre.className)) pre.className += ` language-${lang}`;
 
     // Opt the <pre> into the line-numbers plugin
     pre.classList.add("line-numbers");
