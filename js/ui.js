@@ -163,6 +163,12 @@ export function updateUserPill(user) {
   }
   if (pill) pill.hidden = false;
   if (signinCta) signinCta.hidden = true;
+
+  // Reveal the Dashboard nav link only for instructors / superadmins.
+  const navAdmin = $("nav-admin");
+  if (navAdmin) {
+    navAdmin.hidden = !(user.role === "instructor" || user.role === "superadmin");
+  }
 }
 
 // On every page boot, reveal the navbar Sign-in CTA when no session token
@@ -171,7 +177,12 @@ export function updateUserPill(user) {
 export function showSigninCtaIfNeeded() {
   const token = localStorage.getItem("classpp.jwt");
   const cta = $("nav-signin");
-  if (cta && !token) cta.hidden = false;
+  if (!cta || token) return;
+  // If this page already has a visible sign-in card (student / instructor
+  // sign-in flow), the navbar CTA is redundant — skip it.
+  const signinCard = document.getElementById("signin-card");
+  if (signinCard && !signinCard.hidden) return;
+  cta.hidden = false;
 }
 
 // Mount the settings drawer (theme switcher + signed-in email + sign-out).

@@ -35,7 +35,7 @@ async function showSignIn() {
 function pickGoogleTheme() {
   const t = document.documentElement.getAttribute("data-theme") || "light";
   if (t === "dark" || t === "high-contrast") return "filled_black";
-  return "outline"; // light / sepia / uwyo — blends into the card
+  return "filled_blue";
 }
 
 function renderGoogleButton(clientId) {

@@ -1204,35 +1204,19 @@ tbody tr:hover { background: var(--interactive); }
 .token.important, .token.bold { font-weight: bold; }
 .token.italic { font-style: italic; }
 
-/* ---- Line numbers plugin styling ---- */
-.post-content pre.line-numbers {
-  position: relative;
-  padding-left: 3.6rem;
-  counter-reset: linenumber;
+/* ---- Line numbers plugin: layout comes from prism-line-numbers.min.css
+       on CDN. We only override colors here, plus push the gutter below
+       our 30px chrome bar so numbers don't overlap the three-dots header. */
+.post-content pre[class*="language-"].line-numbers {
+  /* Extra top padding so the first code line clears the chrome bar. */
+  padding-top: 2.5rem;
 }
-.post-content pre.line-numbers > code { position: relative; white-space: inherit; }
-.line-numbers .line-numbers-rows {
-  position: absolute;
-  pointer-events: none;
-  top: 2.5rem; /* sit below the 30px chrome bar */
-  left: 0;
-  width: 2.8rem;
-  letter-spacing: -1px;
-  border-right: 1px solid #2d2d30;
-  user-select: none;
-  font-size: 0.86rem;
-  line-height: 1.65;
+.post-content pre.line-numbers > .line-numbers-rows {
+  top: 2.5rem;                    /* align with code (which starts below chrome bar) */
+  border-right-color: #2d2d30;    /* dark separator on dark code block */
 }
-.line-numbers-rows > span {
-  display: block;
-  counter-increment: linenumber;
-  padding-right: 0.6rem;
-  text-align: right;
-}
-.line-numbers-rows > span:before {
-  content: counter(linenumber);
-  color: #858585;
-  display: block;
+.post-content pre.line-numbers > .line-numbers-rows > span:before {
+  color: #858585;                 /* muted gray numbers, like VS Code */
 }
 
 .post-content code {

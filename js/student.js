@@ -348,9 +348,11 @@ async function showSignInState() {
 // outline = neutral light, filled_blue = brand-blue, filled_black = dark.
 function pickGoogleTheme() {
   const t = document.documentElement.getAttribute("data-theme") || "light";
+  // filled_black for dark themes; filled_blue (Google's recognizable blue
+  // pill) for everything else — outline still renders with a white-ish
+  // background, which clashes with non-white themes like sepia/uwyo.
   if (t === "dark" || t === "high-contrast") return "filled_black";
-  if (t === "uwyo" || t === "sepia") return "outline";
-  return "outline"; // light — outline blends seamlessly with the card
+  return "filled_blue";
 }
 
 function renderGoogleButton(clientId) {
