@@ -23,18 +23,11 @@
       <nav>
         <a href="/" id="nav-submit">Submit</a>
         <a href="/blog/" id="nav-notes">Notes</a>
-        <a href="/instructor/" id="nav-admin" class="button sm" style="text-decoration:none;" hidden>Dashboard →</a>
-        <div class="theme-selector-wrapper">
-          <i data-lucide="palette" style="width:15px;height:15px;color:var(--muted);flex-shrink:0;"></i>
-          <select id="theme-selector" class="theme-dropdown">
-            <option value="light">Light</option>
-            <option value="dark">Dark</option>
-            <option value="uwyo">UWYO</option>
-            <option value="sepia">Sepia</option>
-            <option value="high-contrast">High Contrast</option>
-          </select>
-        </div>
-        <a href="#" id="signout" hidden>Sign out</a>
+        <a href="/instructor/" id="nav-admin" class="button sm" style="text-decoration:none;" hidden>Dashboard</a>
+        <!-- Settings button: only shown when signed in -->
+        <button id="btn-settings" class="icon-btn" title="Settings" hidden aria-label="Settings">
+          <i data-lucide="settings" style="width:17px;height:17px;"></i>
+        </button>
       </nav>
     </div>
   </header>
@@ -42,10 +35,6 @@
   <script type="module">
     import { api } from "/js/api.js";
     api.initTheme();
-    const sel = document.getElementById("theme-selector");
-    sel.value = document.documentElement.getAttribute("data-theme") || "light";
-    sel.addEventListener("change", e => api.setTheme(e.target.value));
-    // Mark active nav
     document.getElementById("nav-submit")?.classList.add("nav-active");
   </script>
 
@@ -83,7 +72,7 @@
     <!-- Picker (multiple activities) -->
     <section id="picker" hidden>
       <h2 style="margin:0 0 0.4rem;">Open Activities</h2>
-      <p class="muted" style="margin:0 0 1.25rem;">Your instructor has multiple activities open — pick one to start.</p>
+      <p class="muted" style="margin:0 0 1.25rem;">Pick an activity to respond to.</p>
       <div id="picker-list" class="activity-picker-grid"></div>
     </section>
 
@@ -104,9 +93,7 @@
           <div id="rating-buttons" class="rating-row"></div>
           <div id="rating-labels" class="rating-label-row"></div>
         </div>
-        <button type="submit" id="rating-submit-btn" style="width:100%;margin-top:1.5rem;">
-          Submit Rating →
-        </button>
+        <button type="submit" id="rating-submit-btn" style="width:100%;margin-top:1.5rem;">Submit Rating</button>
         <div id="rating-status" class="status" role="status"></div>
       </form>
 
@@ -120,32 +107,72 @@
           <label for="file">Attachment <span class="muted">(Optional — image, PDF, or video)</span></label>
           <input type="file" id="file" accept="image/*,video/*,application/pdf" style="padding:0.5rem 0;" />
         </div>
-        <button type="submit" id="submit-btn" style="width:100%;margin-top:0.5rem;">
-          Submit Response →
-        </button>
+        <button type="submit" id="submit-btn" style="width:100%;margin-top:0.5rem;">Submit Response</button>
         <div id="status" class="status" role="status"></div>
       </form>
 
       <!-- Confirmation (shown after submit) -->
       <div id="confirm-card" class="confirm-card" hidden>
-        <div class="confirm-icon">✓</div>
+        <div class="confirm-icon"><i data-lucide="check" style="width:22px;height:22px;"></i></div>
         <h2>Response submitted!</h2>
         <p>Thanks — your instructor can see it live.</p>
       </div>
     </section>
 
     <!-- Empty / no open activities -->
-    <section id="empty" class="card" style="text-align:center;padding:2.5rem 1.5rem;" hidden>
-      <i data-lucide="clock" style="width:36px;height:36px;color:var(--subtle);margin-bottom:0.85rem;"></i>
-      <h2 style="margin:0 0 0.4rem;font-size:1.05rem;">No open activities yet</h2>
-      <p class="muted" style="margin:0 0 1.25rem;font-size:0.9rem;">Your instructor will open one when the session starts.</p>
-      <div class="refresh-countdown" id="refresh-countdown" style="justify-content:center;">
-        <div class="refresh-ring"></div>
-        <span>Checking again in <strong id="countdown-num">20</strong>s</span>
+    <section id="empty" class="card" style="padding:2rem 1.5rem;" hidden>
+      <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0.35rem;">
+        <i data-lucide="clock" style="width:18px;height:18px;color:var(--subtle);flex-shrink:0;"></i>
+        <h2 style="margin:0;font-size:1rem;">No open activities yet</h2>
+      </div>
+      <p class="muted" style="margin:0 0 0 2rem;font-size:0.9rem;">You'll be notified as soon as your instructor opens one — no need to refresh.</p>
+      <div style="margin-top:1rem;margin-left:2rem;display:flex;align-items:center;gap:0.5rem;font-size:0.8rem;color:var(--subtle);">
+        <i data-lucide="radio" style="width:13px;height:13px;"></i>
+        <span>Listening for live updates…</span>
       </div>
     </section>
 
   </main>
+
+  <!-- Settings modal (requires login) -->
+  <div id="modal-overlay-settings" class="modal-overlay" hidden></div>
+  <div id="modal-settings" class="modal-panel" hidden>
+    <div class="modal-panel-header">
+      <span style="font-weight:700;font-size:0.95rem;">Settings</span>
+      <button id="close-settings" class="icon-btn" aria-label="Close"><i data-lucide="x" style="width:16px;height:16px;"></i></button>
+    </div>
+
+    <div class="modal-panel-body">
+      <div class="settings-row">
+        <label class="settings-label" for="theme-selector">
+          <i data-lucide="palette" style="width:15px;height:15px;"></i>
+          Theme
+        </label>
+        <select id="theme-selector" class="settings-select">
+          <option value="light">Light</option>
+          <option value="dark">Dark</option>
+          <option value="uwyo">UWYO</option>
+          <option value="sepia">Sepia</option>
+          <option value="high-contrast">High Contrast</option>
+        </select>
+      </div>
+
+      <hr style="border:0;border-top:1px solid var(--border);margin:0.75rem 0;" />
+
+      <div class="settings-row" style="opacity:.7;font-size:0.82rem;">
+        <label class="settings-label">
+          <i data-lucide="user" style="width:15px;height:15px;"></i>
+          Signed in as
+        </label>
+        <span id="settings-email" class="muted" style="font-size:0.82rem;word-break:break-all;text-align:right;"></span>
+      </div>
+
+      <button id="signout" class="secondary" style="width:100%;margin-top:0.75rem;">
+        <i data-lucide="log-out" style="width:15px;height:15px;"></i>
+        Sign out
+      </button>
+    </div>
+  </div>
 
   <footer class="site">
     <div class="inner">
@@ -163,6 +190,43 @@
   </footer>
 
   <script type="module" src="/js/student.js"></script>
-  <script>lucide.createIcons();</script>
+  <script>
+    lucide.createIcons();
+
+    // Settings modal wiring (theme select, open/close)
+    (function () {
+      const btn = document.getElementById("btn-settings");
+      const modal = document.getElementById("modal-settings");
+      const overlay = document.getElementById("modal-overlay-settings");
+      const closeBtn = document.getElementById("close-settings");
+      const sel = document.getElementById("theme-selector");
+
+      // Apply saved theme and keep select in sync
+      import("/js/api.js").then(({ api }) => {
+        api.initTheme();
+        sel.value = document.documentElement.getAttribute("data-theme") || "light";
+      });
+
+      sel.addEventListener("change", () => {
+        import("/js/api.js").then(({ api }) => api.setTheme(sel.value));
+      });
+
+      function openSettings() {
+        import("/js/api.js").then(({ session }) => {
+          const u = session.user;
+          if (u) document.getElementById("settings-email").textContent = u.email;
+        });
+        sel.value = document.documentElement.getAttribute("data-theme") || "light";
+        modal.hidden = false;
+        overlay.hidden = false;
+      }
+      function closeSettings() { modal.hidden = true; overlay.hidden = true; }
+
+      btn.addEventListener("click", openSettings);
+      closeBtn.addEventListener("click", closeSettings);
+      overlay.addEventListener("click", closeSettings);
+      document.addEventListener("keydown", e => { if (e.key === "Escape") closeSettings(); });
+    })();
+  </script>
 </body>
 </html>

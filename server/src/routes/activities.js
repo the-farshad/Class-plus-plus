@@ -4,6 +4,32 @@ import { requireAuth, requireInstructor } from "../auth.js";
 
 export const activitiesRouter = Router();
 
+// ---------- SSE broadcast ----------
+const sseClients = new Set();
+
+function notifySSE() {
+  const msg = `data: ${JSON.stringify({ type: "activities_changed" })}\n\n`;
+  sseClients.forEach(res => { try { res.write(msg); } catch { sseClients.delete(res); } });
+}
+
+// Public endpoint — only sends "something changed", no data, no auth needed.
+activitiesRouter.get("/events", (req, res) => {
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+  res.setHeader("X-Accel-Buffering", "no"); // disable nginx/caddy buffering
+  res.flushHeaders();
+  res.write(`data: ${JSON.stringify({ type: "connected" })}\n\n`);
+
+  // Keep-alive ping every 25 s so connections don't time out
+  const ping = setInterval(() => {
+    try { res.write(": ping\n\n"); } catch { clearInterval(ping); sseClients.delete(res); }
+  }, 25_000);
+
+  sseClients.add(res);
+  req.on("close", () => { clearInterval(ping); sseClients.delete(res); });
+});
+
 // Public to authed users — students need to pick activities.
 activitiesRouter.get("/", requireAuth, (req, res) => {
   const { class_id } = req.query;
@@ -51,8 +77,9 @@ activitiesRouter.post("/admin", requireInstructor, (req, res) => {
   const prompt = String(req.body && req.body.prompt || "").trim();
   const assetUrl = req.body && req.body.asset_url ? String(req.body.asset_url) : null;
   const classId = req.body && req.body.class_id ? parseInt(req.body.class_id, 10) : null;
-  const type = req.body && req.body.type === "poll" ? "poll" : "submission";
-  const pollOptions = type === "poll" ? JSON.stringify(req.body.poll_options || []) : null;
+  const VALID_TYPES = new Set(["submission", "poll", "poll_pie", "rating", "word_cloud"]);
+  const type = VALID_TYPES.has(req.body?.type) ? req.body.type : "submission";
+  const pollOptions = (type === "poll" || type === "poll_pie") ? JSON.stringify(req.body.poll_options || []) : null;
   const difficulty = req.body && req.body.difficulty ? req.body.difficulty : 'easy';
   const scheduledAt = req.body && req.body.scheduled_at ? parseInt(req.body.scheduled_at, 10) : null;
 
@@ -61,6 +88,7 @@ activitiesRouter.post("/admin", requireInstructor, (req, res) => {
     "INSERT INTO activities (prompt, status, asset_url, class_id, type, poll_options, difficulty, scheduled_at, created_at) VALUES (?, 'open', ?, ?, ?, ?, ?, ?, ?)"
   ).run(prompt, assetUrl, classId, type, pollOptions, difficulty, scheduledAt, Date.now());
   res.json({ ok: true, activity_id: info.lastInsertRowid });
+  notifySSE();
 });
 
 activitiesRouter.patch("/admin/:id", requireInstructor, (req, res) => {
@@ -88,6 +116,7 @@ activitiesRouter.patch("/admin/:id", requireInstructor, (req, res) => {
     
     if (info.changes === 0) return res.status(404).json({ ok: false, error: "Not found" });
     res.json({ ok: true });
+    notifySSE();
   } catch (err) {
     res.status(500).json({ ok: false, error: err.message });
   }

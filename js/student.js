@@ -1,4 +1,4 @@
-import { api, session } from "/js/api.js";
+import { api, session, API_BASE_URL } from "/js/api.js";
 
 const $ = (id) => document.getElementById(id);
 const show = (id) => { const el = $(id); if (el) el.hidden = false; };
@@ -11,40 +11,46 @@ function setStatusEl(id, msg, kind = "") {
   el.className = "status" + (kind ? ` ${kind}` : "");
 }
 
-const TYPE_ICONS = {
-  poll: "📊", poll_pie: "🥧", rating: "⭐", word_cloud: "☁️", submission: "📝",
-};
 const TYPE_LABELS = {
   poll: "Poll", poll_pie: "Poll", rating: "Rating", word_cloud: "Word Cloud", submission: "Submission",
 };
 
-// ---- Auto-refresh for empty state ----
-let countdownTimer = null;
-let countdownSec = 20;
+// ---- SSE live updates ----
+let sseSource = null;
+let sseRetryTimer = null;
+let fallbackTimer = null;
 
-function startCountdown() {
-  countdownSec = 20;
-  updateCountdown();
-  clearInterval(countdownTimer);
-  countdownTimer = setInterval(async () => {
-    countdownSec--;
-    updateCountdown();
-    if (countdownSec <= 0) {
-      clearInterval(countdownTimer);
-      await loadActivities();
-    }
-  }, 1000);
+function connectSSE() {
+  if (sseSource) return; // already connected
+  sseSource = new EventSource(`${API_BASE_URL}/activities/events`);
+
+  sseSource.onmessage = (e) => {
+    try {
+      const data = JSON.parse(e.data);
+      if (data.type === "activities_changed") loadActivities();
+    } catch { /* ignore parse errors */ }
+  };
+
+  sseSource.addEventListener("error", () => {
+    sseSource.close();
+    sseSource = null;
+    // Retry SSE after 5 s; while waiting, fall back to a single 5 s poll
+    clearTimeout(sseRetryTimer);
+    sseRetryTimer = setTimeout(connectSSE, 5000);
+    // Fallback poll if no server push arrives
+    clearTimeout(fallbackTimer);
+    fallbackTimer = setTimeout(loadActivities, 5000);
+  });
 }
 
-function updateCountdown() {
-  const el = $("countdown-num");
-  if (el) el.textContent = countdownSec;
+function disconnectSSE() {
+  if (sseSource) { sseSource.close(); sseSource = null; }
+  clearTimeout(sseRetryTimer);
+  clearTimeout(fallbackTimer);
 }
 
-function stopCountdown() {
-  clearInterval(countdownTimer);
-  countdownTimer = null;
-}
+// Kept for error-state display only (no longer used for refresh)
+function stopCountdown() { /* noop — SSE handles refresh now */ }
 
 // ---- Activity display ----
 
@@ -60,7 +66,7 @@ function showActivity(a) {
       <div style="flex:1;">
         <h2 id="prompt-text" style="margin:0;font-size:1.4rem;line-height:1.3;">${escapeHTML(a.prompt)}</h2>
       </div>
-      <span class="tag poll" id="activity-type-tag">${TYPE_ICONS[a.type] || ""} ${TYPE_LABELS[a.type] || a.type}</span>
+      <span class="tag poll" id="activity-type-tag">${TYPE_LABELS[a.type] || a.type}</span>
     </div>`;
 
   const fc = $("form-card");
@@ -158,8 +164,9 @@ function showPicker(activities) {
     const card = document.createElement("button");
     card.className = "picker-card";
     card.type = "button";
+    const PICKER_ICON = { poll:"bar-chart-2", poll_pie:"pie-chart", rating:"star", word_cloud:"cloud", submission:"file-text" };
     card.innerHTML = `
-      <div class="picker-card-icon">${TYPE_ICONS[a.type] || "📋"}</div>
+      <div class="picker-card-icon"><i data-lucide="${PICKER_ICON[a.type]||"file-text"}" style="width:22px;height:22px;color:var(--brand);"></i></div>
       <div class="picker-card-title">${escapeHTML(a.prompt)}</div>
       <div class="picker-card-type">${TYPE_LABELS[a.type] || a.type}</div>`;
     card.addEventListener("click", () => showActivity(a));
@@ -189,7 +196,7 @@ async function loadActivities() {
 
     if (!res.activities.length) {
       show("empty");
-      startCountdown();
+      // SSE will wake us when an activity opens — no countdown needed
       return;
     }
     if (res.activities.length === 1) {
@@ -206,7 +213,6 @@ async function loadActivities() {
       ? "Check your connection — the server may be temporarily unavailable."
       : err.message;
     show("empty");
-    startCountdown();
   }
 }
 
@@ -214,15 +220,17 @@ async function showSignedInState() {
   const u = session.user;
   if (!u) return;
 
-  // Show session banner
   const metaEl = $("hero-meta");
   const whoEl = $("who-am-i");
   if (whoEl) whoEl.textContent = u.email;
   if (metaEl) metaEl.hidden = false;
+  show("btn-settings"); // show gear icon now that user is signed in
 
   if (u.role === "instructor" || u.role === "superadmin") {
     show("nav-admin");
   }
+
+  connectSSE(); // start live push before first load
   await loadActivities();
 }
 
@@ -261,8 +269,8 @@ function renderGoogleButton(clientId) {
   tryRender();
 }
 
-$("signout").addEventListener("click", e => {
-  e.preventDefault();
+$("signout").addEventListener("click", () => {
+  disconnectSSE();
   api.signOut();
   location.reload();
 });

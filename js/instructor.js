@@ -73,7 +73,7 @@ function enterDashboard() {
   hide("signin-card"); hide("forbidden-card");
   show("dashboard");
   $("who-am-i").textContent = u.email;
-  $("signout").hidden = false;
+  show("signout");
 
   initTabs();
   loadStats();
@@ -241,11 +241,42 @@ function initTabs() {
       const target = e.currentTarget;
       target.classList.add("active");
       $(target.dataset.tab).classList.add("active");
+      // Refresh overview when its tab is activated
+      if (target.dataset.tab === "tab-overview") loadStats();
     });
   });
 }
 
-$("signout").addEventListener("click", (e) => { e.preventDefault(); api.signOut(); location.reload(); });
+// ---------- Settings modal ----------
+
+(function () {
+  const btnSettings = $("btn-settings");
+  const modal = $("modal-settings");
+  const overlay = $("modal-overlay-settings");
+  const closeBtn = $("close-settings");
+  const sel = $("theme-selector");
+
+  sel.value = document.documentElement.getAttribute("data-theme") || "light";
+  sel.addEventListener("change", () => api.setTheme(sel.value));
+
+  function openSettings() {
+    const u = session.user;
+    if (u) {
+      const emailEl = $("settings-email");
+      if (emailEl) emailEl.textContent = u.email;
+    }
+    sel.value = document.documentElement.getAttribute("data-theme") || "light";
+    modal.hidden = false;
+    overlay.hidden = false;
+  }
+  function closeSettings() { modal.hidden = true; overlay.hidden = true; }
+
+  btnSettings.addEventListener("click", openSettings);
+  closeBtn.addEventListener("click", closeSettings);
+  overlay.addEventListener("click", closeSettings);
+})();
+
+$("signout").addEventListener("click", () => { api.signOut(); location.reload(); });
 $("forbidden-signout").addEventListener("click", () => { api.signOut(); location.reload(); });
 
 // ---------- Classes ----------
@@ -509,11 +540,11 @@ async function loadActivities() {
 }
 
 const TYPE_LABELS = {
-  submission: "📝 Submission",
-  poll: "📊 Poll (Bar)",
-  poll_pie: "🥧 Poll (Pie)",
-  rating: "⭐ Rating",
-  word_cloud: "☁️ Word Cloud",
+  submission: "Submission",
+  poll: "Poll (Bar)",
+  poll_pie: "Poll (Pie)",
+  rating: "Rating",
+  word_cloud: "Word Cloud",
 };
 
 function renderActivities(list_data) {
