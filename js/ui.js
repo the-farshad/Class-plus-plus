@@ -102,12 +102,31 @@ export async function renderVersion() {
   });
 }
 
+// Wire any .float-field-toggle buttons (the eye icon inside password
+// inputs) to toggle the input type between password and text. Idempotent.
+export function wirePasswordToggles(root = document) {
+  root.querySelectorAll(".float-field-toggle").forEach((btn) => {
+    if (btn.dataset.wired) return;
+    btn.dataset.wired = "1";
+    const targetId = btn.dataset.toggle;
+    const input = document.getElementById(targetId);
+    if (!input) return;
+    btn.addEventListener("click", () => {
+      const showing = input.type === "text";
+      input.type = showing ? "password" : "text";
+      btn.innerHTML = `<i data-lucide="${showing ? "eye" : "eye-off"}"></i>`;
+      if (window.lucide) window.lucide.createIcons({ root: btn });
+    });
+  });
+}
+
 // One-call page bootstrap: render icons, mark regions, inject skip link.
 // Safe to call multiple times.
 export function bootPage() {
   ensureSkipLink();
   renderVersion();
   showSigninCtaIfNeeded();
+  wirePasswordToggles();
   // Populate the user pill from localStorage on every page so signed-in
   // users never see "Guest" on pages that don't have their own auth flow
   // (e.g. /blog/, /blog/post.html, /404.html). Pages that do drive auth

@@ -46,6 +46,12 @@ async function showSignIn() {
       }
     });
   }
+
+  // Google sign-in stays available as a secondary option for instructors.
+  try {
+    const cfg = await api.authConfig();
+    if (cfg.google_client_id) renderGoogleButton(cfg.google_client_id);
+  } catch { /* server unreachable — password form may still work via cached session */ }
 }
 
 // Pick a Google button theme that visually matches the active site theme.

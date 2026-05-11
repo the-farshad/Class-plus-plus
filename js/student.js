@@ -337,6 +337,9 @@ async function showSignInState() {
   hide("session-hero");
   show("landing-hero");
   show("signin-card");
+  // Make sure the email/password label-floating works on autofilled values:
+  // Chrome's autofill sometimes doesn't dispatch a focus event. Trigger it.
+  setTimeout(() => $("pw-email")?.focus(), 50);
 
   // Wire the email + password form once. Idempotent.
   const form = $("password-form");
@@ -361,6 +364,13 @@ async function showSignInState() {
       }
     });
   }
+
+  // Render the Google button as a secondary option (for instructors /
+  // guests with Google accounts). Pulls the client ID from /auth/config.
+  try {
+    const cfg = await api.authConfig();
+    if (cfg.google_client_id) renderGoogleButton(cfg.google_client_id);
+  } catch { /* offline — password form still works if the user has a cached session */ }
 }
 
 // Pick a Google button theme that visually matches the current site theme.
