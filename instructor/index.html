@@ -101,18 +101,30 @@
               <button id="refresh-stats" class="secondary sm">Refresh</button>
             </div>
           </div>
-          <div class="grid-2" style="margin-bottom: 2rem;">
-            <div class="card" style="margin-bottom: 0;">
-              <h3 class="muted" style="margin: 0 0 0.5rem; font-size: 0.9rem;">Total Students</h3>
-              <div id="stat-students" style="font-size: 2.5rem; font-weight: 800; color: var(--brand-1);">--</div>
+          <div class="grid-2" style="margin-bottom: 1.5rem;">
+            <div class="card" style="margin-bottom:0;">
+              <p class="muted" style="margin:0 0 0.4rem;font-size:0.8rem;text-transform:uppercase;letter-spacing:0.06em;font-weight:700;">Total Students</p>
+              <div id="stat-students" style="font-size:2.8rem;font-weight:800;color:var(--brand-1);line-height:1;">--</div>
             </div>
-            <div class="card" style="margin-bottom: 0;">
-              <h3 class="muted" style="margin: 0 0 0.5rem; font-size: 0.9rem;">Open Activities</h3>
-              <div id="stat-activities" style="font-size: 2.5rem; font-weight: 800; color: var(--warning);">--</div>
+            <div class="card" style="margin-bottom:0;">
+              <p class="muted" style="margin:0 0 0.4rem;font-size:0.8rem;text-transform:uppercase;letter-spacing:0.06em;font-weight:700;">Currently Open</p>
+              <div id="stat-activities" style="font-size:2.8rem;font-weight:800;color:var(--success);line-height:1;">--</div>
             </div>
-            <div class="card" style="margin-bottom: 0; grid-column: 1 / -1;">
-              <h3 class="muted" style="margin: 0 0 1rem; font-size: 0.9rem;">Participation Trends</h3>
-              <canvas id="participation-chart" height="80"></canvas>
+            <div class="card" style="margin-bottom:0;">
+              <p class="muted" style="margin:0 0 0.4rem;font-size:0.8rem;text-transform:uppercase;letter-spacing:0.06em;font-weight:700;">Total Activities</p>
+              <div id="stat-total-activities" style="font-size:2.8rem;font-weight:800;color:var(--brand-2);line-height:1;">--</div>
+            </div>
+            <div class="card" style="margin-bottom:0;">
+              <p class="muted" style="margin:0 0 0.4rem;font-size:0.8rem;text-transform:uppercase;letter-spacing:0.06em;font-weight:700;">Open Activities</p>
+              <div id="stat-open-activities" style="font-size:2.8rem;font-weight:800;color:var(--warning);line-height:1;">--</div>
+            </div>
+          </div>
+          <div class="card" style="margin-bottom:1.5rem;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+              <p class="muted" style="margin:0;font-size:0.8rem;text-transform:uppercase;letter-spacing:0.06em;font-weight:700;">Activities Created — Last 30 Days</p>
+            </div>
+            <div style="height:180px;">
+              <canvas id="participation-chart"></canvas>
             </div>
           </div>
         </section>

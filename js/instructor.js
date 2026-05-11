@@ -88,32 +88,112 @@ function enterDashboard() {
 
 // ---------- Stats & Overview ----------
 
+/** Build rolling-30-day labels + per-day activity counts from the activities cache. */
+function buildParticipationDataset(activities) {
+  // Generate last-30-day date labels
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const labels = [];
+  const counts = [];
+
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(today.getDate() - i);
+    const key = d.toISOString().slice(0, 10); // "YYYY-MM-DD"
+    labels.push(
+      i === 0 ? "Today" :
+      i === 1 ? "Yesterday" :
+      d.toLocaleDateString(undefined, { month: "short", day: "numeric" })
+    );
+    const dayCount = activities.filter(a => {
+      if (!a.created_at) return false;
+      return new Date(a.created_at).toISOString().slice(0, 10) === key;
+    }).length;
+    counts.push(dayCount);
+  }
+  return { labels, counts };
+}
+
 async function loadStats() {
   try {
-    const res = await api.getStats();
-    $("stat-students").textContent = res.stats.students;
-    $("stat-activities").textContent = res.stats.activities;
+    const [statsRes, activitiesRes] = await Promise.all([
+      api.getStats(),
+      api.listAllActivities(null),
+    ]);
+
+    $("stat-students").textContent = statsRes.stats.students;
+    $("stat-activities").textContent = statsRes.stats.activities;
+
+    // Update cache so filter dropdown also reflects latest
+    activitiesCache = activitiesRes.activities;
+
+    // Build real 30-day dataset
+    const { labels, counts } = buildParticipationDataset(activitiesRes.activities);
+
+    // Stat card: total activities created
+    const totalCreated = activitiesRes.activities.length;
+    const openCount = activitiesRes.activities.filter(a => a.status === "open").length;
+
+    // Add extra stat chips if elements exist
+    const statTotalEl = $("stat-total-activities");
+    if (statTotalEl) statTotalEl.textContent = totalCreated;
+    const statOpenEl = $("stat-open-activities");
+    if (statOpenEl) statOpenEl.textContent = openCount;
 
     if (participationChart) participationChart.destroy();
     const ctx = $("participation-chart").getContext("2d");
+
+    // Use CSS variable colours so chart respects theme
+    const style = getComputedStyle(document.documentElement);
+    const brand1 = style.getPropertyValue("--brand-1").trim() || "#2563eb";
+    const brand2 = style.getPropertyValue("--brand-2").trim() || "#7c3aed";
+
     participationChart = new Chart(ctx, {
       type: "bar",
       data: {
-        labels: ["Mon", "Tue", "Wed", "Thu", "Fri"],
+        labels,
         datasets: [{
-          label: "Submissions",
-          data: [12, 19, 3, 5, 2],
-          backgroundColor: "rgba(79, 70, 229, 0.5)",
-          borderColor: "rgba(79, 70, 229, 1)",
-          borderWidth: 1,
-          borderRadius: 4,
+          label: "Activities created",
+          data: counts,
+          backgroundColor: `color-mix(in srgb, ${brand1} 50%, transparent)`,
+          borderColor: brand1,
+          borderWidth: 0,
+          borderRadius: 5,
+          borderSkipped: false,
         }],
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        scales: { y: { beginAtZero: true } },
-        plugins: { legend: { display: false } },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: {
+              maxTicksLimit: 10,
+              color: style.getPropertyValue("--muted").trim() || "#6b7280",
+              font: { size: 11 },
+            },
+          },
+          y: {
+            beginAtZero: true,
+            ticks: {
+              stepSize: 1,
+              color: style.getPropertyValue("--muted").trim() || "#6b7280",
+              font: { size: 11 },
+            },
+            grid: {
+              color: style.getPropertyValue("--border").trim() || "#e5e7eb",
+            },
+          },
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: ctx => ` ${ctx.parsed.y} activit${ctx.parsed.y !== 1 ? "ies" : "y"}`,
+            },
+          },
+        },
       },
     });
 
