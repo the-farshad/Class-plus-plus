@@ -74,10 +74,39 @@ function patchLucide() {
   window.__classpp_lucide_patched = true;
 }
 
+// Render the current build number into every [data-version] slot on the page.
+// Also injects a small build chip into .footer-meta containers that don't
+// already advertise a version, so any footer shows it without HTML edits.
+export async function renderVersion() {
+  let v;
+  try {
+    ({ VERSION: v } = await import("/js/version.js"));
+  } catch {
+    return;
+  }
+  const label = `v${v.version}`;
+  const tooltip = `Build ${v.build} · ${v.builtAt}`;
+
+  document.querySelectorAll("[data-version]").forEach((el) => {
+    el.textContent = label;
+    el.title = tooltip;
+  });
+
+  document.querySelectorAll(".footer-meta").forEach((el) => {
+    if (el.querySelector("[data-version]")) return;
+    const chip = document.createElement("span");
+    chip.dataset.version = "";
+    chip.textContent = label;
+    chip.title = tooltip;
+    el.appendChild(chip);
+  });
+}
+
 // One-call page bootstrap: render icons, mark regions, inject skip link.
 // Safe to call multiple times.
 export function bootPage() {
   ensureSkipLink();
+  renderVersion();
   // Lucide loads asynchronously via the CDN <script> tag. If it isn't ready yet
   // we poll briefly — the icons placeholder elements stay hidden via CSS until
   // SVGs are injected, so a 50–200ms delay is invisible.
