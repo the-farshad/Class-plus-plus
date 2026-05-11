@@ -653,7 +653,21 @@ function renderActivities(list_data) {
     qrBtn.title = "QR Code / Copy link";
     qrBtn.addEventListener("click", () => showQR(a));
 
-    actions.append(toggle, view, editBtn, qrBtn);
+    const delBtn2 = document.createElement("button");
+    delBtn2.className = "secondary sm danger";
+    delBtn2.innerHTML = `<i data-lucide="trash-2" style="width:13px;height:13px;"></i>`;
+    delBtn2.title = "Delete activity";
+    delBtn2.addEventListener("click", async () => {
+      if (!confirm(`Delete "${a.prompt}"?\nThis also removes all submissions and votes.`)) return;
+      try {
+        await api.deleteActivity(a.activity_id);
+        loadActivities();
+      } catch (err) {
+        alert("Delete failed: " + err.message);
+      }
+    });
+
+    actions.append(toggle, view, editBtn, qrBtn, delBtn2);
     li.append(left, actions);
     list.appendChild(li);
   });

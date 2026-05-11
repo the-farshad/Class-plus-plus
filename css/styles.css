@@ -1113,6 +1113,13 @@ tbody tr:hover { background: var(--interactive); }
 #live-badge { font-size: 0.68rem; letter-spacing: 0.08em; }
 
 /* ---------- Icon Button ---------- */
+button.danger, .button.danger {
+  color: var(--error, #dc2626);
+  border-color: var(--error-soft, #fee2e2);
+  background: var(--error-soft, #fee2e2);
+}
+button.danger:hover { opacity: 1; background: var(--error, #dc2626); color: #fff; border-color: var(--error, #dc2626); }
+
 .icon-btn {
   display: inline-flex;
   align-items: center;

@@ -117,6 +117,7 @@ export const api = {
     patchJSON(`/activities/admin/${encodeURIComponent(id)}`, { status }),
   updateActivity: (id, payload) =>
     patchJSON(`/activities/admin/${encodeURIComponent(id)}`, payload),
+  deleteActivity: (id) => del(`/activities/admin/${encodeURIComponent(id)}`),
   vote: (id, optionIndex) => postJSON(`/activities/${encodeURIComponent(id)}/vote`, { option_index: optionIndex }),
   getResults: (id) => get(`/activities/${encodeURIComponent(id)}/results`),
 

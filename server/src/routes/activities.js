@@ -122,6 +122,17 @@ activitiesRouter.patch("/admin/:id", requireInstructor, (req, res) => {
   }
 });
 
+activitiesRouter.delete("/admin/:id", requireInstructor, (req, res) => {
+  try {
+    const info = db.prepare("DELETE FROM activities WHERE id = ?").run(req.params.id);
+    if (info.changes === 0) return res.status(404).json({ ok: false, error: "Not found" });
+    res.json({ ok: true });
+    notifySSE();
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
 // Vote in a poll
 activitiesRouter.post("/:id/vote", requireAuth, (req, res) => {
   const { option_index } = req.body;
