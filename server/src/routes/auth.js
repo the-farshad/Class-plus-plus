@@ -3,7 +3,7 @@ import rateLimit from "express-rate-limit";
 import { config } from "../config.js";
 import {
   verifyGoogleIdToken, verifyMicrosoftIdToken,
-  emailIsAllowed, roleFor, issueAppJwt,
+  verifyEmailPassword, emailIsAllowed, roleFor, issueAppJwt,
 } from "../auth.js";
 
 export const authRouter = Router();
@@ -45,6 +45,30 @@ authRouter.post("/google", limiter, async (req, res) => {
   } catch (err) {
     res.status(401).json({ ok: false, error: err.message || "Verification failed" });
   }
+});
+
+// Email + admin-generated password sign-in.
+// The instructor creates a temp password for a student via the dashboard;
+// the student then signs in here with their email + that password.
+authRouter.post("/password", limiter, (req, res) => {
+  const email = (req.body && req.body.email || "").trim().toLowerCase();
+  const password = req.body && req.body.password;
+  if (!email || !password) {
+    return res.status(400).json({ ok: false, error: "Email and password are required" });
+  }
+  if (!emailIsAllowed(email)) {
+    return res.status(403).json({ ok: false, error: "Email not authorized" });
+  }
+  if (!verifyEmailPassword(email, password)) {
+    return res.status(401).json({ ok: false, error: "Invalid email or password" });
+  }
+  const role = roleFor(email);
+  const token = issueAppJwt({ email, role });
+  res.json({
+    ok: true,
+    token,
+    user: { email, role, name: null },
+  });
 });
 
 // Microsoft / Azure AD sign-in (the path UWYO students will use, since UWYO

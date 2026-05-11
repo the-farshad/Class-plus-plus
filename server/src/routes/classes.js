@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db } from "../db.js";
-import { requireInstructor } from "../auth.js";
+import { requireInstructor, setPassword, generateTempPassword, hasPassword } from "../auth.js";
 
 export const classesRouter = Router();
 
@@ -88,6 +88,32 @@ classesRouter.post("/:id/students/bulk", (req, res) => {
   } catch (err) {
     res.status(500).json({ ok: false, error: err.message });
   }
+});
+
+// Generate (or rotate) a temporary password for a student in this class.
+// Returns the plaintext password ONCE — the admin must copy it now.
+classesRouter.post("/:id/students/:email/password", (req, res) => {
+  try {
+    const email = decodeURIComponent(req.params.email).toLowerCase();
+    // Sanity: student must be in this class roster before we issue a credential.
+    const row = db.prepare(
+      "SELECT 1 FROM class_students WHERE class_id = ? AND student_email = ?"
+    ).get(req.params.id, email);
+    if (!row) return res.status(404).json({ ok: false, error: "Student not in this class" });
+
+    const password = generateTempPassword(12);
+    setPassword(email, password, req.user.email, /* must_change */ 0);
+    res.json({ ok: true, email, password });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// Reports whether a given student already has a password set, so the
+// roster UI can show "Generate" vs. "Rotate".
+classesRouter.get("/:id/students/:email/password-status", (req, res) => {
+  const email = decodeURIComponent(req.params.email).toLowerCase();
+  res.json({ ok: true, has_password: hasPassword(email) });
 });
 
 classesRouter.delete("/:id/students/:email", (req, res) => {

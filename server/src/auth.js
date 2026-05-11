@@ -1,6 +1,8 @@
 import { OAuth2Client } from "google-auth-library";
 import jwt from "jsonwebtoken";
 import jwksClient from "jwks-rsa";
+import bcrypt from "bcryptjs";
+import crypto from "node:crypto";
 import { config } from "./config.js";
 import { db } from "./db.js";
 
@@ -79,6 +81,46 @@ export async function verifyMicrosoftIdToken(idToken) {
   });
 }
 
+// ---------- Email + admin-generated password ----------
+// Generates an easy-to-read random temporary password
+// (no ambiguous chars like 0/O/1/I/l).
+const PWD_ALPHABET = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+export function generateTempPassword(len = 12) {
+  const bytes = crypto.randomBytes(len);
+  let out = "";
+  for (let i = 0; i < len; i++) out += PWD_ALPHABET[bytes[i] % PWD_ALPHABET.length];
+  return out;
+}
+
+// Stores (or overwrites) a password hash for the given email.
+// Returns the plaintext password so the admin can share it once.
+export function setPassword(email, password, setBy = null, mustChange = 1) {
+  const hash = bcrypt.hashSync(password, 10);
+  db.prepare(`
+    INSERT INTO user_passwords (email, password_hash, set_at, set_by, must_change)
+    VALUES (?, ?, ?, ?, ?)
+    ON CONFLICT(email) DO UPDATE SET
+      password_hash = excluded.password_hash,
+      set_at = excluded.set_at,
+      set_by = excluded.set_by,
+      must_change = excluded.must_change
+  `).run(email.toLowerCase(), hash, Date.now(), setBy ? setBy.toLowerCase() : null, mustChange);
+  return password;
+}
+
+export function verifyEmailPassword(email, password) {
+  const row = db.prepare("SELECT password_hash FROM user_passwords WHERE email = ?")
+    .get(email.toLowerCase());
+  if (!row) return false;
+  return bcrypt.compareSync(password, row.password_hash);
+}
+
+export function hasPassword(email) {
+  const row = db.prepare("SELECT 1 FROM user_passwords WHERE email = ?")
+    .get(email.toLowerCase());
+  return !!row;
+}
+
 export function emailIsAllowed(email) {
   const e = email.toLowerCase();
   if (e.endsWith(`@${config.allowedDomain.toLowerCase()}`)) return true;
@@ -86,6 +128,10 @@ export function emailIsAllowed(email) {
   if (allow) return true;
   const inst = db.prepare("SELECT 1 FROM instructors WHERE email = ?").get(e);
   if (inst) return true;
+  // Anyone on any class roster is implicitly allowed — the instructor
+  // already vouched for them by adding them to a class.
+  const roster = db.prepare("SELECT 1 FROM class_students WHERE student_email = ?").get(e);
+  if (roster) return true;
   return false;
 }
 

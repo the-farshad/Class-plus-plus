@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@600;700;800&family=Lora:wght@400;500;600&family=Ubuntu:wght@400;500;700&family=Roboto+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/styles.css?v=57" />
+  <link rel="stylesheet" href="/css/styles.css?v=58" />
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js" defer></script>
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -50,7 +50,7 @@
   </header>
 
   <script type="module">
-    import { api } from "/js/api.js?v=57";
+    import { api } from "/js/api.js?v=58";
     api.initTheme();
     document.getElementById("nav-submit")?.classList.add("nav-active");
   </script>
@@ -76,21 +76,20 @@
     <section id="signin-card" class="signin-hero" hidden>
       <div class="signin-hero-mark">C++</div>
       <h2>Sign in to participate</h2>
-      <p>Use your <code id="domain-hint">@uwyo.edu</code> account.</p>
+      <p>Use the email + password your instructor gave you.</p>
 
-      <button id="btn-ms-signin" class="ms-signin-btn" hidden>
-        <svg viewBox="0 0 21 21" aria-hidden="true" width="18" height="18">
-          <rect x="1" y="1" width="9" height="9" fill="#f25022"/>
-          <rect x="11" y="1" width="9" height="9" fill="#7fba00"/>
-          <rect x="1" y="11" width="9" height="9" fill="#00a4ef"/>
-          <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
-        </svg>
-        Sign in with your UWYO email
-      </button>
+      <form id="password-form" class="password-form" autocomplete="on">
+        <div class="field">
+          <label for="pw-email">Email</label>
+          <input type="email" id="pw-email" autocomplete="username" required placeholder="you@uwyo.edu" />
+        </div>
+        <div class="field">
+          <label for="pw-password">Password</label>
+          <input type="password" id="pw-password" autocomplete="current-password" required placeholder="Enter the password your instructor shared" />
+        </div>
+        <button type="submit" id="pw-submit" style="width:100%;margin-top:0.25rem;">Sign in</button>
+      </form>
 
-      <div class="signin-or" id="signin-or" hidden><span>or</span></div>
-
-      <div class="g-button-wrap" id="g_id_signin"></div>
       <div id="signin-status" class="status"></div>
     </section>
 
@@ -208,9 +207,9 @@
     </div>
   </div>
 
-  <script type="module" src="/js/student.js?v=57"></script>
+  <script type="module" src="/js/student.js?v=58"></script>
   <script type="module">
-    import { bootPage } from "/js/ui.js?v=57";
+    import { bootPage } from "/js/ui.js?v=58";
     bootPage();
   </script>
 </body>

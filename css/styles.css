@@ -1336,6 +1336,13 @@ tbody tr:hover { background: var(--interactive); }
   margin: 0 0 1.5rem;
   font-size: 0.93rem;
 }
+.password-form {
+  text-align: left;
+  margin-top: 0.5rem;
+}
+.password-form .field { margin-bottom: 0.85rem; }
+.password-form label { font-size: 0.78rem; font-weight: 600; }
+
 .signin-hero .g-button-wrap {
   display: flex;
   justify-content: center;

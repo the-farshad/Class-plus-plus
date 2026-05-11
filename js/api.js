@@ -130,6 +130,11 @@ export const api = {
     if (res.ok) session.set(res.token, res.user);
     return res;
   },
+  signInWithPassword: async (email, password) => {
+    const res = await postJSON("/auth/password", { email, password });
+    if (res.ok) session.set(res.token, res.user);
+    return res;
+  },
   signOut: () => session.clear(),
 
   // Activities
@@ -167,6 +172,10 @@ export const api = {
   addClassStudent: (id, student) => postJSON(`/admin/classes/${encodeURIComponent(id)}/students`, student),
   bulkAddClassStudents: (id, students) => postJSON(`/admin/classes/${encodeURIComponent(id)}/students/bulk`, { students }),
   removeClassStudent: (id, email) => del(`/admin/classes/${encodeURIComponent(id)}/students/${encodeURIComponent(email)}`),
+  generateStudentPassword: (id, email) =>
+    postJSON(`/admin/classes/${encodeURIComponent(id)}/students/${encodeURIComponent(email)}/password`, {}),
+  studentPasswordStatus: (id, email) =>
+    get(`/admin/classes/${encodeURIComponent(id)}/students/${encodeURIComponent(email)}/password-status`),
   exportGlobalRoster: () => get("/admin/classes/admin/global-roster"),
 
   // Allowlist

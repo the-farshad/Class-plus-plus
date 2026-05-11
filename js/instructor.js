@@ -24,21 +24,27 @@ async function showSignIn() {
   const navSignin = $("nav-signin");
   if (navSignin) navSignin.hidden = true;
   show("signin-card");
-  try {
-    const cfg = await api.authConfig();
 
-    await setupMicrosoftSignIn({
-      cfg,
-      statusEl: "signin-status",
-      onSuccess: async (idToken) => {
-        await api.signInWithMicrosoft(idToken);
+  const form = $("password-form");
+  if (form && !form.dataset.wired) {
+    form.dataset.wired = "1";
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const email = $("pw-email").value.trim().toLowerCase();
+      const password = $("pw-password").value;
+      const btn = $("pw-submit");
+      btn.disabled = true;
+      setStatus("signin-status", "Signing in…");
+      try {
+        await api.signInWithPassword(email, password);
+        $("pw-password").value = "";
         enterDashboard();
-      },
+      } catch (err) {
+        setStatus("signin-status", err.message || "Sign-in failed", "error");
+      } finally {
+        btn.disabled = false;
+      }
     });
-
-    renderGoogleButton(cfg.google_client_id);
-  } catch (err) {
-    setStatus("signin-status", `Couldn't reach server: ${err.message}`, "error");
   }
 }
 
@@ -482,6 +488,50 @@ $("add-student-form").addEventListener("submit", async (e) => {
   }
 });
 
+function showGeneratedPassword(email, password) {
+  let modal = document.getElementById("modal-generated-pw");
+  if (!modal) {
+    modal = document.createElement("div");
+    modal.id = "modal-generated-pw";
+    modal.className = "modal-center";
+    modal.setAttribute("role", "dialog");
+    modal.setAttribute("aria-modal", "true");
+    document.body.appendChild(modal);
+  }
+  modal.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+      <h2 style="margin:0;">Temporary password</h2>
+      <button id="close-genpw" class="icon-btn" aria-label="Close"><i data-lucide="x" style="width:16px;height:16px;"></i></button>
+    </div>
+    <p class="muted" style="font-size:0.85rem;margin:0 0 0.85rem;">
+      Share this with <strong>${escapeHTML(email)}</strong>. Shown <strong>once</strong>; copy it now.
+    </p>
+    <div style="display:flex;gap:0.4rem;align-items:stretch;margin-bottom:0.85rem;">
+      <input type="text" id="genpw-value" readonly value="${escapeHTML(password)}" style="font-family:var(--font-mono);font-size:1rem;letter-spacing:0.04em;font-weight:600;" />
+      <button id="genpw-copy" class="secondary"><i data-lucide="copy" style="width:14px;height:14px;"></i> Copy</button>
+    </div>
+    <p class="muted" style="font-size:0.78rem;margin:0;">If you lose it, just click Password again — it rotates.</p>`;
+  show("modal-overlay");
+  modal.hidden = false;
+  if (window.lucide) window.lucide.createIcons();
+
+  const close = () => { hide("modal-overlay"); modal.hidden = true; };
+  document.getElementById("close-genpw").addEventListener("click", close);
+
+  const copyBtn = document.getElementById("genpw-copy");
+  copyBtn.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(password);
+      copyBtn.innerHTML = `<i data-lucide="check" style="width:14px;height:14px;"></i> Copied`;
+      if (window.lucide) window.lucide.createIcons();
+    } catch { /* clipboard blocked, ignore */ }
+  });
+
+  const valEl = document.getElementById("genpw-value");
+  valEl.focus();
+  valEl.select();
+}
+
 async function loadClassStudents() {
   const list = $("student-list");
   list.innerHTML = '<li class="muted">Loading…</li>';
@@ -495,6 +545,28 @@ async function loadClassStudents() {
     res.students.forEach(s => {
       const li = document.createElement("li");
       li.innerHTML = `<div>${escapeHTML(s.student_email)} <span class="muted">${escapeHTML(s.student_id || "")}</span></div>`;
+
+      const actions = document.createElement("div");
+      actions.className = "row";
+      actions.style.gap = "0.3rem";
+
+      const pwBtn = document.createElement("button");
+      pwBtn.className = "secondary sm";
+      pwBtn.innerHTML = `<i data-lucide="key-round" style="width:13px;height:13px;"></i> Password`;
+      pwBtn.title = `Generate / rotate password for ${s.student_email}`;
+      pwBtn.setAttribute("aria-label", `Generate password for ${s.student_email}`);
+      pwBtn.addEventListener("click", async () => {
+        pwBtn.disabled = true;
+        try {
+          const res = await api.generateStudentPassword(activeMgmtClass.id, s.student_email);
+          showGeneratedPassword(s.student_email, res.password);
+        } catch (err) {
+          alert("Could not generate password: " + err.message);
+        } finally {
+          pwBtn.disabled = false;
+        }
+      });
+
       const delBtn = document.createElement("button");
       delBtn.className = "secondary sm danger";
       delBtn.innerHTML = `<i data-lucide="user-minus" style="width:13px;height:13px;"></i>`;
@@ -505,7 +577,9 @@ async function loadClassStudents() {
         await api.removeClassStudent(activeMgmtClass.id, s.student_email);
         loadClassStudents();
       });
-      li.appendChild(delBtn);
+
+      actions.append(pwBtn, delBtn);
+      li.appendChild(actions);
       list.appendChild(li);
     });
   } catch (err) {

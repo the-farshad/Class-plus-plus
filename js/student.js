@@ -337,26 +337,29 @@ async function showSignInState() {
   hide("session-hero");
   show("landing-hero");
   show("signin-card");
-  try {
-    const cfg = await api.authConfig();
-    const hint = $("domain-hint");
-    if (hint) hint.textContent = `@${cfg.allowed_domain}`;
 
-    // Microsoft (UWYO) — primary path since UWYO is on Microsoft 365.
-    await setupMicrosoftSignIn({
-      cfg,
-      statusEl: "signin-status",
-      onSuccess: async (idToken) => {
-        await api.signInWithMicrosoft(idToken);
+  // Wire the email + password form once. Idempotent.
+  const form = $("password-form");
+  if (form && !form.dataset.wired) {
+    form.dataset.wired = "1";
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const email = $("pw-email").value.trim().toLowerCase();
+      const password = $("pw-password").value;
+      const btn = $("pw-submit");
+      btn.disabled = true;
+      setStatusEl("signin-status", "Signing in…");
+      try {
+        await api.signInWithPassword(email, password);
+        $("pw-password").value = "";
         hide("signin-card");
         await showSignedInState();
-      },
+      } catch (err) {
+        setStatusEl("signin-status", err.message || "Sign-in failed", "error");
+      } finally {
+        btn.disabled = false;
+      }
     });
-
-    // Google — secondary fallback for instructors / guests with Google accounts.
-    renderGoogleButton(cfg.google_client_id);
-  } catch (err) {
-    setStatusEl("signin-status", `Couldn't reach server: ${err.message}`, "error");
   }
 }
 
