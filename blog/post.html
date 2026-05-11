@@ -6,8 +6,9 @@
   <title>Class++ — Note</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@600;700;800&family=Lora:wght@400;500;600&family=Roboto+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/styles.css" />
+  <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
   <header class="site">
@@ -17,21 +18,44 @@
         <span>Class<span style="color: var(--brand-1)">++</span></span>
         <span class="brand-tag">Notes</span>
       </a>
-      <nav>
+      <nav style="align-items: center; gap: 1rem;">
         <a href="/">Submit</a>
-        <a href="/blog/">All notes</a>
+        <a href="/blog/">Notes</a>
+        <div class="theme-selector-wrapper">
+          <i data-lucide="palette" style="width: 16px; height: 16px; color: var(--muted);"></i>
+          <select id="theme-selector" class="theme-dropdown">
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+            <option value="uwyo">UWYO</option>
+            <option value="sepia">Sepia</option>
+            <option value="high-contrast">High Contrast</option>
+          </select>
+        </div>
       </nav>
     </div>
   </header>
+
+  <script type="module">
+    import { api } from "/js/api.js";
+    api.initTheme();
+    const selector = document.getElementById("theme-selector");
+    selector.value = document.documentElement.getAttribute("data-theme") || "light";
+    selector.addEventListener("change", (e) => api.setTheme(e.target.value));
+  </script>
+
   <main>
     <article id="post" class="card post-content">
       <p class="muted">Loading…</p>
     </article>
   </main>
+  
   <script src="https://cdn.jsdelivr.net/npm/marked@12/marked.min.js"></script>
   <script type="module">
     import { renderPost } from "/js/blog.js";
     renderPost(document.getElementById("post"));
+  </script>
+  <script>
+    lucide.createIcons();
   </script>
 </body>
 </html>
