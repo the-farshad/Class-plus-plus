@@ -179,6 +179,12 @@
 /* ---------- Reset & Base ---------- */
 *, *::before, *::after { box-sizing: border-box; }
 
+/* CRITICAL: every element with the `hidden` attribute must actually hide.
+   Without !important the UA rule `[hidden]{display:none}` is overridden by
+   author rules like `.signin-cta{display:inline-flex}` (same specificity,
+   later wins), which left the navbar Sign-in button showing after sign-in. */
+[hidden] { display: none !important; }
+
 html {
   height: 100%;
 }
@@ -468,7 +474,26 @@ main {
 }
 .hero p { color: var(--muted); margin: 0; font-size: 0.95rem; }
 
-/* ---------- Landing Hero (big, marketing-style) ---------- */
+/* ---------- Landing (plain heading above sign-in) ---------- */
+.landing-plain {
+  text-align: center;
+  padding: 1.5rem 1rem 0;
+  max-width: 32rem;
+  margin: 0 auto;
+}
+.landing-plain h1 {
+  font-size: clamp(1.5rem, 3.5vw, 1.85rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 0 0 0.4rem;
+}
+.landing-plain p {
+  color: var(--muted);
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+/* ---------- Landing Hero (kept for backwards compat) ---------- */
 .landing-hero {
   position: relative;
   padding: 3.5rem 1.5rem 3rem;

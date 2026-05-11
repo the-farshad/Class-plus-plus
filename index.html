@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@600;700;800&family=Lora:wght@400;500;600&family=Ubuntu:wght@400;500;700&family=Roboto+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/styles.css?v=47" />
+  <link rel="stylesheet" href="/css/styles.css?v=48" />
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <script src="https://unpkg.com/lucide@latest"></script>
 </head>
@@ -49,39 +49,16 @@
   </header>
 
   <script type="module">
-    import { api } from "/js/api.js?v=47";
+    import { api } from "/js/api.js?v=48";
     api.initTheme();
     document.getElementById("nav-submit")?.classList.add("nav-active");
   </script>
 
   <main>
-    <!-- Big landing hero (shown to signed-out visitors) -->
-    <section id="landing-hero" class="landing-hero" hidden>
-      <span class="eyebrow"><span class="live-dot"></span> Live classroom</span>
-      <h1>The classroom, <span class="accent">in real time.</span></h1>
-      <p class="lede">Class++ turns lectures into conversations. Answer polls, rate concepts, contribute to word clouds — your instructor sees the room as it happens.</p>
-      <div class="feature-strip">
-        <div class="feature-chip">
-          <span class="feature-chip-icon"><i data-lucide="bar-chart-2" style="width:16px;height:16px;"></i></span>
-          <span class="feature-chip-title">Polls</span>
-          <p class="feature-chip-desc">Tap an option. Results form live on the projector.</p>
-        </div>
-        <div class="feature-chip">
-          <span class="feature-chip-icon"><i data-lucide="sliders" style="width:16px;height:16px;"></i></span>
-          <span class="feature-chip-title">Ratings</span>
-          <p class="feature-chip-desc">Rate confidence or difficulty from 1–10.</p>
-        </div>
-        <div class="feature-chip">
-          <span class="feature-chip-icon"><i data-lucide="cloud" style="width:16px;height:16px;"></i></span>
-          <span class="feature-chip-title">Word clouds</span>
-          <p class="feature-chip-desc">Drop a word — watch the class converge.</p>
-        </div>
-        <div class="feature-chip">
-          <span class="feature-chip-icon"><i data-lucide="file-text" style="width:16px;height:16px;"></i></span>
-          <span class="feature-chip-title">Submissions</span>
-          <p class="feature-chip-desc">Code, photos, PDFs — turn in anything.</p>
-        </div>
-      </div>
+    <!-- Plain heading shown above the sign-in card when signed out -->
+    <section id="landing-hero" class="landing-plain" hidden>
+      <h1>Welcome to Class++</h1>
+      <p>Sign in to join today's session.</p>
     </section>
 
     <!-- Compact session hero (shown to signed-in users) -->
@@ -217,9 +194,9 @@
     </div>
   </div>
 
-  <script type="module" src="/js/student.js?v=47"></script>
+  <script type="module" src="/js/student.js?v=48"></script>
   <script type="module">
-    import { bootPage } from "/js/ui.js?v=47";
+    import { bootPage } from "/js/ui.js?v=48";
     bootPage();
   </script>
 </body>

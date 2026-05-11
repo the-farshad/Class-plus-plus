@@ -344,7 +344,17 @@ async function showSignInState() {
   }
 }
 
+// Pick a Google button theme that visually matches the current site theme.
+// outline = neutral light, filled_blue = brand-blue, filled_black = dark.
+function pickGoogleTheme() {
+  const t = document.documentElement.getAttribute("data-theme") || "light";
+  if (t === "dark" || t === "high-contrast") return "filled_black";
+  if (t === "uwyo" || t === "sepia") return "outline";
+  return "outline"; // light — outline blends seamlessly with the card
+}
+
 function renderGoogleButton(clientId) {
+  const target = $("g_id_signin");
   const tryRender = () => {
     if (!window.google?.accounts?.id) { setTimeout(tryRender, 200); return; }
     window.google.accounts.id.initialize({
@@ -359,8 +369,24 @@ function renderGoogleButton(clientId) {
         }
       },
     });
-    window.google.accounts.id.renderButton($("g_id_signin"), {
-      theme: "filled_blue", size: "large", shape: "pill", text: "signin_with",
+
+    const draw = () => {
+      if (!target) return;
+      target.innerHTML = "";
+      window.google.accounts.id.renderButton(target, {
+        theme: pickGoogleTheme(),
+        size: "large",
+        shape: "pill",
+        text: "signin_with",
+        width: 280,
+      });
+    };
+    draw();
+
+    // Re-render when the user switches themes from the settings drawer.
+    new MutationObserver(draw).observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-theme"],
     });
   };
   tryRender();
