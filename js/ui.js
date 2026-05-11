@@ -107,6 +107,7 @@ export async function renderVersion() {
 export function bootPage() {
   ensureSkipLink();
   renderVersion();
+  showSigninCtaIfNeeded();
   // Lucide loads asynchronously via the CDN <script> tag. If it isn't ready yet
   // we poll briefly — the icons placeholder elements stay hidden via CSS until
   // SVGs are injected, so a 50–200ms delay is invisible.
@@ -129,8 +130,14 @@ export function updateUserPill(user) {
   const avatar = $("user-avatar");
   const emailEl = $("user-pill-email");
   const roleEl = $("user-pill-role");
+  const signinCta = $("nav-signin");
 
-  if (!user || !user.email) return;
+  if (!user || !user.email) {
+    // Signed-out: hide the pill, surface the Sign-in CTA in the navbar.
+    if (pill) pill.hidden = true;
+    if (signinCta) signinCta.hidden = false;
+    return;
+  }
 
   const email = user.email;
   const initial = (email[0] || "?").toUpperCase();
@@ -143,6 +150,16 @@ export function updateUserPill(user) {
     roleEl.className = "user-role " + role;
   }
   if (pill) pill.hidden = false;
+  if (signinCta) signinCta.hidden = true;
+}
+
+// On every page boot, reveal the navbar Sign-in CTA when no session token
+// is present. Pages that have their own sign-in flow (student / instructor)
+// will call updateUserPill() later to flip this back off once signed in.
+export function showSigninCtaIfNeeded() {
+  const token = localStorage.getItem("classpp.jwt");
+  const cta = $("nav-signin");
+  if (cta && !token) cta.hidden = false;
 }
 
 // Mount the settings drawer (theme switcher + signed-in email + sign-out).

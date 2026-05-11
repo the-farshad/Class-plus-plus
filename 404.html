@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@600;700;800&family=Lora:wght@400;500;600&family=Ubuntu:wght@400;500;700&family=Roboto+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/styles.css?v=46" />
+  <link rel="stylesheet" href="/css/styles.css?v=47" />
   <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
@@ -31,12 +31,16 @@
         </a>
       </nav>
 
-      <div class="nav-actions"></div>
+      <div class="nav-actions">
+        <a id="nav-signin" class="signin-cta" href="/" hidden>
+          <i data-lucide="log-in"></i> Sign in
+        </a>
+      </div>
     </div>
   </header>
 
   <script type="module">
-    import { api } from "/js/api.js?v=46";
+    import { api } from "/js/api.js?v=47";
     api.initTheme();
   </script>
 
@@ -64,7 +68,7 @@
   </main>
 
   <script type="module">
-    import { bootPage } from "/js/ui.js?v=46";
+    import { bootPage } from "/js/ui.js?v=47";
     bootPage();
   </script>
 </body>

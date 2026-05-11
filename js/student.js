@@ -46,6 +46,10 @@ function stopCountdown() { /* noop — SSE handles refresh now */ }
 
 function showActivity(a) {
   stopCountdown();
+  stopResultsRefresh();
+  // Remove any stale results panel from a previous activity.
+  const oldResults = document.getElementById("student-results");
+  if (oldResults) oldResults.remove();
   $("activity-id").value = a.activity_id;
 
   // Header in form-card
@@ -135,7 +139,8 @@ function renderPoll(a) {
         container.querySelectorAll(".poll-tile").forEach(b => b.classList.remove("selected"));
         tile.classList.add("selected");
         localStorage.setItem(VOTE_KEY(a.activity_id), String(idx));
-        setStatusEl("poll-status", "Vote recorded — locked in for this poll.", "success");
+        setStatusEl("poll-status", "Vote recorded — live results below.", "success");
+        showPollResults(a);
       } catch (err) {
         container.querySelectorAll(".poll-tile").forEach(b => b.disabled = false);
         setStatusEl("poll-status", err.message, "error");
@@ -147,7 +152,71 @@ function renderPoll(a) {
 
   if (priorVote !== null) {
     container.querySelectorAll(".poll-tile").forEach(b => b.disabled = true);
-    setStatusEl("poll-status", "You already voted on this poll.", "success");
+    setStatusEl("poll-status", "You already voted — live results below.", "success");
+    showPollResults(a);
+  }
+}
+
+// ----- Student-side poll results (shown after voting) -----
+
+let resultsRefreshTimer = null;
+
+function stopResultsRefresh() {
+  if (resultsRefreshTimer) { clearInterval(resultsRefreshTimer); resultsRefreshTimer = null; }
+}
+
+async function showPollResults(a) {
+  let panel = document.getElementById("student-results");
+  if (!panel) {
+    panel = document.createElement("div");
+    panel.id = "student-results";
+    panel.className = "student-results";
+    $("poll-card").appendChild(panel);
+  }
+  await refreshPollResults(a, panel);
+  stopResultsRefresh();
+  resultsRefreshTimer = setInterval(() => refreshPollResults(a, panel), 4000);
+}
+
+async function refreshPollResults(a, panel) {
+  try {
+    const res = await api.getResults(a.activity_id);
+    const options = res.options || [];
+    const myVote = localStorage.getItem(VOTE_KEY(a.activity_id));
+    const total = res.votes.reduce((acc, v) => acc + v.count, 0);
+    const counts = options.map((_, idx) => res.votes.find(v => v.option_index === idx)?.count || 0);
+    const maxCount = Math.max(1, ...counts);
+    const letters = "ABCDEFGHIJKLMNOP";
+
+    const isPie = a.type === "poll_pie";
+    panel.innerHTML = `
+      <div class="results-head">
+        <span class="results-title"><i data-lucide="bar-chart-3"></i> Live results</span>
+        <span class="results-count">${total} vote${total !== 1 ? "s" : ""}</span>
+      </div>
+      <div class="results-bars">
+        ${options.map((opt, idx) => {
+          const c = counts[idx];
+          const pct = total ? Math.round((c / total) * 100) : 0;
+          const widthPct = Math.round((c / maxCount) * 100);
+          const mine = myVote !== null && String(idx) === myVote;
+          return `
+            <div class="result-row${mine ? " mine" : ""}">
+              <div class="result-row-head">
+                <span class="result-letter">${letters[idx] || idx + 1}</span>
+                <span class="result-label">${escapeHTML(opt)}</span>
+                ${mine ? `<span class="result-mine-badge"><i data-lucide="check"></i> Your vote</span>` : ""}
+                <span class="result-pct">${pct}%</span>
+              </div>
+              <div class="result-bar"><div class="result-bar-fill" style="width:${widthPct}%"></div></div>
+              <div class="result-row-meta">${c} vote${c !== 1 ? "s" : ""}</div>
+            </div>`;
+        }).join("")}
+      </div>
+      ${isPie ? `<p class="muted" style="font-size:0.78rem;margin:0.5rem 0 0;text-align:center;">Showing as percentages — instructor sees a pie view.</p>` : ""}`;
+    if (window.lucide) window.lucide.createIcons();
+  } catch (err) {
+    panel.innerHTML = `<p class="muted" style="font-size:0.85rem;">Couldn't load results: ${escapeHTML(err.message)}</p>`;
   }
 }
 
@@ -192,6 +261,9 @@ function showPicker(activities) {
     grid.appendChild(card);
   });
   show("picker");
+  // CRITICAL: convert inert <i data-lucide> placeholders into real SVGs.
+  // Without this the picker-card-icon containers render as empty squares.
+  if (window.lucide) window.lucide.createIcons();
 }
 
 async function loadActivities() {
