@@ -200,8 +200,11 @@ async function loadActivities() {
   } catch (err) {
     hide("loading");
     const card = $("empty");
-    card.querySelector("h2").textContent = "Couldn't connect";
-    card.querySelector("p").textContent = err.message;
+    const isNetwork = err.message.includes("NetworkError") || err.message.includes("Failed to fetch") || err.message.includes("fetch");
+    card.querySelector("h2").textContent = isNetwork ? "Can't reach the server" : "Something went wrong";
+    card.querySelector("p").textContent = isNetwork
+      ? "Check your connection — the server may be temporarily unavailable."
+      : err.message;
     show("empty");
     startCountdown();
   }

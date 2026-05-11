@@ -263,6 +263,12 @@ export async function renderPost(container) {
   } catch (err) {
     const skeleton = document.getElementById("post-skeleton");
     if (skeleton) skeleton.remove();
-    container.innerHTML = `<p class="muted">Could not load note: ${escapeHTML(err.message)}</p>`;
+    const is404 = err.message.includes("404") || err.message.includes("Not found");
+    container.innerHTML = `
+      <p style="color:var(--error);font-weight:600;margin-bottom:0.5rem;">
+        ${is404 ? "Note not found" : "Could not load note"}
+      </p>
+      <p class="muted" style="font-size:0.88rem;">${escapeHTML(err.message)}</p>
+      <a href="/blog/" class="button secondary sm" style="margin-top:1rem;text-decoration:none;">← Back to all notes</a>`;
   }
 }
