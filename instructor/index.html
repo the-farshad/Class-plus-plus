@@ -21,10 +21,17 @@
       <nav>
         <a href="/">Student view</a>
         <a href="/blog/">Notes</a>
+        <button id="theme-toggle" class="secondary sm" style="padding: 0.4rem; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; box-shadow: none;">🌓</button>
         <a href="#" id="signout" hidden>Sign out</a>
       </nav>
     </div>
   </header>
+
+  <script type="module">
+    import { api } from "/js/api.js";
+    api.initTheme();
+    document.getElementById("theme-toggle").addEventListener("click", () => api.toggleTheme());
+  </script>
 
   <main>
     <section id="signin-card" class="card feature" hidden>

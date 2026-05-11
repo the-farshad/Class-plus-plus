@@ -85,6 +85,21 @@ async function del(path) {
 }
 
 export const api = {
+  // Theme Management
+  initTheme: () => {
+    const saved = localStorage.getItem("classpp.theme");
+    const system = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    const theme = saved || system;
+    document.documentElement.setAttribute("data-theme", theme);
+  },
+  toggleTheme: () => {
+    const current = document.documentElement.getAttribute("data-theme") || "light";
+    const next = current === "light" ? "dark" : "light";
+    document.documentElement.setAttribute("data-theme", next);
+    localStorage.setItem("classpp.theme", next);
+    return next;
+  },
+
   // Auth / config
   authConfig: () => get("/auth/config"),
   signIn: async (idToken) => {
