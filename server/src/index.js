@@ -66,5 +66,3 @@ app.use((err, _req, res, _next) => {
 app.listen(config.port, "127.0.0.1", () => {
   console.log(`classpp-api listening on http://127.0.0.1:${config.port}`);
 });
-rt}`);
-});
