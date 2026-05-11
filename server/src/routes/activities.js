@@ -31,16 +31,22 @@ activitiesRouter.get("/events", (req, res) => {
 });
 
 // Public to authed users — students need to pick activities.
+// Time-gating: only show rows that (a) are status='open',
+// (b) have no release_at or release_at <= now, AND
+// (c) have no due_at or due_at > now.
 activitiesRouter.get("/", requireAuth, (req, res) => {
   const { class_id } = req.query;
   const now = Date.now();
   let sql = `
-    SELECT id AS activity_id, prompt, asset_url, type, poll_options, difficulty 
-    FROM activities 
-    WHERE status = 'open' 
-    AND (scheduled_at IS NULL OR scheduled_at <= ?)
+    SELECT id AS activity_id, prompt, asset_url, type, poll_options, difficulty,
+           session_tag, release_at, due_at
+    FROM activities
+    WHERE status = 'open'
+      AND (scheduled_at IS NULL OR scheduled_at <= ?)
+      AND (release_at IS NULL OR release_at <= ?)
+      AND (due_at IS NULL OR due_at > ?)
   `;
-  const params = [now];
+  const params = [now, now, now];
   if (class_id) {
     sql += " AND class_id = ?";
     params.push(class_id);
@@ -52,17 +58,26 @@ activitiesRouter.get("/", requireAuth, (req, res) => {
 
 activitiesRouter.get("/:id", requireAuth, (req, res) => {
   const row = db.prepare(
-    "SELECT id AS activity_id, prompt, asset_url, status, type, poll_options FROM activities WHERE id = ?"
+    "SELECT id AS activity_id, prompt, asset_url, status, type, poll_options, session_tag, release_at, due_at FROM activities WHERE id = ?"
   ).get(req.params.id);
   if (!row) return res.status(404).json({ ok: false, error: "Not found" });
   if (row.status !== "open") return res.status(409).json({ ok: false, error: "Activity is closed" });
+  const now = Date.now();
+  if (row.release_at && row.release_at > now) {
+    return res.status(409).json({ ok: false, error: "Activity has not been released yet" });
+  }
+  if (row.due_at && row.due_at <= now) {
+    return res.status(409).json({ ok: false, error: "Activity is past its due date" });
+  }
   res.json({ ok: true, activity: row });
 });
 
 // Instructor: list everything.
 activitiesRouter.get("/admin/all", requireInstructor, (req, res) => {
   const { class_id } = req.query;
-  let sql = "SELECT id AS activity_id, prompt, status, asset_url, type, class_id, created_at FROM activities";
+  let sql = `SELECT id AS activity_id, prompt, status, asset_url, type, class_id,
+                    session_tag, release_at, due_at, created_at
+             FROM activities`;
   const params = [];
   if (class_id) {
     sql += " WHERE class_id = ?";
@@ -85,11 +100,24 @@ activitiesRouter.post("/admin", requireInstructor, (req, res) => {
   // Session tag = "prog01".."prog14", "lab01".."lab14", or null.
   const rawTag = req.body && typeof req.body.session_tag === "string" ? req.body.session_tag.trim().toLowerCase() : "";
   const sessionTag = /^(prog|lab)(0[1-9]|1[0-4])$/.test(rawTag) ? rawTag : null;
+  // Accept release_at / due_at as either ms or ISO string from the client.
+  function toMs(v) {
+    if (v == null || v === "") return null;
+    if (typeof v === "number") return v;
+    const t = new Date(v).getTime();
+    return Number.isNaN(t) ? null : t;
+  }
+  const releaseAt = toMs(req.body && req.body.release_at);
+  const dueAt = toMs(req.body && req.body.due_at);
 
   if (!prompt) return res.status(400).json({ ok: false, error: "Missing prompt" });
   const info = db.prepare(
-    "INSERT INTO activities (prompt, status, asset_url, class_id, type, poll_options, difficulty, scheduled_at, session_tag, created_at) VALUES (?, 'open', ?, ?, ?, ?, ?, ?, ?, ?)"
-  ).run(prompt, assetUrl, classId, type, pollOptions, difficulty, scheduledAt, sessionTag, Date.now());
+    `INSERT INTO activities
+       (prompt, status, asset_url, class_id, type, poll_options, difficulty,
+        scheduled_at, session_tag, release_at, due_at, created_at)
+     VALUES (?, 'open', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  ).run(prompt, assetUrl, classId, type, pollOptions, difficulty,
+        scheduledAt, sessionTag, releaseAt, dueAt, Date.now());
   res.json({ ok: true, activity_id: info.lastInsertRowid });
   notifySSE();
 });

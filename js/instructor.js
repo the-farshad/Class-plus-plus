@@ -664,6 +664,11 @@ $("new-form").addEventListener("submit", async (e) => {
   const uiType = $("activity-type").value;
   const classId = $("class-selector").value || null;
   const sessionTag = $("session-tag")?.value || null;
+  // datetime-local inputs return e.g. "2026-09-01T08:00" with NO timezone;
+  // we treat that as local time and convert to ms. Empty string -> null.
+  const toMs = (v) => v ? new Date(v).getTime() : null;
+  const releaseAt = toMs($("release-at")?.value);
+  const dueAt     = toMs($("due-at")?.value);
 
   let type = uiType;
   let options = [];
@@ -681,9 +686,11 @@ $("new-form").addEventListener("submit", async (e) => {
   if (btn) btn.disabled = true;
   setStatus("new-status", "Creating…");
   try {
-    const res = await api.createActivity(prompt, classId, type, options, sessionTag);
+    const res = await api.createActivity(prompt, classId, type, options, sessionTag, releaseAt, dueAt);
     setStatus("new-status", `Launched! (#${res.activity_id})`, "success");
     $("prompt").value = "";
+    $("release-at").value = "";
+    $("due-at").value = "";
     // Reset options list
     $("poll-options-list").innerHTML = "";
     loadActivities();
@@ -721,6 +728,35 @@ const TYPE_ICONS = {
   rating: "sliders",
   word_cloud: "cloud",
 };
+
+// Compact human duration ("3h", "2d", "12m") for the schedule chip.
+function shortDelta(ms) {
+  const abs = Math.abs(ms);
+  const m = Math.round(abs / 60_000);
+  if (m < 60) return `${m}m`;
+  const h = Math.round(m / 60);
+  if (h < 24) return `${h}h`;
+  const d = Math.round(h / 24);
+  return `${d}d`;
+}
+
+// Render a small "Releases in 3h" / "Due in 2d" / "Past due" chip next to
+// the timestamp, so the instructor sees gating at a glance.
+function formatScheduleInfo(a) {
+  const now = Date.now();
+  const parts = [];
+  if (a.release_at && a.release_at > now) {
+    parts.push(`<span style="color:var(--warning);margin-left:0.4rem;font-size:0.78rem;">Releases in ${shortDelta(a.release_at - now)}</span>`);
+  }
+  if (a.due_at) {
+    if (a.due_at <= now) {
+      parts.push(`<span style="color:var(--error);margin-left:0.4rem;font-size:0.78rem;">Past due</span>`);
+    } else {
+      parts.push(`<span style="color:var(--muted);margin-left:0.4rem;font-size:0.78rem;">Due in ${shortDelta(a.due_at - now)}</span>`);
+    }
+  }
+  return parts.join("");
+}
 
 function fmtDate(ts) {
   if (!ts) return "";
@@ -764,6 +800,7 @@ function renderActivities(list_data) {
         ${fmtDate(a.created_at)}
         <span style="color:var(--border-strong);margin:0 0.3rem;">·</span>
         <span style="color:var(--muted);font-size:0.78rem;">#${a.activity_id}</span>
+        ${formatScheduleInfo(a)}
       </div>`;
     left.append();
 

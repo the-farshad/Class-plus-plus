@@ -4,3 +4,9 @@ data.db
 uploads/
 spring_2026/
 server/data/
+
+# Assignment / question content must never live in git.
+# Keep questions JSON in server/private/ on the droplet itself.
+server/private/
+**/questions*.json
+!**/questions.example.json

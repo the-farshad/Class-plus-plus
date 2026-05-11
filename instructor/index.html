@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@600;700;800&family=Lora:wght@400;500;600&family=Ubuntu:wght@400;500;700&family=Roboto+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/styles.css?v=60" />
+  <link rel="stylesheet" href="/css/styles.css?v=61" />
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -220,6 +220,17 @@
                 <button type="button" id="add-option-btn" class="secondary sm" style="margin-top:0.5rem;">
                   <i data-lucide="plus" style="width:13px;height:13px;"></i> Add option
                 </button>
+              </div>
+
+              <div style="display:flex;gap:0.65rem;flex-wrap:wrap;align-items:flex-end;margin-top:0.75rem;">
+                <div class="field" style="margin:0;flex:1;min-width:160px;">
+                  <label for="release-at">Release at <span class="muted" style="font-weight:400;">(optional)</span></label>
+                  <input type="datetime-local" id="release-at" />
+                </div>
+                <div class="field" style="margin:0;flex:1;min-width:160px;">
+                  <label for="due-at">Due at <span class="muted" style="font-weight:400;">(optional)</span></label>
+                  <input type="datetime-local" id="due-at" />
+                </div>
               </div>
 
               <div style="display:flex;gap:0.65rem;flex-wrap:wrap;align-items:flex-end;margin-top:0.75rem;">
@@ -511,9 +522,9 @@
 
   <div class="build-chip" data-version></div>
 
-  <script type="module" src="/js/instructor.js?v=60"></script>
+  <script type="module" src="/js/instructor.js?v=61"></script>
   <script type="module">
-    import { bootPage } from "/js/ui.js?v=60";
+    import { bootPage } from "/js/ui.js?v=61";
     bootPage();
   </script>
 </body>

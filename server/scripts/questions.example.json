@@ -1,0 +1,25 @@
+[
+  {
+    "session_tag": "prog01",
+    "prompt": "Prog 01 — Which header is required for std::cin and std::cout?",
+    "type": "poll",
+    "options": ["<iostream>", "<stdio.h>", "<cstdlib>", "<string>"],
+    "release_at": "2026-09-01T08:00:00",
+    "due_at":     "2026-09-01T18:00:00"
+  },
+  {
+    "session_tag": "prog02",
+    "prompt": "Prog 02 — User enters value1=3 and value2=5. Following the accumulator loop, what is printed?",
+    "type": "poll",
+    "options": ["15", "60", "120", "20"],
+    "release_at": "2026-09-08T08:00:00",
+    "due_at":     "2026-09-08T18:00:00"
+  },
+  {
+    "session_tag": "prog04",
+    "prompt": "Prog 04 — In your own handwriting, draw the call stack for factorial(4) using a recursive implementation. Show each frame and the return value bubbling up. Photograph and submit.",
+    "type": "submission",
+    "release_at": "2026-09-22T08:00:00",
+    "due_at":     "2026-09-22T23:59:00"
+  }
+]
