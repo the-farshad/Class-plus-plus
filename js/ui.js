@@ -108,6 +108,18 @@ export function bootPage() {
   ensureSkipLink();
   renderVersion();
   showSigninCtaIfNeeded();
+  // Populate the user pill from localStorage on every page so signed-in
+  // users never see "Guest" on pages that don't have their own auth flow
+  // (e.g. /blog/, /blog/post.html, /404.html). Pages that do drive auth
+  // (student.js, instructor.js) will re-call updateUserPill themselves
+  // with the freshly-validated user.
+  try {
+    const raw = localStorage.getItem("classpp.user");
+    if (raw) {
+      const user = JSON.parse(raw);
+      if (user && user.email) updateUserPill(user);
+    }
+  } catch { /* corrupt localStorage — leave pill at its default state */ }
   // Lucide loads asynchronously via the CDN <script> tag. If it isn't ready yet
   // we poll briefly — the icons placeholder elements stay hidden via CSS until
   // SVGs are injected, so a 50–200ms delay is invisible.
