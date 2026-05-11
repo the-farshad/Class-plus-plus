@@ -92,12 +92,10 @@ export const api = {
     const theme = saved || system;
     document.documentElement.setAttribute("data-theme", theme);
   },
-  toggleTheme: () => {
-    const current = document.documentElement.getAttribute("data-theme") || "light";
-    const next = current === "light" ? "dark" : "light";
-    document.documentElement.setAttribute("data-theme", next);
-    localStorage.setItem("classpp.theme", next);
-    return next;
+  setTheme: (theme) => {
+    document.documentElement.setAttribute("data-theme", theme);
+    localStorage.setItem("classpp.theme", theme);
+    return theme;
   },
 
   // Auth / config
@@ -117,6 +115,8 @@ export const api = {
     postJSON("/activities/admin", { prompt, class_id: classId, type, poll_options: options }),
   setActivityStatus: (id, status) =>
     patchJSON(`/activities/admin/${encodeURIComponent(id)}`, { status }),
+  updateActivity: (id, payload) =>
+    patchJSON(`/activities/admin/${encodeURIComponent(id)}`, payload),
   vote: (id, optionIndex) => postJSON(`/activities/${encodeURIComponent(id)}/vote`, { option_index: optionIndex }),
   getResults: (id) => get(`/activities/${encodeURIComponent(id)}/results`),
 
@@ -135,11 +135,13 @@ export const api = {
   getStats: () => get("/admin/stats"),
   listClasses: () => get("/admin/classes"),
   createClass: (name, code, semester) => postJSON("/admin/classes", { name, code, semester }),
+  updateClass: (id, payload) => patchJSON(`/admin/classes/${encodeURIComponent(id)}`, payload),
   deleteClass: (id) => del(`/admin/classes/${encodeURIComponent(id)}`),
   listClassStudents: (id) => get(`/admin/classes/${encodeURIComponent(id)}/students`),
   addClassStudent: (id, student) => postJSON(`/admin/classes/${encodeURIComponent(id)}/students`, student),
   bulkAddClassStudents: (id, students) => postJSON(`/admin/classes/${encodeURIComponent(id)}/students/bulk`, { students }),
   removeClassStudent: (id, email) => del(`/admin/classes/${encodeURIComponent(id)}/students/${encodeURIComponent(email)}`),
+  exportGlobalRoster: () => get("/admin/classes/admin/global-roster"),
 
   // Allowlist
   listAllowlist: () => get("/admin/allowlist"),

@@ -64,14 +64,33 @@ activitiesRouter.post("/admin", requireInstructor, (req, res) => {
 });
 
 activitiesRouter.patch("/admin/:id", requireInstructor, (req, res) => {
-  const status = req.body && req.body.status;
-  if (status !== "open" && status !== "closed") {
+  const { status, prompt, type, poll_options, difficulty, scheduled_at, class_id } = req.body;
+  
+  if (status && status !== "open" && status !== "closed") {
     return res.status(400).json({ ok: false, error: "Invalid status" });
   }
-  const info = db.prepare("UPDATE activities SET status = ? WHERE id = ?")
-    .run(status, req.params.id);
-  if (info.changes === 0) return res.status(404).json({ ok: false, error: "Not found" });
-  res.json({ ok: true });
+
+  try {
+    const current = db.prepare("SELECT * FROM activities WHERE id = ?").get(req.params.id);
+    if (!current) return res.status(404).json({ ok: false, error: "Not found" });
+
+    const newStatus = status !== undefined ? status : current.status;
+    const newPrompt = prompt !== undefined ? String(prompt).trim() : current.prompt;
+    const newType = type !== undefined ? type : current.type;
+    const newPollOptions = newType === "poll" && poll_options !== undefined ? JSON.stringify(poll_options) : current.poll_options;
+    const newDifficulty = difficulty !== undefined ? difficulty : current.difficulty;
+    const newScheduledAt = scheduled_at !== undefined ? scheduled_at : current.scheduled_at;
+    const newClassId = class_id !== undefined ? class_id : current.class_id;
+
+    const info = db.prepare(
+      "UPDATE activities SET status = ?, prompt = ?, type = ?, poll_options = ?, difficulty = ?, scheduled_at = ?, class_id = ? WHERE id = ?"
+    ).run(newStatus, newPrompt, newType, newPollOptions, newDifficulty, newScheduledAt, newClassId, req.params.id);
+    
+    if (info.changes === 0) return res.status(404).json({ ok: false, error: "Not found" });
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
 });
 
 // Vote in a poll

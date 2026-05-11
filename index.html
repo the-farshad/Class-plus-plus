@@ -6,7 +6,7 @@
   <title>Class++ — Submit Response</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@600;700;800&family=Lora:wght@400;500;600&family=Roboto+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/styles.css" />
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -19,13 +19,22 @@
         <span>Class<span style="color: var(--brand-1)">++</span></span>
         <span class="brand-tag">Live</span>
       </a>
-      <nav style="align-items: center;">
+      <nav style="align-items: center; gap: 1rem;">
         <a href="/" id="nav-submit">Submit</a>
         <a href="/blog/" id="nav-notes">Notes</a>
         <a href="/instructor/" id="nav-admin" class="button sm" style="text-decoration: none;" hidden>Dashboard <span aria-hidden="true">→</span></a>
-        <button id="theme-toggle" class="secondary sm" style="padding: 0.4rem; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; box-shadow: none;" title="Toggle Theme">
-          <i data-lucide="moon" style="width: 16px; height: 16px;"></i>
-        </button>
+        
+        <div class="theme-selector-wrapper">
+          <i data-lucide="palette" style="width: 16px; height: 16px; color: var(--muted);"></i>
+          <select id="theme-selector" class="theme-dropdown">
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+            <option value="uwyo">UWYO</option>
+            <option value="sepia">Sepia</option>
+            <option value="high-contrast">High Contrast</option>
+          </select>
+        </div>
+
         <a href="#" id="signout" hidden>Sign out</a>
       </nav>
     </div>
@@ -34,7 +43,9 @@
   <script type="module">
     import { api } from "/js/api.js";
     api.initTheme();
-    document.getElementById("theme-toggle").addEventListener("click", () => api.toggleTheme());
+    const selector = document.getElementById("theme-selector");
+    selector.value = document.documentElement.getAttribute("data-theme") || "light";
+    selector.addEventListener("change", (e) => api.setTheme(e.target.value));
   </script>
 
   <main>

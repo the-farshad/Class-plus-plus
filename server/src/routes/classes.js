@@ -35,6 +35,17 @@ classesRouter.delete("/:id", (req, res) => {
   }
 });
 
+// Global Roster Export
+classesRouter.get("/admin/global-roster", (req, res) => {
+  const rows = db.prepare(`
+    SELECT cs.student_email, cs.student_id, c.code as class_code, c.name as class_name 
+    FROM class_students cs
+    LEFT JOIN classes c ON cs.class_id = c.id
+    ORDER BY cs.student_email ASC
+  `).all();
+  res.json({ ok: true, roster: rows });
+});
+
 // Class Roster
 classesRouter.get("/:id/students", (req, res) => {
   const rows = db.prepare("SELECT * FROM class_students WHERE class_id = ?").all(req.params.id);
@@ -82,6 +93,13 @@ classesRouter.post("/:id/students/bulk", (req, res) => {
 classesRouter.delete("/:id/students/:email", (req, res) => {
   try {
     db.prepare("DELETE FROM class_students WHERE class_id = ? AND student_email = ?")
+      .run(req.params.id, req.params.email.toLowerCase());
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+id = ? AND student_email = ?")
       .run(req.params.id, req.params.email.toLowerCase());
     res.json({ ok: true });
   } catch (err) {

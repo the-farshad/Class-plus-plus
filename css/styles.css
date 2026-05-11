@@ -71,6 +71,99 @@
   --header-bg: rgba(9, 9, 11, 0.85);
 }
 
+/* UWYO Theme */
+[data-theme="uwyo"] {
+  --bg: #fdfaf6;
+  --bg-grad-1: #f3ede2;
+  --bg-grad-2: #fdfaf6;
+  --surface: #ffffff;
+  --surface-2: #f3ede2;
+  --text: #3e2b1b;
+  --muted: #6b523c;
+  --subtle: #9c8470;
+  --border: #dcd0bc;
+  --border-strong: #c2b097;
+
+  --brand-1: #492F24; /* UWYO Brown */
+  --brand-2: #FFC425; /* UWYO Gold */
+  --brand-3: #492F24;
+
+  --success: #16a34a;
+  --success-bg: #dcfce7;
+  --error: #b91c1c;
+  --error-bg: #fee2e2;
+  --warning: #d97706;
+
+  --shadow-sm: 0 1px 2px rgba(73, 47, 36, 0.08);
+  --shadow: 0 4px 6px -1px rgba(73, 47, 36, 0.12);
+  --shadow-lg: 0 20px 25px -5px rgba(73, 47, 36, 0.15);
+  --shadow-glow: 0 0 20px rgba(255, 196, 37, 0.4);
+  --header-bg: rgba(255, 255, 255, 0.85);
+  --font-family: 'Montserrat', "Inter", sans-serif;
+}
+
+/* Sepia Theme */
+[data-theme="sepia"] {
+  --bg: #f4ecd8;
+  --bg-grad-1: #e9e0c9;
+  --bg-grad-2: #f4ecd8;
+  --surface: #fbf6ec;
+  --surface-2: #e9e0c9;
+  --text: #433422;
+  --muted: #705b43;
+  --subtle: #9e876b;
+  --border: #d5c8b3;
+  --border-strong: #baaa91;
+
+  --brand-1: #895e34;
+  --brand-2: #ab7946;
+  --brand-3: #895e34;
+
+  --success: #2d6b41;
+  --success-bg: #d7e4db;
+  --error: #9e2a2b;
+  --error-bg: #f3dcdc;
+  --warning: #9e642a;
+
+  --shadow-sm: 0 1px 2px rgba(67, 52, 34, 0.1);
+  --shadow: 0 4px 6px -1px rgba(67, 52, 34, 0.15);
+  --shadow-lg: 0 20px 25px -5px rgba(67, 52, 34, 0.2);
+  --shadow-glow: 0 0 20px rgba(137, 94, 52, 0.3);
+  --header-bg: rgba(251, 246, 236, 0.85);
+  --font-family: 'Lora', Georgia, serif;
+}
+
+/* High Contrast Theme */
+[data-theme="high-contrast"] {
+  --bg: #000000;
+  --bg-grad-1: #000000;
+  --bg-grad-2: #000000;
+  --surface: #000000;
+  --surface-2: #111111;
+  --text: #ffffff;
+  --muted: #ffff00;
+  --subtle: #cccccc;
+  --border: #ffffff;
+  --border-strong: #ffffff;
+
+  --brand-1: #ffff00;
+  --brand-2: #ffff00;
+  --brand-3: #ffff00;
+
+  --success: #00ff00;
+  --success-bg: transparent;
+  --error: #ff0000;
+  --error-bg: transparent;
+  --warning: #ffff00;
+
+  --shadow-sm: none;
+  --shadow: none;
+  --shadow-lg: none;
+  --shadow-glow: none;
+  --header-bg: #000000;
+  --font-family: 'Roboto Mono', monospace;
+}
+
 :root {
   --brand-grad: linear-gradient(135deg, var(--brand-1) 0%, var(--brand-2) 50%, var(--brand-3) 100%);
   --brand-grad-soft: linear-gradient(135deg, rgba(99, 102, 241, 0.10), rgba(236, 72, 153, 0.10));
@@ -82,12 +175,10 @@ html, body {
   margin: 0;
   padding: 0;
   color: var(--text);
-  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-    "Helvetica Neue", Arial, sans-serif;
+  font-family: var(--font-family, 'Inter Variable', "Inter", -apple-system, sans-serif);
   font-size: 16px;
-  line-height: 1.55;
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
-  text-rendering: optimizeLegibility;
 }
 
 body {
@@ -419,6 +510,75 @@ button.sm, .button.sm {
 .activity-list li:hover {
   border-color: var(--brand-1);
   box-shadow: var(--shadow);
+}
+
+.week-badge {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.2rem 0.55rem;
+  border-radius: 6px;
+  background: var(--brand-grad-soft);
+  color: var(--brand-1);
+  margin-right: 0.35rem;
+  vertical-align: middle;
+}
+
+.blog-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-end;
+  margin-bottom: 1.25rem;
+}
+
+.blog-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  flex: 1 1 200px;
+  min-width: 0;
+}
+
+.blog-field-label {
+  font-size: 0.8rem;
+}
+
+.blog-toolbar input[type="search"],
+.blog-toolbar select {
+  width: 100%;
+  font: inherit;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.blog-toolbar input[type="search"]:focus,
+.blog-toolbar select:focus {
+  outline: none;
+  border-color: var(--brand-1);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+}
+
+.tags-line {
+  margin-top: 0.35rem;
+  font-size: 0.82rem !important;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .tag {

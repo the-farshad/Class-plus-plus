@@ -29,12 +29,29 @@
       <p>Solution write-ups, lesson recaps, and follow-up explanations.</p>
     </div>
     <section class="card">
+      <div class="blog-toolbar">
+        <label class="blog-field">
+          <span class="sr-only">Search notes</span>
+          <input type="search" id="post-search" placeholder="Search title, summary, tags…" autocomplete="off" />
+        </label>
+        <label class="blog-field">
+          <span class="muted blog-field-label">Sort</span>
+          <select id="post-sort">
+            <option value="date">Newest first</option>
+            <option value="week">Week order (course)</option>
+            <option value="title">Title A–Z</option>
+          </select>
+        </label>
+      </div>
       <ul id="post-list" class="activity-list"></ul>
     </section>
   </main>
   <script type="module">
     import { renderIndex } from "/js/blog.js";
-    renderIndex(document.getElementById("post-list"));
+    renderIndex(document.getElementById("post-list"), {
+      searchEl: document.getElementById("post-search"),
+      sortEl: document.getElementById("post-sort"),
+    });
   </script>
 </body>
 </html>

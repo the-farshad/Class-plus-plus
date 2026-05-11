@@ -3,96 +3,126 @@
     "slug": "welcome",
     "title": "Welcome to Class++ Notes",
     "date": "2026-05-04",
-    "summary": "What this section is for and how to add a new post."
+    "summary": "What this section is for and how to add a new post.",
+    "tags": ["meta", "how-to"]
   },
   {
     "slug": "cpp-pointers",
     "title": "Understanding Pointers in C++",
     "date": "2026-05-11",
-    "summary": "A quick guide to pointers, memory addresses, and common pitfalls in C++."
+    "summary": "A quick guide to pointers, memory addresses, and common pitfalls in C++.",
+    "tags": ["pointers", "memory", "references"]
   },
   {
     "slug": "week-1-notes",
-    "title": "Week 1: Introduction to C++",
+    "title": "Week 1: First project, I/O, and Program 01 workflow",
     "date": "2026-05-11",
-    "summary": "Essential concepts for Lab 01 and Program 01."
+    "week": 1,
+    "summary": "Visual Studio empty project, headers, four-integer sum—pseudocode + .cpp + transcript deliverables.",
+    "tags": ["visual-studio", "iostream", "cin", "cout", "variables", "deliverables"]
   },
   {
     "slug": "week-2-notes",
-    "title": "Week 2: Variables & Control Flow",
+    "title": "Week 2: Planning, selection, and bounded products",
     "date": "2026-05-12",
-    "summary": "Essential concepts for Lab 02 and Program 02."
+    "week": 2,
+    "summary": "Pseudocode discipline; if/else menus; program multiplies every integer in an interval (order flexible).",
+    "tags": ["pseudocode", "if-else", "planning", "loops", "arithmetics"]
   },
   {
     "slug": "week-3-notes",
-    "title": "Week 3: Structs & Classes",
+    "title": "Week 3: Structs, classes, and three loop flavors",
     "date": "2026-05-13",
-    "summary": "Essential concepts for Lab 03 and Program 03."
+    "week": 3,
+    "summary": "Extend Person struct/class with dates; program exercises for, while, and do-while on different tasks.",
+    "tags": ["struct", "class", "methods", "for-loop", "while-loop", "do-while"]
   },
   {
     "slug": "week-4-notes",
-    "title": "Week 4: Loops & Iteration",
+    "title": "Week 4: Stub functions, validation, and heart-rate math",
     "date": "2026-05-14",
-    "summary": "Essential concepts for Lab 04 and Program 04."
+    "week": 4,
+    "summary": "Minimal main + stubs; positive-only inputs; sentinel-driven program with fixed-prototype helpers.",
+    "tags": ["functions", "stubs", "validation", "casting", "sentinel"]
   },
   {
     "slug": "week-5-notes",
-    "title": "Week 5: Functions",
+    "title": "Week 5: Float vs double precision and π series",
     "date": "2026-05-15",
-    "summary": "Essential concepts for Lab 05 and Program 05."
+    "week": 5,
+    "summary": "Formatting with iomanip; reciprocal sums; alternating series for π without pow/atan in the series step.",
+    "tags": ["double", "float", "iomanip", "series", "numeric-error"]
   },
   {
     "slug": "week-6-notes",
-    "title": "Week 6: Arrays",
+    "title": "Week 6: Robust integer reads and multi-file layouts",
     "date": "2026-05-16",
-    "summary": "Essential concepts for Lab 06 and Program 06."
+    "week": 6,
+    "summary": "istream failure recovery; sentinel averages; separate header/cpp driver for geometric formulas.",
+    "tags": ["istream", "failbit", "ignore", "headers", "multi-file"]
   },
   {
     "slug": "week-7-notes",
-    "title": "Week 7: Pointers Basics",
+    "title": "Week 7: Line-oriented files and structured records",
     "date": "2026-05-17",
-    "summary": "Essential concepts for Lab 07 and Program 07."
+    "week": 7,
+    "summary": "Retry open/copy with getline; read employee structs from a block-formatted binary-style file.",
+    "tags": ["fstream", "getline", "structs", "file-io"]
   },
   {
     "slug": "week-8-notes",
-    "title": "Week 8: Dynamic Memory",
+    "title": "Week 8: Overloads, switches, and timing code",
     "date": "2026-05-18",
-    "summary": "Essential concepts for Lab 08 and Program 08."
+    "week": 8,
+    "summary": "Hospital charge overloads + reference outs; Fibonacci timings with steady_clock statistics.",
+    "tags": ["overloading", "switch", "reference-parameters", "chrono"]
   },
   {
     "slug": "week-9-notes",
-    "title": "Week 9: File I/O",
+    "title": "Week 9: Companion classes and regression math",
     "date": "2026-05-19",
-    "summary": "Essential concepts for Lab 09 and Program 09."
+    "week": 9,
+    "summary": "UML + Date beside Time; implement least-square line parameters behind a supplied interface.",
+    "tags": ["classes", "uml", "aggregation", "arrays", "statistics"]
   },
   {
     "slug": "week-10-notes",
-    "title": "Week 10: Advanced Classes",
+    "title": "Week 10: STL vector analysis and Polynomial ADT",
     "date": "2026-05-20",
-    "summary": "Essential concepts for Lab 10 and Program 10."
+    "week": 10,
+    "summary": "File → vector pipeline with range-for helpers; encapsulate coeffs/degree behaviors in a class.",
+    "tags": ["vector", "range-for", "file-io", "classes", "adts"]
   },
   {
     "slug": "week-11-notes",
-    "title": "Week 11: Inheritance",
+    "title": "Week 11: Raw C-strings vs a handcrafted string class",
     "date": "2026-05-21",
-    "summary": "Essential concepts for Lab 11 and Program 11."
+    "week": 11,
+    "summary": "strlen_s-style safety where available; cin.getline drains; dynamic storage for char buffers.",
+    "tags": ["cstring", "char-array", "cin", "class-design", "memory"]
   },
   {
     "slug": "week-12-notes",
-    "title": "Week 12: Polymorphism",
+    "title": "Week 12: Inheritance fleets and polymorphic shapes",
     "date": "2026-05-22",
-    "summary": "Essential concepts for Lab 12 and Program 12."
+    "week": 12,
+    "summary": "Derive specialized Auto types; extend abstract 2D hierarchy and sort by a geometric key.",
+    "tags": ["inheritance", "virtual", "polymorphism", "stl", "algorithms"]
   },
   {
     "slug": "week-13-notes",
-    "title": "Week 13: Templates",
+    "title": "Week 13: Virtual dispatch puzzles and 3D vector algebra",
     "date": "2026-05-23",
-    "summary": "Essential concepts for Lab 13 and Program 13."
+    "week": 13,
+    "summary": "Abstract bases, access control gotchas; ThreeDVec with dot/cross/magnitude operators.",
+    "tags": ["virtual", "abstract-class", "operators", "math", "classes"]
   },
   {
     "slug": "week-14-notes",
-    "title": "Week 14: Exceptions & STL",
+    "title": "Week 14: Debugging mixed I/O and vector statistics",
     "date": "2026-05-24",
-    "summary": "Essential concepts for Lab 14 and Program 14."
+    "week": 14,
+    "summary": "Repair getline/cin interactions; load ints from file; mean and median with STL vector.",
+    "tags": ["debugging", "getline", "vector", "median", "exceptions-readiness"]
   }
 ]

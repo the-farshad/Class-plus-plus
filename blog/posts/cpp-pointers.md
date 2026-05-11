@@ -1,3 +1,10 @@
+---
+slug: cpp-pointers
+title: "Understanding Pointers in C++"
+date: "2026-05-11"
+summary: "A quick guide to pointers, memory addresses, and common pitfalls in C++."
+tags: ["pointers","memory","references"]
+---
 # Understanding Pointers in C++
 
 Pointers are one of the most powerful and, at times, confusing features of C++. A pointer is simply a variable that stores the **memory address** of another variable.
