@@ -330,14 +330,14 @@ function renderClassList() {
     actions.className = "row";
 
     const rosterBtn = document.createElement("button");
-    rosterBtn.className = "sm";
-    rosterBtn.textContent = "Students";
+    rosterBtn.className = "secondary sm";
+    rosterBtn.innerHTML = `<i data-lucide="users" style="width:13px;height:13px;"></i> Roster`;
     rosterBtn.addEventListener("click", () => showStudentMgmt(c));
 
     const editBtn = document.createElement("button");
     editBtn.className = "secondary sm";
-    editBtn.innerHTML = `<i data-lucide="edit-2" style="width:14px;height:14px;"></i>`;
-    editBtn.title = "Edit Class";
+    editBtn.innerHTML = `<i data-lucide="edit-2" style="width:13px;height:13px;"></i>`;
+    editBtn.title = "Edit class";
     editBtn.addEventListener("click", () => {
       $("edit-class-id").value = c.id;
       $("edit-class-name").value = c.name;
@@ -347,8 +347,9 @@ function renderClassList() {
     });
 
     const delBtn = document.createElement("button");
-    delBtn.className = "secondary sm";
-    delBtn.textContent = "Delete";
+    delBtn.className = "secondary sm danger";
+    delBtn.innerHTML = `<i data-lucide="trash-2" style="width:13px;height:13px;"></i>`;
+    delBtn.title = "Delete class";
     delBtn.addEventListener("click", async () => {
       if (!confirm("Delete class and all its data?")) return;
       await api.deleteClass(c.id);
@@ -448,8 +449,9 @@ async function loadClassStudents() {
       const li = document.createElement("li");
       li.innerHTML = `<div>${escapeHTML(s.student_email)} <span class="muted">${escapeHTML(s.student_id || "")}</span></div>`;
       const delBtn = document.createElement("button");
-      delBtn.className = "secondary sm";
-      delBtn.textContent = "Remove";
+      delBtn.className = "secondary sm danger";
+      delBtn.innerHTML = `<i data-lucide="user-minus" style="width:13px;height:13px;"></i>`;
+      delBtn.title = `Remove ${s.student_email}`;
       delBtn.addEventListener("click", async () => {
         if (!confirm(`Remove ${s.student_email}?`)) return;
         await api.removeClassStudent(activeMgmtClass.id, s.student_email);
@@ -578,43 +580,77 @@ async function loadActivities() {
 
 const TYPE_LABELS = {
   submission: "Submission",
-  poll: "Poll (Bar)",
-  poll_pie: "Poll (Pie)",
+  poll: "Poll",
+  poll_pie: "Pie Poll",
   rating: "Rating",
   word_cloud: "Word Cloud",
 };
+const TYPE_ICONS = {
+  submission: "file-text",
+  poll: "bar-chart-2",
+  poll_pie: "pie-chart",
+  rating: "sliders",
+  word_cloud: "cloud",
+};
+
+function fmtDate(ts) {
+  if (!ts) return "";
+  const d = new Date(ts);
+  return d.toLocaleDateString(undefined, { month: "short", day: "numeric" }) +
+    " · " + d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+}
 
 function renderActivities(list_data) {
   const list = $("activities");
   list.innerHTML = "";
   if (!list_data.length) {
-    list.innerHTML = `<li class="muted">No activities for this class.</li>`;
+    list.innerHTML = `<li class="muted" style="padding:1rem;">No activities yet — launch one above.</li>`;
     return;
   }
   list_data.forEach((a) => {
     const li = document.createElement("li");
-    li.dataset.type = a.type; // enables CSS left-border color per type
+    li.dataset.type = a.type;
     const left = document.createElement("div");
-    const promptEl = document.createElement("div");
-    const label = TYPE_LABELS[a.type] || a.type.toUpperCase();
-    promptEl.innerHTML = `<strong>[${label}]</strong> ${escapeHTML(a.prompt)}`;
-    const meta = document.createElement("div");
-    meta.className = "meta";
-    const created = a.created_at ? new Date(a.created_at).toLocaleString() : "";
-    meta.innerHTML = `#${a.activity_id} · <span class="tag ${a.status}">${a.status}</span> · ${escapeHTML(created)}`;
-    left.append(promptEl, meta);
+    const icon = TYPE_ICONS[a.type] || "file-text";
+    const label = TYPE_LABELS[a.type] || a.type;
+    const isOpen = a.status === "open";
+    left.innerHTML = `
+      <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.25rem;">
+        <span class="type-badge type-badge--${a.type}">
+          <i data-lucide="${icon}" style="width:11px;height:11px;"></i> ${label}
+        </span>
+        <span class="status-pill ${isOpen ? "open" : "closed"}">
+          ${isOpen
+            ? `<i data-lucide="circle" style="width:7px;height:7px;fill:currentColor;"></i> Live`
+            : `<i data-lucide="circle" style="width:7px;height:7px;fill:currentColor;color:var(--muted)"></i> Closed`}
+        </span>
+      </div>
+      <div style="font-size:0.93rem;font-weight:500;line-height:1.4;">${escapeHTML(a.prompt)}</div>
+      <div class="meta" style="margin-top:0.2rem;">
+        <i data-lucide="clock" style="width:11px;height:11px;vertical-align:middle;"></i>
+        ${fmtDate(a.created_at)}
+        <span style="color:var(--border-strong);margin:0 0.3rem;">·</span>
+        <span style="color:var(--muted);font-size:0.78rem;">#${a.activity_id}</span>
+      </div>`;
+    left.append();
 
     const actions = document.createElement("div");
     actions.className = "row";
+    actions.style.gap = "0.3rem";
 
     const toggle = document.createElement("button");
-    toggle.className = "secondary sm";
-    toggle.textContent = a.status === "open" ? "Close" : "Open";
+    toggle.className = isOpen ? "secondary sm" : "sm";
+    toggle.style.minWidth = "72px";
+    toggle.innerHTML = isOpen
+      ? `<i data-lucide="lock" style="width:12px;height:12px;"></i> Close`
+      : `<i data-lucide="lock-open" style="width:12px;height:12px;"></i> Open`;
     toggle.addEventListener("click", () => toggleStatus(a));
 
     const view = document.createElement("button");
-    view.className = "sm";
-    view.textContent = a.type === "submission" ? "Responses" : "Results";
+    view.className = "secondary sm";
+    view.innerHTML = a.type === "submission"
+      ? `<i data-lucide="list" style="width:12px;height:12px;"></i> Responses`
+      : `<i data-lucide="bar-chart-2" style="width:12px;height:12px;"></i> Results`;
     view.addEventListener("click", () => showLiveResults(a));
 
     const editBtn = document.createElement("button");

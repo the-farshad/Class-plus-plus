@@ -519,6 +519,38 @@ button.sm, .button.sm {
 .activity-list li[data-type="word_cloud"] { border-left: 3px solid var(--warning); }
 .activity-list li[data-type="submission"] { border-left: 3px solid var(--border-strong); }
 
+/* Activity type badge */
+.type-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  background: var(--surface-2);
+  color: var(--muted);
+}
+.type-badge--poll,
+.type-badge--poll_pie { background: var(--brand-soft); color: var(--brand); }
+.type-badge--rating   { background: var(--success-soft); color: var(--success); }
+.type-badge--word_cloud { background: color-mix(in srgb, var(--warning) 15%, transparent); color: var(--warning); }
+
+/* Status pill */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+}
+.status-pill.open   { background: var(--success-soft); color: var(--success); }
+.status-pill.closed { background: var(--surface-2); color: var(--muted); }
+
 /* ---------- Tags & Badges ---------- */
 .tag {
   display: inline-flex;
