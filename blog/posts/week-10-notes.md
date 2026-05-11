@@ -11,24 +11,31 @@ week: 10
 
 ## What is `std::vector`?
 
-A `std::vector` is a dynamically-sized array that manages its own memory. Unlike a raw array (`int arr[100]`), a vector grows automatically as you add elements and you never have to guess the size upfront.
+A `std::vector` is a dynamically-sized array that manages its own memory. Unlike a raw array, it grows automatically as you add elements.
 
 ```cpp
 #include <vector>
 #include <iostream>
 
 int main() {
-    std::vector<int> scores;    // empty, size = 0
+    std::vector<int> scores;
 
     scores.push_back(85);
     scores.push_back(92);
     scores.push_back(74);
 
-    std::cout << "Size: " << scores.size() << "\n";   // 3
-    std::cout << "First: " << scores[0] << "\n";      // 85
-    std::cout << "Last:  " << scores.back() << "\n";  // 74
+    std::cout << "Size:  " << scores.size()  << "\n";
+    std::cout << "First: " << scores[0]      << "\n";
+    std::cout << "Last:  " << scores.back()  << "\n";
     return 0;
 }
+```
+
+**Output:**
+```
+Size:  3
+First: 85
+Last:  74
 ```
 
 Key operations:
@@ -36,46 +43,51 @@ Key operations:
 | Operation | What it does |
 |-----------|-------------|
 | `v.push_back(x)` | append `x` to the end |
-| `v.size()` | number of elements (type `size_t`) |
-| `v[i]` | access element at index `i` (no bounds check) |
-| `v.at(i)` | access with bounds checking (throws on bad index) |
+| `v.size()` | number of elements |
+| `v[i]` | element at index `i` (no bounds check) |
+| `v.at(i)` | element with bounds checking |
 | `v.front()` / `v.back()` | first / last element |
 | `v.empty()` | true if size is 0 |
 | `v.clear()` | remove all elements |
 
 ## Range-based `for` loops
 
-The range-based `for` loop works with any container that has a begin/end:
-
 ```cpp
-std::vector<int> nums = {3, 7, 2, 9, 1};
+#include <vector>
+#include <iostream>
 
-for (int n : nums) {
-    std::cout << n << " ";
+int main() {
+    std::vector<int> nums = {3, 7, 2, 9, 1};
+
+    std::cout << "Values: ";
+    for (const int& n : nums) {
+        std::cout << n << " ";
+    }
+    std::cout << "\n";
+
+    // double each element
+    for (int& n : nums) {
+        n *= 2;
+    }
+
+    std::cout << "Doubled: ";
+    for (const int& n : nums) {
+        std::cout << n << " ";
+    }
+    std::cout << "\n";
+    return 0;
 }
-// 3 7 2 9 1
 ```
 
-Use `const int& n` when you do not need to modify elements (avoids copying):
-
-```cpp
-int total = 0;
-for (const int& n : nums) {
-    total += n;
-}
+**Output:**
 ```
-
-Use `int& n` when you do need to modify:
-
-```cpp
-for (int& n : nums) {
-    n *= 2;   // doubles every element in place
-}
+Values:  3 7 2 9 1
+Doubled: 6 14 4 18 2
 ```
 
 ## Loading a vector from a file
 
-The correct order is: open file → read all data into vector → close file → then process. Do not mix reading and computation.
+The correct order: **open → read all → close → then compute**. Do not mix reading and computation.
 
 ```cpp
 #include <fstream>
@@ -85,9 +97,7 @@ The correct order is: open file → read all data into vector → close file →
 
 void readIntegers(std::vector<int>& data, std::ifstream& file) {
     int val = 0;
-    while (file >> val) {
-        data.push_back(val);
-    }
+    while (file >> val) data.push_back(val);
 }
 
 int getMin(const std::vector<int>& v) {
@@ -109,13 +119,9 @@ double getAvg(const std::vector<int>& v) {
 }
 
 int main() {
-    std::string filename;
-    std::cout << "Filename: ";
-    std::cin >> filename;
-
-    std::ifstream inFile(filename);
+    std::ifstream inFile("numbers.txt");
     if (!inFile.is_open()) {
-        std::cout << "Cannot open \"" << filename << "\"\n";
+        std::cout << "Cannot open file.\n";
         return 1;
     }
 
@@ -124,52 +130,83 @@ int main() {
     inFile.close();
 
     if (data.empty()) {
-        std::cout << "No data in file.\n";
+        std::cout << "No data.\n";
         return 1;
     }
 
-    std::cout << "Min: " << getMin(data)
-              << "  Max: " << getMax(data)
-              << "  Avg: " << getAvg(data) << "\n";
+    std::cout << "Count: " << data.size()  << "\n";
+    std::cout << "Min:   " << getMin(data) << "\n";
+    std::cout << "Max:   " << getMax(data) << "\n";
+    std::cout << "Avg:   " << getAvg(data) << "\n";
     return 0;
 }
 ```
 
-## Designing an ADT: the Polynomial class
+If `numbers.txt` contains: `10 5 3 22 8 15 1 19`
 
-An ADT (Abstract Data Type) hides its internal representation and exposes only meaningful operations. For a polynomial `4x³ + 3x² + 0.3x − 1.54`:
-
-- Internally: an array/vector of coefficients, indexed by exponent
-- Externally: methods like `degree()`, `evaluate(x)`, `print()`
-
-```cpp
-class Polynomial {
-public:
-    Polynomial();                              // zero polynomial
-    Polynomial(int degree);                   // all-zero coefficients
-    void setCoeff(int exponent, double val);  // set one coefficient
-    double getCoeff(int exponent) const;
-    int    degree() const;
-    double evaluate(double x) const;          // compute p(x)
-    void   print() const;
-
-private:
-    std::vector<double> coeffs_;  // coeffs_[k] is the coefficient for x^k
-};
+**Output:**
+```
+Count: 8
+Min:   1
+Max:   22
+Avg:   10.375
 ```
 
-**Evaluate using Horner's method** — more efficient than computing each power separately:
+## Designing an ADT: the Polynomial class
+
+An ADT hides its internal representation and exposes only meaningful operations. For `4x³ + 3x² + 0.3x − 1.54`:
 
 ```cpp
-// p(x) = a0 + a1*x + a2*x^2 + a3*x^3
-//       = a0 + x*(a1 + x*(a2 + x*a3))
-double Polynomial::evaluate(double x) const {
-    double result = 0.0;
-    for (int k = static_cast<int>(coeffs_.size()) - 1; k >= 0; --k) {
-        result = result * x + coeffs_[k];
+#include <vector>
+#include <iostream>
+#include <iomanip>
+
+class Polynomial {
+public:
+    Polynomial() {}
+
+    void setCoeff(int exp, double val) {
+        if (exp >= static_cast<int>(coeffs_.size()))
+            coeffs_.resize(exp + 1, 0.0);
+        coeffs_[exp] = val;
     }
-    return result;
+
+    int    degree()                 const { return static_cast<int>(coeffs_.size()) - 1; }
+    double getCoeff(int exp)        const { return (exp < static_cast<int>(coeffs_.size())) ? coeffs_[exp] : 0.0; }
+
+    double evaluate(double x) const {
+        double result = 0.0;
+        for (int k = degree(); k >= 0; --k)
+            result = result * x + coeffs_[k];   // Horner's method
+        return result;
+    }
+
+private:
+    std::vector<double> coeffs_;  // coeffs_[k] = coefficient for x^k
+};
+
+int main() {
+    Polynomial p;
+    p.setCoeff(3,  4.0);   // 4x^3
+    p.setCoeff(2,  3.0);   // 3x^2
+    p.setCoeff(1,  0.3);   //  0.3x
+    p.setCoeff(0, -1.54);  // -1.54
+
+    std::cout << "Degree: " << p.degree() << "\n";
+    std::cout << std::fixed << std::setprecision(4);
+    std::cout << "p(0) = " << p.evaluate(0.0) << "\n";  // should be -1.54
+    std::cout << "p(1) = " << p.evaluate(1.0) << "\n";  // 4+3+0.3-1.54 = 5.76
+    std::cout << "p(2) = " << p.evaluate(2.0) << "\n";  // 32+12+0.6-1.54 = 43.06
+    return 0;
 }
+```
+
+**Output:**
+```
+Degree: 3
+p(0) = -1.5400
+p(1) = 5.7600
+p(2) = 43.0600
 ```
 
 ---

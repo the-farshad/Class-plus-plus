@@ -22,6 +22,11 @@ int main() {
 }
 ```
 
+**Output:**
+```
+Hello, world!
+```
+
 **`#include <iostream>`** tells the compiler to bring in the standard input/output library. Without it, `cout` and `cin` simply do not exist. The angle brackets mean it is a system header, not a file you wrote.
 
 **`int main()`** is the entry point. Every program has exactly one. It returns an `int` to the operating system—`0` means success, anything else signals an error.
@@ -46,11 +51,25 @@ int main() {
 }
 ```
 
+**Sample run:**
+```
+Enter your age: 25
+In ten years you will be 35.
+```
+
 The `>>` operator extracts a value from the stream and puts it into the variable. You can chain multiple reads on one line:
 
 ```cpp
 int x = 0, y = 0;
-std::cin >> x >> y;   // reads two integers separated by whitespace
+std::cout << "Enter two integers: ";
+std::cin >> x >> y;
+std::cout << "Sum: " << x + y << "\n";
+```
+
+**Sample run:**
+```
+Enter two integers: 4 7
+Sum: 11
 ```
 
 ## Variables and types
@@ -68,26 +87,53 @@ A variable is a named box that holds a value. You must declare its *type* before
 Always initialize variables when you declare them:
 
 ```cpp
-int score = 0;       // good
-int score;           // bad—value is garbage until assigned
+int score = 0;       // good — starts at zero
+int score;           // bad  — value is garbage until assigned
 ```
 
 ## Doing arithmetic
 
 ```cpp
-int a = 10, b = 3;
-std::cout << a + b  << "\n";  // 13
-std::cout << a - b  << "\n";  // 7
-std::cout << a * b  << "\n";  // 30
-std::cout << a / b  << "\n";  // 3   ← integer division, remainder dropped
-std::cout << a % b  << "\n";  // 1   ← remainder (modulo)
+#include <iostream>
+
+int main() {
+    int a = 10, b = 3;
+    std::cout << a << " + " << b << " = " << a + b << "\n";
+    std::cout << a << " - " << b << " = " << a - b << "\n";
+    std::cout << a << " * " << b << " = " << a * b << "\n";
+    std::cout << a << " / " << b << " = " << a / b << "\n";
+    std::cout << a << " % " << b << " = " << a % b << "\n";
+    return 0;
+}
 ```
 
-Integer division is a frequent surprise: `10 / 3` is `3`, not `3.333`. To get a decimal result, at least one operand must be a floating-point type:
+**Output:**
+```
+10 + 3 = 13
+10 - 3 = 7
+10 * 3 = 30
+10 / 3 = 3
+10 % 3 = 1
+```
+
+Integer division truncates toward zero: `10 / 3` is `3`, not `3.333`. To get a decimal result, at least one operand must be a floating-point type:
 
 ```cpp
-double result = 10.0 / 3;    // 3.333...
-double result2 = static_cast<double>(a) / b;  // same
+#include <iostream>
+
+int main() {
+    int a = 10, b = 3;
+    double exact = static_cast<double>(a) / b;
+    std::cout << "Integer division: " << a / b   << "\n";
+    std::cout << "Double  division: " << exact    << "\n";
+    return 0;
+}
+```
+
+**Output:**
+```
+Integer division: 3
+Double  division: 3.33333
 ```
 
 ## Putting output together
@@ -95,10 +141,20 @@ double result2 = static_cast<double>(a) / b;  // same
 You can chain any number of values with `<<`:
 
 ```cpp
-int cups = 4;
-double oz = 8.5;
-std::cout << cups << " cups × " << oz << " oz = " << cups * oz << " oz total\n";
-// 4 cups × 8.5 oz = 34 oz total
+#include <iostream>
+
+int main() {
+    int cups = 4;
+    double oz = 8.5;
+    std::cout << cups << " cups x " << oz << " oz = "
+              << cups * oz << " oz total\n";
+    return 0;
+}
+```
+
+**Output:**
+```
+4 cups x 8.5 oz = 34 oz total
 ```
 
 ## The three-document workflow

@@ -9,8 +9,6 @@ week: 14
 
 # Week 14: Debugging, Statistics, and Wrapping Up
 
-Two skills meet this week: reading code that is **already broken** and fixing it systematically, and computing **statistical summaries** (mean and median) of data loaded from a file.
-
 ## Debugging systematically
 
 When you inherit buggy code, resist the urge to start changing things randomly. Work through these steps:
@@ -18,45 +16,72 @@ When you inherit buggy code, resist the urge to start changing things randomly. 
 1. **Read the expected behavior** — what should the program do?
 2. **Run it and observe the actual behavior** — what does it do instead?
 3. **Form a hypothesis** — what could cause this specific symptom?
-4. **Test the hypothesis** — add a `cout` or use the debugger to inspect state.
+4. **Test the hypothesis** — add a `cout` to inspect state at that point.
 5. **Fix one thing at a time** — confirm each fix before moving on.
 
 ## The `cin` + `getline` name-reading bug
 
-A classic bug: a program reads a name with `cin >>` expecting one word, but full names have spaces, so `getline` is needed instead. Without the fix:
+A classic bug: the program reads a name with `cin >>` and full names break because `>>` stops at the first space.
 
+**Buggy version:**
 ```cpp
-std::string nurseName, patientName;
+#include <iostream>
+#include <string>
 
-std::cout << "Enter nurse's name: ";
-std::cin >> nurseName;           // reads only first word, leaves rest in buffer
+int main() {
+    std::string nurseName, patientName;
+    std::cout << "Enter nurse's name: ";
+    std::cin >> nurseName;          // stops at first space!
+    std::cout << "Enter patient's name: ";
+    std::cin >> patientName;        // picks up leftover words from nurse's name
 
-std::cout << "Enter patient's name: ";
-std::cin >> patientName;         // picks up second word of nurse's name!
+    std::cout << "Nurse:   " << nurseName   << "\n";
+    std::cout << "Patient: " << patientName << "\n";
+    return 0;
+}
 ```
 
-For names with spaces, use `getline` throughout, and ensure there is no leftover newline before the first call:
-
-```cpp
-std::string nurseName, patientName;
-
-// If anything was read with >> before this, call:
-// std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-
-std::cout << "Enter nurse's name: ";
-std::getline(std::cin, nurseName);
-
-std::cout << "Enter patient's name: ";
-std::getline(std::cin, patientName);
+**Sample run with full name — wrong output:**
+```
+Enter nurse's name: Josephine Nightingale
+Enter patient's name: Nurse:   Josephine
+Patient: Nightingale
 ```
 
-Now "Josephine Nightingale" stays together as the nurse's name.
+**Fixed version using `getline`:**
+```cpp
+#include <iostream>
+#include <string>
+#include <limits>
+
+int main() {
+    std::string nurseName, patientName;
+
+    std::cout << "Enter nurse's name: ";
+    std::getline(std::cin, nurseName);
+
+    std::cout << "Enter patient's name: ";
+    std::getline(std::cin, patientName);
+
+    std::cout << "Nurse:   " << nurseName   << "\n";
+    std::cout << "Patient: " << patientName << "\n";
+    return 0;
+}
+```
+
+**Sample run — correct output:**
+```
+Enter nurse's name: Josephine Nightingale
+Enter patient's name: Poor Unfortunate Soule
+Nurse:   Josephine Nightingale
+Patient: Poor Unfortunate Soule
+```
 
 ## Computing the mean
 
 ```cpp
 #include <vector>
-#include <numeric>   // for std::accumulate
+#include <iostream>
 
 double mean(const std::vector<int>& v) {
     if (v.empty()) return 0.0;
@@ -64,85 +89,91 @@ double mean(const std::vector<int>& v) {
     for (int x : v) sum += x;
     return static_cast<double>(sum) / static_cast<double>(v.size());
 }
-```
 
-Watch out for overflow: if the values are large and the vector is long, `int` can overflow. Use `long long` for the accumulator.
-
-## Computing the median
-
-The median is the middle value when the data is sorted. For even counts, it is the average of the two middle values.
-
-```cpp
-#include <algorithm>   // for std::sort
-
-double median(std::vector<int> v) {   // pass by VALUE — we will sort it
-    if (v.empty()) return 0.0;
-    std::sort(v.begin(), v.end());
-
-    size_t n = v.size();
-    if (n % 2 == 1) {
-        return static_cast<double>(v[n / 2]);         // middle element
-    } else {
-        return (v[n/2 - 1] + v[n/2]) / 2.0;          // average of two middles
-    }
+int main() {
+    std::vector<int> data = {4, 8, 15, 16, 23, 42};
+    std::cout << "Mean: " << mean(data) << "\n";
+    return 0;
 }
 ```
 
-Passing by value (not reference) means the sort happens on a copy—the caller's vector is unchanged. This is intentional when the caller still needs the original order.
+**Output:**
+```
+Mean: 18
+```
+
+Use `long long` for the accumulator—if values are large and the vector is long, `int` overflows silently.
+
+## Computing the median
+
+```cpp
+#include <vector>
+#include <algorithm>
+#include <iostream>
+
+double median(std::vector<int> v) {   // pass by VALUE — we sort a copy
+    if (v.empty()) return 0.0;
+    std::sort(v.begin(), v.end());
+    size_t n = v.size();
+    if (n % 2 == 1)
+        return static_cast<double>(v[n / 2]);
+    else
+        return (v[n/2 - 1] + v[n/2]) / 2.0;
+}
+
+int main() {
+    std::vector<int> odd  = {3, 1, 4, 1, 5};
+    std::vector<int> even = {3, 1, 4, 1, 5, 9};
+
+    std::cout << "Odd  count median: " << median(odd)  << "\n";
+    std::cout << "Even count median: " << median(even) << "\n";
+    return 0;
+}
+```
+
+**Output:**
+```
+Odd  count median: 3
+Even count median: 3.5
+```
+
+For `odd` = {1, 1, 3, 4, 5} sorted, middle element is index 2 → `3`.
+For `even` = {1, 1, 3, 4, 5, 9} sorted, average of indices 2 and 3 → `(3 + 4) / 2 = 3.5`.
 
 ## Reading integers from a file into a vector
 
 ```cpp
 #include <fstream>
 #include <vector>
-#include <string>
 #include <iostream>
+#include <string>
 
-std::vector<int> readData(const std::string& filename, bool& ok) {
-    std::vector<int> data;
-    std::ifstream file(filename);
-    if (!file.is_open()) {
-        ok = false;
-        return data;
-    }
+int readData(std::vector<int>& data, std::ifstream& file) {
+    if (!file.is_open()) return 1;   // error
     int val = 0;
-    while (file >> val) {
-        data.push_back(val);
-    }
-    ok = true;
-    return data;
+    while (file >> val) data.push_back(val);
+    return 0;                        // success
 }
-```
 
-The function signals success/failure through the `bool&` parameter because the return value is already used for the data. An alternative is to return an empty vector and let the caller decide what "empty" means, but explicit status is clearer.
+int main() {
+    std::string filename;
+    std::ifstream file;
 
-## Prompting until a file opens
-
-```cpp
-std::string promptForFile() {
-    std::string name;
     while (true) {
         std::cout << "Enter filename: ";
-        std::cin >> name;
-        std::ifstream test(name);
-        if (test.is_open()) return name;
-        std::cout << "  Cannot open \"" << name << "\" — try again.\n";
+        std::cin >> filename;
+        file.open(filename);
+        if (file.is_open()) break;
+        std::cout << "  Cannot open \"" << filename << "\"\n";
+        file.clear();
     }
-}
-```
 
-## Putting it all together
-
-```cpp
-int main() {
-    std::string filename = promptForFile();
-
-    bool ok = false;
-    std::vector<int> data = readData(filename, ok);
-    if (!ok || data.empty()) {
+    std::vector<int> data;
+    if (readData(data, file) != 0 || data.empty()) {
         std::cout << "No data to process.\n";
         return 1;
     }
+    file.close();
 
     std::cout << "Count:  " << data.size()  << "\n";
     std::cout << "Mean:   " << mean(data)   << "\n";
@@ -151,11 +182,26 @@ int main() {
 }
 ```
 
+If the file `scores.txt` contains: `72 88 91 65 78 95 83 70`
+
+**Sample run:**
+```
+Enter filename: missing.txt
+  Cannot open "missing.txt"
+Enter filename: scores.txt
+Count:  8
+Mean:   80.25
+Median: 80.5
+```
+
 ## Looking ahead: exceptions
 
-`std::sort` and many STL operations can throw `std::bad_alloc` if memory runs out. A `try/catch` block gracefully handles these:
+STL operations can throw `std::bad_alloc` when memory runs out. A `try/catch` block handles this gracefully:
 
 ```cpp
+#include <stdexcept>
+#include <iostream>
+
 try {
     std::sort(v.begin(), v.end());
 } catch (const std::exception& e) {
@@ -163,7 +209,7 @@ try {
 }
 ```
 
-You will explore this further in later courses; for now, knowing the syntax exists is enough.
+You will explore exception-driven design in later courses. For now, knowing the syntax exists is enough.
 
 ---
 

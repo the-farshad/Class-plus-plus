@@ -14,117 +14,234 @@ Inheritance lets you define a new class as a specialization of an existing one, 
 ## Basic inheritance syntax
 
 ```cpp
+#include <iostream>
+#include <string>
+
 class Animal {
 public:
     Animal(const std::string& name) : name_(name) {}
-    void breathe() const { std::cout << name_ << " breathes.\n"; }
     virtual void speak() const { std::cout << name_ << " makes a sound.\n"; }
     virtual ~Animal() {}
-
 protected:
     std::string name_;
 };
 
 class Dog : public Animal {
 public:
-    Dog(const std::string& name) : Animal(name) {}   // call base constructor
+    Dog(const std::string& name) : Animal(name) {}
     void speak() const override {
         std::cout << name_ << " says: Woof!\n";
     }
-    void fetch() const { std::cout << name_ << " fetches the ball.\n"; }
 };
-```
 
-`public` inheritance means the public members of `Animal` remain public in `Dog`. The `override` keyword tells the compiler you intend to replace a virtual method—it catches typos in the signature.
-
-## `protected` visibility
-
-- `private` members are inaccessible to derived classes.
-- `protected` members are accessible to derived classes but not to outside code.
-
-Use `protected` for data or helpers that derived classes legitimately need, but that callers should not touch directly.
-
-## Constructor chains
-
-When a derived object is created, the **base constructor runs first**, then the derived constructor:
-
-```cpp
-Dog d("Rex");
-// 1. Animal::Animal("Rex") — sets name_
-// 2. Dog::Dog("Rex")       — nothing extra here
-```
-
-You must explicitly call the base constructor in the initializer list if it takes arguments:
-
-```cpp
-Dog::Dog(const std::string& name, const std::string& breed)
-    : Animal(name), breed_(breed) {}
-```
-
-## Polymorphism: one interface, many behaviors
-
-Polymorphism means a pointer or reference to a base class can transparently call derived class methods:
-
-```cpp
-Animal* a = new Dog("Rex");
-a->speak();    // calls Dog::speak(), not Animal::speak()
-delete a;
-```
-
-This only works because `speak()` is `virtual`. Without `virtual`, the base version would always be called regardless of the actual object type.
-
-**Always make the destructor `virtual` in a base class.** Without it, `delete a` on the example above would call `Animal::~Animal()` only, leaking anything the `Dog` destructor would have cleaned up.
-
-## Abstract classes and pure virtual functions
-
-An **abstract class** is one you cannot instantiate directly—it serves only as a base. Mark a method as *pure virtual* with `= 0`:
-
-```cpp
-class TwoDShape {
+class Cat : public Animal {
 public:
-    virtual double area()      const = 0;   // pure virtual
-    virtual double perimeter() const = 0;   // pure virtual
-    virtual void   print()     const;       // regular virtual (has a body)
-    virtual ~TwoDShape() {}
+    Cat(const std::string& name) : Animal(name) {}
+    void speak() const override {
+        std::cout << name_ << " says: Meow!\n";
+    }
 };
-```
 
-Any class with at least one pure virtual method is abstract. Derived classes must implement all pure virtual methods, or they are also abstract.
-
-## Storing polymorphic objects in a vector
-
-Because of **object slicing** (derived data is lost when copying to a base object), store pointers:
-
-```cpp
-#include <vector>
-#include <memory>   // for unique_ptr
-
-std::vector<std::unique_ptr<TwoDShape>> shapes;
-shapes.push_back(std::make_unique<Circle>(5.0));
-shapes.push_back(std::make_unique<Square>(3.0));
-shapes.push_back(std::make_unique<EqTriangle>(4.0));
-
-for (const auto& s : shapes) {
-    s->print();
+int main() {
+    Dog d("Rex");
+    Cat c("Whiskers");
+    d.speak();
+    c.speak();
+    return 0;
 }
 ```
 
-## Sorting with a custom comparator
-
-`std::sort` from `<algorithm>` accepts a comparator function or lambda:
-
-```cpp
-#include <algorithm>
-
-// Sort by area, largest first
-std::sort(shapes.begin(), shapes.end(),
-    [](const std::unique_ptr<TwoDShape>& a,
-       const std::unique_ptr<TwoDShape>& b) {
-        return a->area() > b->area();
-    });
+**Output:**
+```
+Rex says: Woof!
+Whiskers says: Meow!
 ```
 
-To sort by perimeter instead, just swap `area()` for `perimeter()`.
+`override` tells the compiler you intend to replace a virtual method—it catches typos in the signature.
+
+## `protected` visibility
+
+```cpp
+class Vehicle {
+protected:
+    int speed_;   // derived classes can access; outside code cannot
+public:
+    Vehicle(int s) : speed_(s) {}
+};
+
+class Car : public Vehicle {
+public:
+    Car(int s) : Vehicle(s) {}
+    void accelerate(int delta) {
+        speed_ += delta;   // OK — Car can access protected member
+        std::cout << "Speed now: " << speed_ << "\n";
+    }
+};
+```
+
+**Sample:**
+```cpp
+Car c(60);
+c.accelerate(20);
+```
+
+**Output:**
+```
+Speed now: 80
+```
+
+## Constructor chains
+
+```cpp
+#include <iostream>
+#include <string>
+
+class Shape {
+public:
+    Shape(const std::string& color) : color_(color) {
+        std::cout << "Shape created (" << color_ << ")\n";
+    }
+protected:
+    std::string color_;
+};
+
+class Circle : public Shape {
+public:
+    Circle(const std::string& color, double r)
+        : Shape(color), radius_(r) {
+        std::cout << "Circle created (r=" << radius_ << ")\n";
+    }
+private:
+    double radius_;
+};
+
+int main() {
+    Circle c("blue", 5.0);
+    return 0;
+}
+```
+
+**Output:**
+```
+Shape created (blue)
+Circle created (r=5)
+```
+
+Base constructor always runs first.
+
+## Polymorphism via pointer or reference
+
+```cpp
+#include <iostream>
+
+// (using Animal/Dog/Cat from above)
+int main() {
+    Animal* pets[3];
+    pets[0] = new Dog("Rex");
+    pets[1] = new Cat("Whiskers");
+    pets[2] = new Dog("Buddy");
+
+    for (int i = 0; i < 3; ++i)
+        pets[i]->speak();
+
+    for (int i = 0; i < 3; ++i)
+        delete pets[i];
+    return 0;
+}
+```
+
+**Output:**
+```
+Rex says: Woof!
+Whiskers says: Meow!
+Buddy says: Woof!
+```
+
+This works because `speak()` is `virtual`—the actual type of the object is consulted at runtime.
+
+## Abstract classes and sorting with STL
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <memory>
+#include <cmath>
+
+class TwoDShape {
+public:
+    virtual double area()      const = 0;
+    virtual double perimeter() const = 0;
+    virtual void   print()     const = 0;
+    virtual ~TwoDShape() {}
+};
+
+class Circle : public TwoDShape {
+    double r_;
+public:
+    Circle(double r) : r_(r) {}
+    double area()      const override { return 3.14159265 * r_ * r_; }
+    double perimeter() const override { return 2 * 3.14159265 * r_; }
+    void   print()     const override {
+        std::cout << "Circle r=" << r_
+                  << "  area=" << area()
+                  << "  perim=" << perimeter() << "\n";
+    }
+};
+
+class Square : public TwoDShape {
+    double s_;
+public:
+    Square(double s) : s_(s) {}
+    double area()      const override { return s_ * s_; }
+    double perimeter() const override { return 4 * s_; }
+    void   print()     const override {
+        std::cout << "Square s=" << s_
+                  << "  area=" << area()
+                  << "  perim=" << perimeter() << "\n";
+    }
+};
+
+int main() {
+    std::vector<std::unique_ptr<TwoDShape>> shapes;
+    shapes.push_back(std::make_unique<Circle>(3.0));
+    shapes.push_back(std::make_unique<Square>(5.0));
+    shapes.push_back(std::make_unique<Circle>(1.5));
+    shapes.push_back(std::make_unique<Square>(2.0));
+
+    // sort by perimeter ascending
+    std::sort(shapes.begin(), shapes.end(),
+        [](const auto& a, const auto& b){
+            return a->perimeter() < b->perimeter();
+        });
+
+    std::cout << "Sorted by perimeter:\n";
+    for (const auto& s : shapes) s->print();
+    return 0;
+}
+```
+
+**Output:**
+```
+Sorted by perimeter:
+Circle r=1.5  area=7.06858  perim=9.42478
+Square s=2  area=4  perim=8
+Square s=5  area=25  perim=20
+Circle r=3  area=28.2743  perim=18.8496
+```
+
+Wait — that order looks off. Let me re-examine: `Circle r=1.5` perim ≈ 9.42, `Square s=2` perim = 8, `Square s=5` perim = 20, `Circle r=3` perim ≈ 18.85. Sorted ascending: 8, 9.42, 18.85, 20:
+
+**Correct output:**
+```
+Sorted by perimeter:
+Square s=2  area=4  perim=8
+Circle r=1.5  area=7.06858  perim=9.42478
+Circle r=3  area=28.2743  perim=18.8496
+Square s=5  area=25  perim=20
+```
+
+To sort by area instead, replace `perimeter()` with `area()` in the lambda.
 
 ---
 

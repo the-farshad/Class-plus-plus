@@ -62,6 +62,18 @@ int main() {
 }
 ```
 
+**Sample run — valid input:**
+```
+Enter a number (1-4): 3
+Three is just confusing.
+```
+
+**Sample run — out of range:**
+```
+Enter a number (1-4): 99
+Input not in range.
+```
+
 Key points:
 - `==` tests equality; `=` assigns. Confusing them is one of the most common bugs in C++.
 - Exactly one branch executes. Once a condition is true, the rest are skipped.
@@ -79,12 +91,34 @@ Key points:
 | `\|\|` | OR — at least one side must be true |
 | `!` | NOT — flips true/false |
 
-Example: checking that a value is inside a range:
+Example — checking a range and printing a verdict:
 
 ```cpp
-if (x >= 1 && x <= 100) {
-    std::cout << "In range.\n";
+#include <iostream>
+
+int main() {
+    int x = 0;
+    std::cout << "Enter a number: ";
+    std::cin >> x;
+
+    if (x >= 1 && x <= 100) {
+        std::cout << x << " is in range [1, 100].\n";
+    } else {
+        std::cout << x << " is out of range.\n";
+    }
+    return 0;
 }
+```
+
+**Sample run:**
+```
+Enter a number: 42
+42 is in range [1, 100].
+```
+
+```
+Enter a number: 0
+0 is out of range.
 ```
 
 ## Loops: the `for` loop
@@ -92,10 +126,23 @@ if (x >= 1 && x <= 100) {
 A `for` loop is the right tool when you know in advance how many times you need to repeat something.
 
 ```cpp
-// print the squares of 1 through 5
-for (int i = 1; i <= 5; ++i) {
-    std::cout << i << " squared = " << i * i << "\n";
+#include <iostream>
+
+int main() {
+    for (int i = 1; i <= 5; ++i) {
+        std::cout << i << " squared = " << i * i << "\n";
+    }
+    return 0;
 }
+```
+
+**Output:**
+```
+1 squared = 1
+2 squared = 4
+3 squared = 9
+4 squared = 16
+5 squared = 25
 ```
 
 The three parts of the header:
@@ -115,7 +162,6 @@ int main() {
     std::cout << "Enter two integers: ";
     std::cin >> low >> high;
 
-    // make sure low <= high
     if (low > high) {
         int tmp = low;
         low = high;
@@ -133,9 +179,23 @@ int main() {
 }
 ```
 
-Two things to notice:
-- We swap `low` and `high` if the user entered them in the wrong order. The same interval `[3, 7]` should give the same product regardless of entry order.
-- We use `long long` because products grow very fast and overflow `int` quickly.
+**Sample run — normal order:**
+```
+Enter two integers: 3 6
+Product from 3 to 6 = 360
+```
+
+**Sample run — reversed order (program handles it):**
+```
+Enter two integers: 6 3
+Product from 3 to 6 = 360
+```
+
+**Sample run — same value:**
+```
+Enter two integers: 5 5
+Product from 5 to 5 = 5
+```
 
 ## Edge cases to test
 

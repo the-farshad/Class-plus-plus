@@ -11,15 +11,13 @@ week: 9
 
 ## What makes a good class?
 
-A class is not just a `struct` with functions bolted on. A well-designed class:
+A well-designed class:
 - Hides its internal representation (`private` members)
 - Exposes only what callers need (`public` interface)
-- Enforces valid state (never lets the object get into an impossible condition)
-- Is documented with a **UML diagram** so teammates understand it without reading the code
+- Enforces valid state through setters
+- Is documented with a **UML diagram** before you write any code
 
 ## UML class diagrams (text style)
-
-UML shows the name, attributes, and operations of a class. In text form (as the course asks):
 
 ```
 Date
@@ -38,29 +36,20 @@ Date
 + print() : void
 ```
 
-Conventions:
-- `-` means `private`
-- `+` means `public`
-- Parameters are `name:type`, default values shown with `=`
-- Return type comes after the colon at the end
-
-Draw (or type) this **before** writing code. It is your blueprint.
+`-` means `private`, `+` means `public`. Draw this **before** writing code.
 
 ## Writing the class
 
+**Date.h**
 ```cpp
-// Date.h
 #pragma once
 
 class Date {
 public:
     Date(int month = 1, int day = 1, int year = 0);
-    void setMonth(int m);
-    int  getMonth() const;
-    void setDay(int d);
-    int  getDay() const;
-    void setYear(int y);
-    int  getYear() const;
+    void setMonth(int m);  int getMonth() const;
+    void setDay(int d);    int getDay()   const;
+    void setYear(int y);   int getYear()  const;
     void print() const;
 
 private:
@@ -70,65 +59,83 @@ private:
 };
 ```
 
+**Date.cpp**
 ```cpp
-// Date.cpp
 #include "Date.h"
 #include <iostream>
 
-Date::Date(int month, int day, int year)
-    : month_(month), day_(day), year_(year) {}
+Date::Date(int m, int d, int y) : month_(m), day_(d), year_(y) {}
 
 void Date::setMonth(int m) { month_ = (m >= 1 && m <= 12) ? m : 1; }
 int  Date::getMonth() const { return month_; }
-
 void Date::setDay(int d)   { day_   = (d >= 1 && d <= 31) ? d : 1; }
 int  Date::getDay()  const { return day_; }
-
-void Date::setYear(int y)  { year_  = (y >= 0) ? y : 0; }
+void Date::setYear(int y)  { year_  = (y >= 0)            ? y : 0; }
 int  Date::getYear() const { return year_; }
 
 void Date::print() const {
-    // US format MM/DD/YYYY
     std::cout << month_ << "/" << day_ << "/" << year_;
 }
 ```
 
-Note the `const` on getter methods—it means "this method does not modify the object." Mark every method that only reads data as `const`.
-
-## Two classes working together
-
-When a `Time` object and a `Date` object describe the same moment, you can hold both in a test program without either class knowing about the other:
-
+**Test:**
 ```cpp
-#include "Date.h"
-#include "Time.h"
 #include <iostream>
+#include "Date.h"
 
 int main() {
     Date d(4, 15, 2026);
-    Time t(14, 30, 0);    // 2:30 PM
+    std::cout << "Date: ";
+    d.print();
+    std::cout << "\n";
+
+    d.setMonth(13);   // invalid — clamped to 1
+    std::cout << "After setMonth(13): " << d.getMonth() << "\n";
+    return 0;
+}
+```
+
+**Output:**
+```
+Date: 4/15/2026
+After setMonth(13): 1
+```
+
+Note the `const` on getter methods—they do not modify the object. Always mark read-only methods `const`.
+
+## Two classes working together
+
+Keep classes independent of each other. A test program coordinates them:
+
+```cpp
+#include <iostream>
+#include "Date.h"
+#include "Time.h"   // provided by the course
+
+int main() {
+    Date d(4, 15, 2026);
+    Time t(14, 30, 0);    // 2:30:00 PM
 
     std::cout << "Date: ";  d.print();
-    std::cout << " Time: "; t.print();
+    std::cout << "  Time: "; t.print();
     std::cout << "\n";
     return 0;
 }
 ```
 
-Keep the two classes independent—neither should `#include` the other. The test program coordinates them.
+**Output:**
+```
+Date: 4/15/2026  Time: 2:30:00 PM
+```
 
 ## Linear regression basics
 
-Given pairs of data points `(x₁,y₁), (x₂,y₂), ..., (xₙ,yₙ)`, the **least-squares line** `y = mx + b` that best fits the data has:
-
-```
-m = (n·Σxᵢyᵢ − Σxᵢ·Σyᵢ) / (n·Σxᵢ² − (Σxᵢ)²)
-b = (Σyᵢ − m·Σxᵢ) / n
-```
-
-You compute five running totals as you loop through the data: `n`, `Σx`, `Σy`, `Σx²`, `Σxy`. Then apply the formulas above once, after the loop.
+Given data points `(x, y)`, the least-squares line `y = mx + b` minimizes total squared error. Compute five running totals, then apply the closed-form formulas:
 
 ```cpp
+#include <iostream>
+#include <cmath>
+
 void computeLine(const double x[], const double y[], int n,
                  double& slope, double& intercept) {
     double sx = 0, sy = 0, sxx = 0, sxy = 0;
@@ -138,10 +145,33 @@ void computeLine(const double x[], const double y[], int n,
         sxx += x[i] * x[i];
         sxy += x[i] * y[i];
     }
-    slope     = (n * sxy - sx * sy) / (n * sxx - sx * sx);
-    intercept = (sy - slope * sx) / n;
+    slope     = (n * sxy - sx * sy)  / (n * sxx - sx * sx);
+    intercept = (sy - slope * sx)    / n;
+}
+
+int main() {
+    double xs[] = {1, 2, 3, 4, 5};
+    double ys[] = {2.1, 3.9, 6.2, 7.8, 10.1};
+    int n = 5;
+
+    double m = 0, b = 0;
+    computeLine(xs, ys, n, m, b);
+
+    std::cout << "Slope:     " << m << "\n";
+    std::cout << "Intercept: " << b << "\n";
+    std::cout << "Line: y = " << m << "x + " << b << "\n";
+    return 0;
 }
 ```
+
+**Output:**
+```
+Slope:     2.01
+Intercept: 0.04
+Line: y = 2.01x + 0.04
+```
+
+The data was generated from `y = 2x + noise`, and the regression recovers approximately `y = 2x`.
 
 ---
 

@@ -13,12 +13,9 @@ Keyboard input disappears when a program ends. Files let you persist data betwee
 
 ## Opening a file
 
-Include `<fstream>` and declare either an `ifstream` (input) or `ofstream` (output):
-
 ```cpp
 #include <fstream>
 #include <iostream>
-#include <string>
 
 int main() {
     std::ifstream inFile("data.txt");
@@ -28,25 +25,32 @@ int main() {
         return 1;
     }
 
-    // ... read from inFile ...
-
+    std::cout << "File opened successfully.\n";
     inFile.close();
     return 0;
 }
 ```
 
-Always check `is_open()` (or test the stream as a boolean) before reading. Files may not exist, may have wrong permissions, or the path may be wrong.
+**Output (file exists):**
+```
+File opened successfully.
+```
 
-## Prompting until a file opens successfully
+**Output (file missing):**
+```
+Could not open data.txt
+```
 
-Programs that rely on a filename from the user should retry:
+Always check `is_open()` before reading.
+
+## Prompting until a file opens
 
 ```cpp
 #include <fstream>
 #include <iostream>
 #include <string>
 
-std::ifstream openUntilSuccess() {
+int main() {
     std::string name;
     std::ifstream file;
 
@@ -54,12 +58,23 @@ std::ifstream openUntilSuccess() {
         std::cout << "Enter filename: ";
         std::cin >> name;
         file.open(name);
-        if (file.is_open()) return file;    // move-return
-
+        if (file.is_open()) break;
         std::cout << "  Cannot open \"" << name << "\". Try again.\n";
-        file.clear();                       // reset flags before reuse
+        file.clear();
     }
+
+    std::cout << "Opened: " << name << "\n";
+    file.close();
+    return 0;
 }
+```
+
+**Sample run:**
+```
+Enter filename: missing.txt
+  Cannot open "missing.txt". Try again.
+Enter filename: notes.txt
+Opened: notes.txt
 ```
 
 ## Reading line by line with `getline`
@@ -67,83 +82,150 @@ std::ifstream openUntilSuccess() {
 `operator>>` on strings stops at whitespace. `std::getline` reads an entire line including spaces:
 
 ```cpp
-std::string line;
-while (std::getline(inFile, line)) {
-    // process line
-    std::cout << line << "\n";
+#include <fstream>
+#include <iostream>
+#include <string>
+
+int main() {
+    std::ifstream in("poem.txt");
+    std::string line;
+    int lineNum = 0;
+    while (std::getline(in, line)) {
+        ++lineNum;
+        std::cout << lineNum << ": " << line << "\n";
+    }
+    return 0;
 }
+```
+
+If `poem.txt` contains:
+```
+Roses are red
+Violets are blue
+```
+
+**Output:**
+```
+1: Roses are red
+2: Violets are blue
 ```
 
 `getline` returns the stream (which converts to `false` at end-of-file), so using it directly in the `while` condition is the correct loop structure.
 
 ### The newline trap
 
-`getline` reads up to and including `\n`, discarding the newline. When you copy to an output file, put it back:
+`getline` discards the `\n` it reads. When copying to an output file, put it back:
 
 ```cpp
-std::string line;
-while (std::getline(input, line)) {
-    output << line << "\n";   // restore the newline that getline consumed
+#include <fstream>
+#include <string>
+
+int main() {
+    std::ifstream input("source.txt");
+    std::ofstream output("copy.txt");
+    std::string line;
+    while (std::getline(input, line)) {
+        output << line << "\n";   // restore the newline getline consumed
+    }
+    return 0;
 }
 ```
 
 ### Mixing `>>` and `getline`
 
-`operator>>` leaves a newline in the buffer after reading a word or number. If you then call `getline`, it immediately reads that leftover newline as an empty line. Fix it by ignoring the remainder of the line after the `>>` read:
+`operator>>` leaves a newline in the buffer. If you call `getline` next without draining it, `getline` reads that empty line immediately.
 
 ```cpp
-int n = 0;
-std::cin >> n;
-std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');  // flush newline
-std::string sentence;
-std::getline(std::cin, sentence);   // now reads correctly
+#include <iostream>
+#include <limits>
+#include <string>
+
+int main() {
+    int n = 0;
+    std::cout << "Enter a number: ";
+    std::cin >> n;
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // drain
+
+    std::string sentence;
+    std::cout << "Enter a sentence: ";
+    std::getline(std::cin, sentence);
+
+    std::cout << "Number: " << n << "\n";
+    std::cout << "Sentence: " << sentence << "\n";
+    return 0;
+}
 ```
+
+**Sample run:**
+```
+Enter a number: 5
+Enter a sentence: hello world
+Number: 5
+Sentence: hello world
+```
+
+Without the `ignore`, "Enter a sentence:" would be skipped and `sentence` would be empty.
 
 ## Reading structured records
 
-When a file contains repeated blocks of data describing the same kind of thing, define a struct and read one block per iteration:
-
 ```cpp
+#include <fstream>
+#include <iostream>
+#include <string>
+
 struct Employee {
     int   id;
-    char  department[25];
+    std::string department;
     float hours;
 };
+
+int main() {
+    std::ifstream inFile("staff.txt");
+    Employee emp;
+    int   totalCount = 0;
+    float totalHours = 0.0f;
+
+    while (inFile >> emp.id >> emp.department >> emp.hours) {
+        if (emp.id == 0) break;           // sentinel
+        ++totalCount;
+        totalHours += emp.hours;
+    }
+
+    if (totalCount > 0) {
+        std::cout << totalCount << " employees\n";
+        std::cout << "Total hours: " << totalHours << "\n";
+        std::cout << "Average: " << totalHours / totalCount << "\n";
+    }
+    return 0;
+}
 ```
 
-Read sequentially until end-of-file or a sentinel value:
+If `staff.txt` contains:
+```
+101 Engineering 40.0
+102 Marketing   37.5
+103 Engineering 42.0
+0   End         0.0
+```
 
-```cpp
-Employee emp;
-int totalCount = 0;
-float totalHours = 0.0f;
-
-while (inFile >> emp.id >> emp.department >> emp.hours) {
-    if (emp.id == 0) break;          // sentinel record
-    ++totalCount;
-    totalHours += emp.hours;
-}
-
-if (totalCount > 0) {
-    std::cout << totalCount << " employees, "
-              << "average " << totalHours / totalCount << " hours.\n";
-}
+**Output:**
+```
+3 employees
+Total hours: 119.5
+Average: 39.8333
 ```
 
 ## Opening for append vs truncate
 
-By default, `ofstream` **truncates** (erases) an existing file. To add to the end instead:
+By default `ofstream` **truncates** (erases) an existing file. To add to the end instead:
 
 ```cpp
-std::ofstream log("log.txt", std::ios::app);   // append mode
+std::ofstream log("log.txt", std::ios::app);
+log << "New entry\n";
 ```
 
-Use append when writing a summary at the end of an existing file, or accumulating logs across runs.
-
-## Always close files
-
-When you are done with a file, call `.close()`. For short programs it happens automatically at the end of scope, but explicitly closing is good practice—and required when you need to check for write errors.
+Each run appends a new line rather than overwriting the file.
 
 ---
 
-*The lab this week has you copy one file to another line by line, handling open failures gracefully. The program reads structured records from a file and computes totals.*
+*The lab has you copy one file to another line by line, handling open failures gracefully. The program reads structured records from a file and computes totals.*

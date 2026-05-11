@@ -9,138 +9,197 @@ week: 11
 
 # Week 11: C-Strings — The Low-Level Foundation of Text
 
-Before `std::string`, text in C (and early C++) was stored as an array of `char` with a special **null terminator** (`'\0'`) marking the end. Understanding this is essential because you will encounter it in old code, in system APIs, and when taking this course.
+Before `std::string`, text was stored as an array of `char` with a **null terminator** (`'\0'`) marking the end. Understanding this is essential because you encounter it in system APIs, old codebases, and this course's assignments.
 
 ## What is a C-string?
 
-A C-string is a `char` array where the last element is `'\0'` (ASCII value 0):
+A C-string is a `char` array whose last used element is `'\0'` (ASCII 0):
 
 ```
  H   e   l   l   o  \0
-[0] [1] [2] [3] [4] [5]   <- indices
+[0] [1] [2] [3] [4] [5]
 ```
-
-Declare and initialize:
 
 ```cpp
-char greeting[6] = "Hello";   // compiler adds the '\0' automatically
-char letter[1]   = {'\0'};    // just the terminator — empty string
+#include <iostream>
+#include <cstring>
+
+int main() {
+    char greeting[6] = "Hello";   // compiler adds '\0'
+    std::cout << greeting << "\n";
+    std::cout << "Length: " << strlen(greeting) << "\n";
+    return 0;
+}
 ```
 
-The array must be large enough to hold the string *plus* the terminator. A 5-character string needs at least 6 elements.
+**Output:**
+```
+Hello
+Length: 5
+```
+
+The array must be large enough for the string **plus** the terminator. A 5-character string needs at least 6 elements.
 
 ## Key C-string functions (`<cstring>`)
 
 ```cpp
+#include <iostream>
 #include <cstring>
 
-char s1[] = "Hello";
-char s2[20];
+int main() {
+    char s1[] = "Hello";
+    char s2[20];
 
-strlen(s1);          // 5 — length NOT counting '\0'
-strcpy(s2, s1);      // copy s1 into s2 (s2 must be large enough)
-strcat(s2, " world");// append " world" to s2
-strcmp(s1, s2);      // 0 if equal, <0 / >0 otherwise
+    std::cout << "strlen: "  << strlen(s1) << "\n";
+
+    strcpy(s2, s1);
+    std::cout << "strcpy: "  << s2 << "\n";
+
+    strcat(s2, " world");
+    std::cout << "strcat: "  << s2 << "\n";
+
+    std::cout << "strcmp(s1,s2): " << strcmp(s1, s2) << "\n";  // negative: s1 < s2
+    std::cout << "strcmp(s1,s1): " << strcmp(s1, s1) << "\n";  // 0: equal
+    return 0;
+}
 ```
 
-**Never write past the end of the array.** There is no automatic bounds checking—if your array is too small and you write beyond it, you corrupt memory.
-
-On Visual Studio with `/SDL` enabled, the *_s* variants are safer:
-
-```cpp
-size_t len = strnlen_s(s1, 128);  // checks at most 128 bytes
-strcpy_s(s2, sizeof(s2), s1);     // checks destination size
+**Output:**
+```
+strlen: 5
+strcpy: Hello
+strcat: Hello world
+strcmp(s1,s2): -32
+strcmp(s1,s1): 0
 ```
 
-On GCC/Clang these may not be available; use the regular versions with careful size calculations.
+On Visual Studio with `/SDL` enabled, `strcpy_s` and `strnlen_s` are preferred. On GCC/Clang use the standard versions.
 
 ## Reading C-strings from the keyboard
 
-`cin >> buffer` reads a word (stops at whitespace). For a full sentence, use `cin.getline`:
+`cin >>` reads one word; `cin.getline` reads an entire line including spaces:
 
 ```cpp
-char name[50];
-char sentence[256];
+#include <iostream>
+#include <cstring>
+#include <limits>
 
-std::cout << "Enter a name: ";
-std::cin >> name;                           // reads one word
+int main() {
+    char name[50];
+    char sentence[256];
 
-// drain leftover newline BEFORE calling getline
-std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+    std::cout << "Enter a name: ";
+    std::cin >> name;
 
-std::cout << "Enter a sentence: ";
-std::cin.getline(sentence, sizeof(sentence));   // reads up to 255 chars + '\0'
+    // drain the leftover newline BEFORE calling getline
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
-std::cout << "Name length: " << strlen(name) << "\n";
-std::cout << "Sentence: " << sentence << "\n";
-std::cout << "gcount: " << std::cin.gcount() << "\n";  // chars just read
+    std::cout << "Enter a sentence: ";
+    std::cin.getline(sentence, sizeof(sentence));
+
+    std::cout << "Name: "         << name               << "\n";
+    std::cout << "Name length: "  << strlen(name)       << "\n";
+    std::cout << "Sentence: "     << sentence           << "\n";
+    std::cout << "Sent length: "  << strlen(sentence)   << "\n";
+    return 0;
+}
 ```
 
-`cin.gcount()` returns how many characters the last `getline` actually read. Useful for diagnostics.
+**Sample run:**
+```
+Enter a name: Torres
+Enter a sentence: The quick brown fox
+Name: Torres
+Name length: 6
+Sentence: The quick brown fox
+Sent length: 19
+```
 
-### The leftover-newline problem
-
-Whenever you mix `>>` and `getline`, there is a leftover `\n` in the stream after the `>>` read. If you call `getline` without draining it, `getline` immediately returns an empty string—it just read that newline.
-
-The fix is always `cin.ignore(...)` between a `>>` read and a `getline`.
+Without the `ignore()`, `getline` would silently consume the leftover newline and `sentence` would be empty.
 
 ## Echoing a C-string one character at a time
 
-Treat the buffer as an array and index into it:
-
 ```cpp
-char word[50];
-std::cin >> word;
+#include <iostream>
+#include <cstring>
 
-std::cout << "Character by character:\n";
-for (int i = 0; word[i] != '\0'; ++i) {
-    std::cout << word[i] << "\n";
+int main() {
+    char word[50];
+    std::cout << "Enter a word: ";
+    std::cin >> word;
+
+    std::cout << "Characters:\n";
+    for (int i = 0; word[i] != '\0'; ++i) {
+        std::cout << "  [" << i << "] = '" << word[i] << "'\n";
+    }
+    return 0;
 }
+```
+
+**Sample run:**
+```
+Enter a word: code
+Characters:
+  [0] = 'c'
+  [1] = 'o'
+  [2] = 'd'
+  [3] = 'e'
 ```
 
 ## Implementing a string class with dynamic storage
 
-When you build a class that owns a C-string of unknown length, you need to allocate memory at runtime:
-
 ```cpp
+#include <iostream>
+#include <cstring>
+
 class SimpleString {
 public:
     SimpleString() : data_(nullptr), length_(0) {}
 
     explicit SimpleString(const char* src) {
-        if (src == nullptr) {
-            data_ = nullptr;
-            length_ = 0;
-        } else {
-            length_ = strlen(src);
-            data_ = new char[length_ + 1];   // +1 for '\0'
-            strcpy(data_, src);
-        }
+        if (!src) { data_ = nullptr; length_ = 0; return; }
+        length_ = strlen(src);
+        data_   = new char[length_ + 1];
+        strcpy(data_, src);
     }
 
-    ~SimpleString() {
-        delete[] data_;   // must free what we allocated
-    }
+    ~SimpleString() { delete[] data_; }
 
     size_t length() const { return length_; }
 
     void print() const {
         if (data_) std::cout << data_;
+        std::cout << "\n";
     }
 
 private:
     char*  data_;
     size_t length_;
-
-    // Copy constructor and assignment deliberately omitted here—
-    // implementing them correctly is part of the week's assignment
 };
+
+int main() {
+    SimpleString s("Wyoming");
+    std::cout << "String: ";
+    s.print();
+    std::cout << "Length: " << s.length() << "\n";
+
+    SimpleString empty;
+    std::cout << "Empty length: " << empty.length() << "\n";
+    return 0;
+}
 ```
 
-Key rules whenever you use `new`:
-- Every `new` must have exactly one matching `delete` (or `delete[]` for arrays).
+**Output:**
+```
+String: Wyoming
+Length: 7
+Empty length: 0
+```
+
+Key rules with `new`:
+- Every `new` needs exactly one matching `delete[]` (for arrays).
 - The destructor is responsible for releasing memory.
-- If a class manages heap memory, you almost certainly need a copy constructor and copy-assignment operator too (the Rule of Three).
+- If a class manages heap memory, you almost certainly need a copy constructor and copy-assignment operator too.
 
 ---
 

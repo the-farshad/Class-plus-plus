@@ -11,7 +11,7 @@ week: 6
 
 ## The problem with `cin >>`
 
-When you write `std::cin >> n` expecting an integer and the user types `abc`, the extraction fails. The value of `n` is unchanged, the stream enters a **fail state**, and every subsequent read is also silently ignored—your program loops forever or crashes in mysterious ways.
+When you write `std::cin >> n` expecting an integer and the user types `abc`, the extraction **fails**. The value of `n` is unchanged, the stream enters a fail state, and every subsequent read is also silently ignored—your program loops forever or crashes.
 
 You need to:
 1. Detect the failure
@@ -21,18 +21,16 @@ You need to:
 
 ## Detecting failure
 
-`std::cin` (and any stream) can be tested as a boolean:
+`std::cin` can be tested as a boolean—it is `true` when healthy, `false` after a failed read:
 
 ```cpp
 int n = 0;
 if (std::cin >> n) {
-    // extraction succeeded — n is valid
+    std::cout << "Read: " << n << "\n";
 } else {
-    // extraction failed — n is unchanged, stream is broken
+    std::cout << "That was not an integer.\n";
 }
 ```
-
-The stream is in a fail state after the bad read. It stays broken until you call `clear()`.
 
 ## Clearing and ignoring
 
@@ -47,15 +45,14 @@ int main() {
         std::cout << "Enter an integer: ";
 
         if (std::cin >> n) {
-            break;                          // success — exit loop
+            break;                      // success
         }
 
-        // failed read: reset the stream
-        std::cin.clear();                   // clear error flags
-        std::cin.ignore(                    // discard garbage up to newline
+        std::cin.clear();               // reset fail flag
+        std::cin.ignore(               // discard garbage up to newline
             std::numeric_limits<std::streamsize>::max(), '\n');
 
-        std::cout << "  That wasn't an integer. Try again.\n";
+        std::cout << "  Not an integer — try again.\n";
     }
 
     std::cout << "You entered: " << n << "\n";
@@ -63,17 +60,25 @@ int main() {
 }
 ```
 
-`std::numeric_limits<std::streamsize>::max()` is the largest number of characters the stream can hold—passing it as the limit to `ignore` means "throw away everything up to (and including) the newline." Always use this instead of a hardcoded number.
+**Sample run:**
+```
+Enter an integer: hello
+  Not an integer — try again.
+Enter an integer: 3.14
+  Not an integer — try again.
+Enter an integer: 42
+You entered: 42
+```
 
-## Combining validation with range checks
+`std::numeric_limits<std::streamsize>::max()` is the largest possible stream size—passing it to `ignore` means "throw away everything up to (and including) the next newline."
 
-You often want *both* type checking *and* a range check in one function:
+## Combining validation with a range check
 
 ```cpp
 #include <iostream>
 #include <limits>
+#include <string>
 
-// Returns a non-negative integer, rejecting bad input and negatives.
 int readNonNegInt(const std::string& prompt) {
     int val = 0;
     while (true) {
@@ -88,17 +93,31 @@ int readNonNegInt(const std::string& prompt) {
         }
     }
 }
+
+int main() {
+    int score = readNonNegInt("Enter score: ");
+    std::cout << "Score accepted: " << score << "\n";
+    return 0;
+}
+```
+
+**Sample run:**
+```
+Enter score: -10
+  Negative not allowed.
+Enter score: abc
+  Not an integer — try again.
+Enter score: 85
+Score accepted: 85
 ```
 
 ## Multi-file programs: why split?
 
-As programs grow, a single file becomes unmanageable. More importantly, **reusable code** (a library of math functions, a class) should live in its own files so multiple programs can share it without copy-pasting.
-
-The convention:
+As programs grow, a single file becomes unmanageable. Reusable code should live in its own files.
 
 | File | Contains |
-|------|---------|
-| `MyLib.hpp` | Class/function declarations (prototypes) |
+|------|----------|
+| `MyLib.hpp` | Function declarations (prototypes) |
 | `MyLib.cpp` | Function definitions (implementations) |
 | `Main.cpp` | `main()` — uses `#include "MyLib.hpp"` |
 
@@ -118,7 +137,6 @@ double fahrenheitToCelsius(double f);
 double celsiusToFahrenheit(double c) {
     return c * 9.0 / 5.0 + 32.0;
 }
-
 double fahrenheitToCelsius(double f) {
     return (f - 32.0) * 5.0 / 9.0;
 }
@@ -130,18 +148,23 @@ double fahrenheitToCelsius(double f) {
 #include "Converter.hpp"
 
 int main() {
-    double celsius = 100.0;
-    std::cout << celsius << "°C = "
-              << celsiusToFahrenheit(celsius) << "°F\n";
+    std::cout << "100 C = " << celsiusToFahrenheit(100.0) << " F\n";
+    std::cout << "32  F = " << fahrenheitToCelsius(32.0)  << " C\n";
     return 0;
 }
+```
+
+**Output:**
+```
+100 C = 212 F
+32  F = 0 C
 ```
 
 `#pragma once` prevents the header from being included more than once in the same translation unit—always put it at the top of every `.hpp` file.
 
 ## Compile-time vs link-time errors
 
-If your prototype in the `.hpp` and your definition in the `.cpp` don't match exactly (different parameter types, different return type), you get a **linker error**—not a compiler error—which is harder to trace. Always copy-paste the prototype from the header into the `.cpp` definition to avoid typos.
+If your prototype in the `.hpp` and your definition in the `.cpp` don't match exactly, you get a **linker error**—not a compiler error—which is harder to trace. Always copy-paste the prototype from the header into the `.cpp` definition to avoid typos.
 
 ---
 

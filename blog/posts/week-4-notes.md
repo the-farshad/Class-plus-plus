@@ -13,33 +13,36 @@ The single biggest improvement you can make to any program is breaking it into w
 
 ## Why functions?
 
-Consider computing the area of a circle. You could write it inline every time:
-
 ```cpp
-double area1 = 3.14159 * r1 * r1;
-double area2 = 3.14159 * r2 * r2;
-```
+#include <iostream>
+const double PI = 3.14159265358979;
 
-Or define it once:
-
-```cpp
 double circleArea(double radius) {
-    return 3.14159265358979 * radius * radius;
+    return PI * radius * radius;
 }
 
-double area1 = circleArea(r1);
-double area2 = circleArea(r2);
+int main() {
+    std::cout << "Area of r=5: " << circleArea(5.0) << "\n";
+    std::cout << "Area of r=3: " << circleArea(3.0) << "\n";
+    return 0;
+}
 ```
 
-The function version is harder to get wrong (the constant is typed once), easier to test, and self-documenting.
+**Output:**
+```
+Area of r=5: 78.5398
+Area of r=3: 28.2743
+```
+
+The constant `PI` is typed once. If you needed to change precision, there is one place to fix—not ten.
 
 ## Anatomy of a function
 
 ```cpp
-// prototype (declaration) — tells the compiler what exists
+// prototype — above main, so the compiler knows it exists
 double circleArea(double radius);
 
-// definition — the actual code
+// definition — the actual code (can be below main)
 double circleArea(double radius) {
     return 3.14159265358979 * radius * radius;
 }
@@ -49,114 +52,164 @@ The **return type** comes first, then the **name**, then **parameters** in paren
 
 ## Stubs: compile first, implement later
 
-A **stub** is a function whose signature is complete but whose body does nothing useful yet—it just returns a dummy value so the project compiles.
+A **stub** is a function whose signature is complete but whose body returns a dummy value so the project compiles while you build the rest.
 
 ```cpp
-double computeMaxHeartRate(int age) {
+#include <iostream>
+
+double computeMaxHR(int age) {
     // TODO: implement
     return 0.0;
 }
 
-double computeTargetHeartRate(double maxHR, double restHR) {
+double computeTargetHR(double maxHR, double restHR) {
     // TODO: implement
     return 0.0;
 }
 
 int main() {
-    // main wires everything together—it compiles and runs even with stubs
     int age = 30;
     double resting = 65.0;
-    double maxHR  = computeMaxHeartRate(age);
-    double target = computeTargetHeartRate(maxHR, resting);
+    double maxHR  = computeMaxHR(age);
+    double target = computeTargetHR(maxHR, resting);
+    std::cout << "Max HR: "    << maxHR  << "\n";
     std::cout << "Target HR: " << target << "\n";
     return 0;
 }
 ```
 
-You build `main` with stubs, confirm the plumbing is right, then fill in each function one at a time—testing after each step.
+**Output with stubs (before implementing):**
+```
+Max HR: 0
+Target HR: 0
+```
 
-## Input validation
-
-Many functions only make sense for certain inputs. A heart rate calculation requires positive numbers; a square-root function requires a non-negative argument. *Validation* means checking inputs and refusing to proceed if they are bad.
+Now implement one function at a time and watch the output improve:
 
 ```cpp
-double computeMaxHeartRate(int age) {
-    if (age <= 0) {
-        std::cout << "Error: age must be positive.\n";
-        return -1.0;   // signal that something went wrong
-    }
+double computeMaxHR(int age) {
     return 205.8 - 0.685 * age;
 }
 ```
 
-A better pattern for interactive programs is to keep prompting until the user gives valid input:
+**Output after implementing `computeMaxHR`:**
+```
+Max HR: 185.25
+Target HR: 0
+```
+
+Fill in `computeTargetHR` next, test again—this is the stub workflow.
+
+## Input validation
+
+Keep prompting until the user enters valid data:
 
 ```cpp
+#include <iostream>
+#include <string>
+
 int getPositiveInt(const std::string& prompt) {
     int value = 0;
     do {
         std::cout << prompt;
         std::cin >> value;
-        if (value <= 0) {
+        if (value <= 0)
             std::cout << "  Please enter a positive integer.\n";
-        }
     } while (value <= 0);
     return value;
 }
+
+int main() {
+    int age     = getPositiveInt("Enter age (years): ");
+    int resting = getPositiveInt("Enter resting heart rate (bpm): ");
+    std::cout << "Age: " << age << ", Resting HR: " << resting << "\n";
+    return 0;
+}
 ```
 
-Call it like:
-
-```cpp
-int age     = getPositiveInt("Enter age (years): ");
-int resting = getPositiveInt("Enter resting heart rate (bpm): ");
+**Sample run:**
+```
+Enter age (years): -5
+  Please enter a positive integer.
+Enter age (years): 0
+  Please enter a positive integer.
+Enter age (years): 25
+Enter resting heart rate (bpm): 68
+Age: 25, Resting HR: 68
 ```
 
 ## Sentinel-driven loops
 
-A **sentinel** is a special value that signals "stop"—not real data, just an exit marker. The sentinel value `-9999` is common in assignments this semester.
+A **sentinel** is a special value that signals "stop"—not real data, just an exit marker. `-9999` is common this semester.
 
 ```cpp
-int value = 0;
-long long sum = 0;
-int count = 0;
+#include <iostream>
 
-while (true) {
-    std::cout << "Enter a non-negative integer (-9999 to quit): ";
-    std::cin >> value;
+int main() {
+    int value = 0;
+    long long sum = 0;
+    int count = 0;
 
-    if (value == -9999) break;    // sentinel: exit
+    while (true) {
+        std::cout << "Enter a non-negative integer (-9999 to quit): ";
+        std::cin >> value;
 
-    if (value < 0) {
-        std::cout << "  Skipping negative value.\n";
-        continue;                 // not the sentinel, but invalid—skip
+        if (value == -9999) break;
+
+        if (value < 0) {
+            std::cout << "  Skipping negative value.\n";
+            continue;
+        }
+
+        sum += value;
+        ++count;
     }
 
-    sum += value;
-    ++count;
-}
+    if (count > 0)
+        std::cout << "Count: " << count << ", Sum: " << sum << "\n";
+    else
+        std::cout << "No values entered.\n";
 
-if (count > 0) {
-    std::cout << "Count: " << count << ", Sum: " << sum << "\n";
+    return 0;
 }
+```
+
+**Sample run:**
+```
+Enter a non-negative integer (-9999 to quit): 10
+Enter a non-negative integer (-9999 to quit): -3
+  Skipping negative value.
+Enter a non-negative integer (-9999 to quit): 20
+Enter a non-negative integer (-9999 to quit): 5
+Enter a non-negative integer (-9999 to quit): -9999
+Count: 3, Sum: 35
 ```
 
 ## Integer arithmetic vs floating-point
 
-When the result needs decimal precision, make sure the division uses floating-point arithmetic. The safest way is to cast one operand:
-
 ```cpp
-int totalBeats = 4520;
-int minutes = 60;
+#include <iostream>
 
-// integer division — result is 75, remainder discarded
-int avgInt = totalBeats / minutes;
+int main() {
+    int totalBeats = 4520;
+    int minutes    = 60;
 
-// floating-point division — result is 75.333...
-double avgDbl = static_cast<double>(totalBeats) / minutes;
+    int    avgInt = totalBeats / minutes;
+    double avgDbl = static_cast<double>(totalBeats) / minutes;
+
+    std::cout << "Integer division: " << avgInt << "\n";
+    std::cout << "Double  division: " << avgDbl << "\n";
+    return 0;
+}
 ```
 
-The `static_cast<double>(...)` converts the value at that point; the other operand is automatically promoted to `double` for the division.
+**Output:**
+```
+Integer division: 75
+Double  division: 75.3333
+```
+
+The `static_cast<double>(...)` converts before the division happens; the other operand is automatically promoted to `double`.
 
 ---
 
