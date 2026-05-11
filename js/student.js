@@ -4,52 +4,99 @@ const $ = (id) => document.getElementById(id);
 const show = (id) => { const el = $(id); if (el) el.hidden = false; };
 const hide = (id) => { const el = $(id); if (el) el.hidden = true; };
 
-function setStatus(targetId, msg, kind = "") {
-  const el = $(targetId);
+function setStatusEl(id, msg, kind = "") {
+  const el = document.getElementById(id);
   if (!el) return;
   el.textContent = msg;
   el.className = "status" + (kind ? ` ${kind}` : "");
 }
 
+const TYPE_ICONS = {
+  poll: "📊", poll_pie: "🥧", rating: "⭐", word_cloud: "☁️", submission: "📝",
+};
+const TYPE_LABELS = {
+  poll: "Poll", poll_pie: "Poll", rating: "Rating", word_cloud: "Word Cloud", submission: "Submission",
+};
+
+// ---- Auto-refresh for empty state ----
+let countdownTimer = null;
+let countdownSec = 20;
+
+function startCountdown() {
+  countdownSec = 20;
+  updateCountdown();
+  clearInterval(countdownTimer);
+  countdownTimer = setInterval(async () => {
+    countdownSec--;
+    updateCountdown();
+    if (countdownSec <= 0) {
+      clearInterval(countdownTimer);
+      await loadActivities();
+    }
+  }, 1000);
+}
+
+function updateCountdown() {
+  const el = $("countdown-num");
+  if (el) el.textContent = countdownSec;
+}
+
+function stopCountdown() {
+  clearInterval(countdownTimer);
+  countdownTimer = null;
+}
+
+// ---- Activity display ----
+
 function showActivity(a) {
+  stopCountdown();
   $("activity-id").value = a.activity_id;
-  $("prompt-text").textContent = a.prompt;
 
-  const typeTag = $("activity-type-tag");
-  const labelMap = {
-    poll: "📊 Poll",
-    poll_pie: "🥧 Poll",
-    rating: "⭐ Rating",
-    word_cloud: "☁️ Word Cloud",
-    submission: "📝 Submission",
-  };
-  typeTag.textContent = labelMap[a.type] || a.type;
-  typeTag.className = "tag " + (a.type === "poll" || a.type === "poll_pie" ? "poll" : "open");
+  // Header in form-card
+  const heading = document.createElement("div");
+  heading.style.marginBottom = "1.25rem";
+  heading.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;">
+      <div style="flex:1;">
+        <h2 id="prompt-text" style="margin:0;font-size:1.4rem;line-height:1.3;">${escapeHTML(a.prompt)}</h2>
+      </div>
+      <span class="tag poll" id="activity-type-tag">${TYPE_ICONS[a.type] || ""} ${TYPE_LABELS[a.type] || a.type}</span>
+    </div>`;
 
-  hide("loading"); hide("picker"); hide("empty");
-  hide("poll-card"); hide("rating-card"); hide("submit-form");
+  const fc = $("form-card");
+  // Remove previous heading if any
+  const prev = fc.querySelector(".activity-heading");
+  if (prev) prev.remove();
+  heading.className = "activity-heading";
+  fc.insertBefore(heading, fc.firstChild);
+
+  hide("loading"); hide("picker"); hide("empty"); hide("confirm-card");
+  hide("poll-card"); hide("rating-card"); hide("rating-form"); hide("submit-form");
 
   if (a.type === "poll" || a.type === "poll_pie") {
     show("poll-card");
     renderPoll(a);
   } else if (a.type === "rating") {
-    show("rating-card");
+    show("rating-form");
     renderRating(a);
   } else {
-    // submission or word_cloud — both use the text form
-    const label = $("response-label");
-    if (label) label.textContent = a.type === "word_cloud" ? "Your answer (1–3 words)" : "Your Response";
-    const placeholder = $("response");
-    if (placeholder) placeholder.placeholder = a.type === "word_cloud"
+    const lbl = $("response-label");
+    if (lbl) lbl.textContent = a.type === "word_cloud" ? "Your answer (1–3 words)" : "Your Response";
+    const ta = $("response");
+    if (ta) ta.placeholder = a.type === "word_cloud"
       ? "e.g. algorithms, OOP, job skills"
-      : "Type your answer here...";
+      : "Type your answer here…";
     show("submit-form");
   }
 
   show("form-card");
 }
 
-// Poll as large clickable tiles (Mentimeter-style)
+function escapeHTML(s) {
+  return String(s ?? "").replace(/[&<>"']/g, c =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
 function renderPoll(a) {
   const container = $("poll-options-list");
   container.innerHTML = "";
@@ -60,18 +107,18 @@ function renderPoll(a) {
     const tile = document.createElement("button");
     tile.className = "poll-tile";
     tile.type = "button";
-    tile.innerHTML = `<span class="poll-tile-letter">${letters[idx] || idx + 1}</span><span class="poll-tile-text">${opt}</span>`;
+    tile.innerHTML = `<span class="poll-tile-letter">${letters[idx] || idx + 1}</span><span class="poll-tile-text">${escapeHTML(opt)}</span>`;
 
     tile.addEventListener("click", async () => {
-      setStatus("poll-status", "Voting…");
+      setStatusEl("poll-status", "Recording your vote…");
       container.querySelectorAll(".poll-tile").forEach(b => b.disabled = true);
       try {
         await api.vote(a.activity_id, idx);
         tile.classList.add("selected");
-        setStatus("poll-status", "Vote recorded! Thanks.", "success");
+        setStatusEl("poll-status", "Vote recorded — thanks!", "success");
       } catch (err) {
         container.querySelectorAll(".poll-tile").forEach(b => b.disabled = false);
-        setStatus("poll-status", err.message, "error");
+        setStatusEl("poll-status", err.message, "error");
       }
     });
 
@@ -79,7 +126,6 @@ function renderPoll(a) {
   });
 }
 
-// Rating as a 1–10 scale (Slido/Mentimeter scale question)
 function renderRating(a) {
   const container = $("rating-buttons");
   if (!container) return;
@@ -91,61 +137,41 @@ function renderRating(a) {
     btn.className = "rating-btn";
     btn.textContent = i;
     btn.dataset.value = i;
-
-    btn.addEventListener("click", async () => {
+    btn.addEventListener("click", () => {
       container.querySelectorAll(".rating-btn").forEach(b => {
         b.classList.toggle("selected", Number(b.dataset.value) <= i);
       });
       $("rating-hidden").value = i;
     });
-
     container.appendChild(btn);
   }
 
-  $("rating-labels").innerHTML =
-    `<span class="muted">Beginner</span><span class="muted">Expert</span>`;
+  const labels = $("rating-labels");
+  if (labels) labels.innerHTML = "<span>Beginner</span><span>Expert</span>";
 }
-
-$("rating-form").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const val = $("rating-hidden").value;
-  if (!val) { setStatus("rating-status", "Please select a value.", "error"); return; }
-  const btn = e.submitter || e.target.querySelector("button[type=submit]");
-  if (btn) btn.disabled = true;
-  setStatus("rating-status", "Submitting…");
-  try {
-    await api.submit({ activity_id: $("activity-id").value, response: val });
-    setStatus("rating-status", `You rated ${val}/10 — thanks!`, "success");
-    $("rating-buttons").querySelectorAll(".rating-btn").forEach(b => b.disabled = true);
-  } catch (err) {
-    setStatus("rating-status", err.message, "error");
-    if (btn) btn.disabled = false;
-  }
-});
 
 function showPicker(activities) {
   hide("loading"); hide("form-card"); hide("empty");
-  const list = $("picker-list");
-  list.innerHTML = "";
-  const labelMap = { poll: "📊 Poll", poll_pie: "🥧 Poll", rating: "⭐ Rating", word_cloud: "☁️ Word Cloud", submission: "📝" };
-  activities.forEach((a) => {
-    const li = document.createElement("li");
-    const span = document.createElement("span");
-    const label = labelMap[a.type] || a.type.toUpperCase();
-    span.innerHTML = `<strong>[${label}]</strong> ${a.prompt}`;
-    const btn = document.createElement("button");
-    btn.className = "sm";
-    btn.textContent = "Choose →";
-    btn.addEventListener("click", () => showActivity(a));
-    li.append(span, btn);
-    list.appendChild(li);
+  const grid = $("picker-list");
+  grid.innerHTML = "";
+  activities.forEach(a => {
+    const card = document.createElement("button");
+    card.className = "picker-card";
+    card.type = "button";
+    card.innerHTML = `
+      <div class="picker-card-icon">${TYPE_ICONS[a.type] || "📋"}</div>
+      <div class="picker-card-title">${escapeHTML(a.prompt)}</div>
+      <div class="picker-card-type">${TYPE_LABELS[a.type] || a.type}</div>`;
+    card.addEventListener("click", () => showActivity(a));
+    grid.appendChild(card);
   });
   show("picker");
 }
 
 async function loadActivities() {
   show("loading");
-  hide("signin-card"); hide("picker"); hide("form-card"); hide("empty");
+  hide("picker"); hide("form-card"); hide("empty");
+
   try {
     const params = new URLSearchParams(location.search);
     const id = params.get("activity");
@@ -153,28 +179,47 @@ async function loadActivities() {
 
     if (id) {
       const res = await api.getActivity(id);
+      hide("loading");
       showActivity(res.activity);
       return;
     }
+
     const res = await api.listOpenActivities(classId);
-    if (!res.activities.length) { hide("loading"); show("empty"); return; }
-    if (res.activities.length === 1) showActivity(res.activities[0]);
-    else showPicker(res.activities);
+    hide("loading");
+
+    if (!res.activities.length) {
+      show("empty");
+      startCountdown();
+      return;
+    }
+    if (res.activities.length === 1) {
+      showActivity(res.activities[0]);
+    } else {
+      showPicker(res.activities);
+    }
   } catch (err) {
     hide("loading");
     const card = $("empty");
-    card.querySelector("h2").textContent = "Couldn't load activities";
+    card.querySelector("h2").textContent = "Couldn't connect";
     card.querySelector("p").textContent = err.message;
     show("empty");
+    startCountdown();
   }
 }
 
 async function showSignedInState() {
   const u = session.user;
   if (!u) return;
-  $("who-am-i").textContent = `Signed in as ${u.email}`;
-  $("signout").hidden = false;
-  if (u.role === "instructor" || u.role === "superadmin") show("nav-admin");
+
+  // Show session banner
+  const metaEl = $("hero-meta");
+  const whoEl = $("who-am-i");
+  if (whoEl) whoEl.textContent = u.email;
+  if (metaEl) metaEl.hidden = false;
+
+  if (u.role === "instructor" || u.role === "superadmin") {
+    show("nav-admin");
+  }
   await loadActivities();
 }
 
@@ -183,10 +228,11 @@ async function showSignInState() {
   show("signin-card");
   try {
     const cfg = await api.authConfig();
-    $("domain-hint").textContent = `@${cfg.allowed_domain}`;
+    const hint = $("domain-hint");
+    if (hint) hint.textContent = `@${cfg.allowed_domain}`;
     renderGoogleButton(cfg.google_client_id);
   } catch (err) {
-    setStatus("signin-status", `Couldn't reach server: ${err.message}`, "error");
+    setStatusEl("signin-status", `Couldn't reach server: ${err.message}`, "error");
   }
 }
 
@@ -201,7 +247,7 @@ function renderGoogleButton(clientId) {
           hide("signin-card");
           await showSignedInState();
         } catch (err) {
-          setStatus("signin-status", err.message, "error");
+          setStatusEl("signin-status", err.message, "error");
         }
       },
     });
@@ -212,24 +258,50 @@ function renderGoogleButton(clientId) {
   tryRender();
 }
 
-$("signout").addEventListener("click", (e) => {
+$("signout").addEventListener("click", e => {
   e.preventDefault();
   api.signOut();
   location.reload();
 });
 
+$("rating-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const val = $("rating-hidden").value;
+  if (!val) { setStatusEl("rating-status", "Please select a rating.", "error"); return; }
+  const btn = $("rating-submit-btn");
+  if (btn) btn.disabled = true;
+  setStatusEl("rating-status", "Submitting…");
+  try {
+    await api.submit({ activity_id: $("activity-id").value, response: val });
+    // Show confirmation
+    hide("rating-form");
+    show("confirm-card");
+    $("rating-hidden").value = "";
+  } catch (err) {
+    setStatusEl("rating-status", err.message, "error");
+    if (btn) btn.disabled = false;
+  }
+});
+
 $("submit-form").addEventListener("submit", async (e) => {
   e.preventDefault();
   const btn = $("submit-btn");
-  btn.disabled = true;
-  setStatus("status", "Submitting…");
+  if (btn) btn.disabled = true;
+  setStatusEl("status", "Submitting…");
   try {
     const file = $("file").files[0] || null;
-    await api.submit({ activity_id: $("activity-id").value, response: $("response").value.trim(), file });
-    setStatus("status", "Submitted. Thanks!", "success");
+    await api.submit({
+      activity_id: $("activity-id").value,
+      response: $("response").value.trim(),
+      file,
+    });
+    // Show confirmation
+    hide("submit-form");
+    show("confirm-card");
+    $("response").value = "";
   } catch (err) {
-    setStatus("status", err.message, "error");
-    btn.disabled = false;
+    setStatusEl("status", err.message, "error");
+    if (btn) btn.disabled = false;
   }
 });
 

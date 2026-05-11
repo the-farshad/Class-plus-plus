@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#2563eb" />
   <title>Class++ — Notes</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -15,14 +16,14 @@
     <div class="inner">
       <a class="brand" href="/">
         <span class="brand-mark">C++</span>
-        <span>Class<span style="color: var(--brand-1)">++</span></span>
+        <span>Class<span style="color:var(--brand-1)">++</span></span>
         <span class="brand-tag">Notes</span>
       </a>
-      <nav style="align-items: center; gap: 1rem;">
-        <a href="/">Submit</a>
-        <a href="/blog/">Notes</a>
+      <nav>
+        <a href="/" id="nav-submit">Submit</a>
+        <a href="/blog/" id="nav-notes">Notes</a>
         <div class="theme-selector-wrapper">
-          <i data-lucide="palette" style="width: 16px; height: 16px; color: var(--muted);"></i>
+          <i data-lucide="palette" style="width:15px;height:15px;color:var(--muted);flex-shrink:0;"></i>
           <select id="theme-selector" class="theme-dropdown">
             <option value="light">Light</option>
             <option value="dark">Dark</option>
@@ -34,48 +35,75 @@
       </nav>
     </div>
   </header>
-  
+
   <script type="module">
     import { api } from "/js/api.js";
     api.initTheme();
-    const selector = document.getElementById("theme-selector");
-    selector.value = document.documentElement.getAttribute("data-theme") || "light";
-    selector.addEventListener("change", (e) => api.setTheme(e.target.value));
+    const sel = document.getElementById("theme-selector");
+    sel.value = document.documentElement.getAttribute("data-theme") || "light";
+    sel.addEventListener("change", e => api.setTheme(e.target.value));
+    document.getElementById("nav-notes")?.classList.add("nav-active");
   </script>
 
   <main>
     <div class="hero">
-      <h1>Class notes</h1>
-      <p>Solution write-ups, lesson recaps, and follow-up explanations.</p>
+      <h1>Course Notes</h1>
+      <p>Weekly concept write-ups, examples, and study guides for C++.</p>
+      <p id="notes-count" class="muted" style="margin-top:0.5rem;font-size:0.85rem;"></p>
     </div>
+
     <section class="card">
       <div class="blog-toolbar">
         <label class="blog-field">
           <span class="sr-only">Search notes</span>
           <input type="search" id="post-search" placeholder="Search title, summary, tags…" autocomplete="off" />
         </label>
-        <label class="blog-field">
-          <span class="muted blog-field-label">Sort</span>
+        <label class="blog-field" style="flex:0 0 auto;min-width:140px;">
+          <span class="muted blog-field-label">Sort by</span>
           <select id="post-sort">
+            <option value="week">Week order</option>
             <option value="date">Newest first</option>
-            <option value="week">Week order (course)</option>
             <option value="title">Title A–Z</option>
           </select>
         </label>
       </div>
-      <ul id="post-list" class="activity-list"></ul>
+
+      <div id="tag-chips" class="tag-chips"></div>
+
+      <ul id="post-list" class="activity-list" style="margin-top:0.5rem;"></ul>
+
+      <p id="no-results" class="muted" style="text-align:center;padding:2rem 0;display:none;">
+        No notes match your search. <button class="secondary sm" id="clear-search" style="margin-left:0.5rem;">Clear filters</button>
+      </p>
     </section>
   </main>
-  
+
+  <footer class="site">
+    <div class="inner">
+      <a class="footer-brand" href="/">
+        <span class="footer-brand-mark">C++</span>
+        Class++
+      </a>
+      <nav class="footer-links">
+        <a href="/">Submit</a>
+        <a href="/blog/">Notes</a>
+        <a href="/instructor/">Instructor</a>
+      </nav>
+      <span class="footer-copy">© 2026 Class++. University of Wyoming.</span>
+    </div>
+  </footer>
+
   <script type="module">
     import { renderIndex } from "/js/blog.js";
     renderIndex(document.getElementById("post-list"), {
-      searchEl: document.getElementById("post-search"),
-      sortEl: document.getElementById("post-sort"),
+      searchEl:  document.getElementById("post-search"),
+      sortEl:    document.getElementById("post-sort"),
+      chipsEl:   document.getElementById("tag-chips"),
+      countEl:   document.getElementById("notes-count"),
+      noResults: document.getElementById("no-results"),
+      clearBtn:  document.getElementById("clear-search"),
     });
   </script>
-  <script>
-    lucide.createIcons();
-  </script>
+  <script>lucide.createIcons();</script>
 </body>
 </html>

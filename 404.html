@@ -3,36 +3,71 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Class++ — Not found</title>
+  <meta name="theme-color" content="#2563eb" />
+  <title>Class++ — 404 Not Found</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/styles.css" />
+  <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
   <header class="site">
     <div class="inner">
       <a class="brand" href="/">
         <span class="brand-mark">C++</span>
-        <span>Class<span style="color: var(--brand-1)">++</span></span>
+        <span>Class<span style="color:var(--brand-1)">++</span></span>
       </a>
       <nav>
         <a href="/">Submit</a>
         <a href="/blog/">Notes</a>
+        <a href="/instructor/">Instructor</a>
       </nav>
     </div>
   </header>
+
+  <script type="module">
+    import { api } from "/js/api.js";
+    api.initTheme();
+  </script>
+
   <main>
-    <div class="hero">
-      <h1>404</h1>
-      <p>That link doesn't go anywhere.</p>
-    </div>
-    <section class="card" style="text-align:center;">
-      <div class="row" style="justify-content:center;">
-        <a class="button" href="/">Go to submit</a>
-        <a class="button secondary" href="/blog/">Browse notes</a>
+    <div class="error-page">
+      <div class="error-code">404</div>
+      <h2 style="margin:0 0 0.5rem;">Symbol not found</h2>
+      <p class="muted">The page you requested doesn't exist — or was moved.</p>
+
+      <div class="error-snippet">
+        <span class="err-keyword">error</span>: use of undeclared identifier '<span class="err-underline" title="this URL">${location.pathname}</span>'<br>
+        <span class="err-comment">// Did you mean one of these?</span><br>
+        &nbsp;&nbsp;<span class="err-keyword">→</span> <span class="err-string">"/"</span> &nbsp;&nbsp;&nbsp;&nbsp;<span class="err-comment">// student submit page</span><br>
+        &nbsp;&nbsp;<span class="err-keyword">→</span> <span class="err-string">"/blog/"</span> &nbsp;<span class="err-comment">// course notes</span><br>
+        &nbsp;&nbsp;<span class="err-keyword">→</span> <span class="err-string">"/instructor/"</span> <span class="err-comment">// instructor dashboard</span>
       </div>
-    </section>
+
+      <div class="row" style="justify-content:center;gap:0.75rem;flex-wrap:wrap;">
+        <a class="button" href="/">Go to Submit →</a>
+        <a class="button secondary" href="/blog/">Browse Notes</a>
+        <a class="button secondary" href="/instructor/">Dashboard</a>
+      </div>
+    </div>
   </main>
+
+  <footer class="site">
+    <div class="inner">
+      <a class="footer-brand" href="/">
+        <span class="footer-brand-mark">C++</span>
+        Class++
+      </a>
+      <nav class="footer-links">
+        <a href="/">Submit</a>
+        <a href="/blog/">Notes</a>
+        <a href="/instructor/">Instructor</a>
+      </nav>
+      <span class="footer-copy">© 2026 Class++. University of Wyoming.</span>
+    </div>
+  </footer>
+
+  <script>lucide.createIcons();</script>
 </body>
 </html>

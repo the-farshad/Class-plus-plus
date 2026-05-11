@@ -45,6 +45,7 @@
     const selector = document.getElementById("theme-selector");
     selector.value = document.documentElement.getAttribute("data-theme") || "light";
     selector.addEventListener("change", (e) => api.setTheme(e.target.value));
+    // no nav-active needed on instructor — all links are external
   </script>
 
   <main style="max-width: 100%; padding: 0;">
@@ -67,9 +68,9 @@
 
       <!-- Sidebar Navigation -->
       <aside class="dashboard-sidebar">
-        <div style="margin-bottom: 2rem;">
-          <p class="muted" style="margin:0; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700;">Signed in as</p>
-          <div id="who-am-i" style="font-weight: 600; line-height: 1.2;"></div>
+        <div class="sidebar-user">
+          <p class="muted" style="margin:0 0 0.2rem;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.07em;font-weight:700;">Signed in as</p>
+          <div id="who-am-i" style="font-weight:600;font-size:0.9rem;line-height:1.3;word-break:break-all;"></div>
         </div>
         <button class="sidebar-nav-item active" data-tab="tab-overview">
           <i data-lucide="bar-chart-2" style="width: 18px; height: 18px; margin-right: 0.25rem;"></i> Overview & Stats
@@ -470,30 +471,25 @@
       </form>
     </div>
 
-    <div id="modal-overlay" style="position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:90; backdrop-filter:blur(4px);" hidden></div>
+    <div id="modal-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:90;backdrop-filter:blur(4px);" hidden></div>
 
   </main>
 
-  <script type="module" src="/js/instructor.js"></script>
-  <script>lucide.createIcons();</script>
-</body>
-</html>
-    <option value="hard">Hard</option>
-              <option value="ai-proof">AI-Proof</option>
-              <option value="ai-collab">AI-Collab</option>
-            </select>
-          </div>
-        </div>
-        <button type="submit" style="width:100%;">Save Changes</button>
-        <div id="edit-activity-status" class="status"></div>
-      </form>
+  <footer class="site">
+    <div class="inner">
+      <a class="footer-brand" href="/">
+        <span class="footer-brand-mark">C++</span>
+        Class++
+      </a>
+      <nav class="footer-links">
+        <a href="/">Student View</a>
+        <a href="/blog/">Notes</a>
+        <a href="/instructor/">Dashboard</a>
+      </nav>
+      <span class="footer-copy">© 2026 Class++. University of Wyoming.</span>
     </div>
-
-    <div id="modal-overlay" style="position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:90; backdrop-filter:blur(4px);" hidden></div>
-
-  </main>
+  </footer>
 
   <script type="module" src="/js/instructor.js"></script>
   <script>lucide.createIcons();</script>
 </body>
-</html>

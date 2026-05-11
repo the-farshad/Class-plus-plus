@@ -3,7 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Class++ — Submit Response</title>
+  <meta name="theme-color" content="#2563eb" />
+  <title>Class++ — Live Session</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@600;700;800&family=Lora:wght@400;500;600&family=Roboto+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -16,16 +17,15 @@
     <div class="inner">
       <a class="brand" href="/">
         <span class="brand-mark">C++</span>
-        <span>Class<span style="color: var(--brand-1)">++</span></span>
+        <span>Class<span style="color:var(--brand-1)">++</span></span>
         <span class="brand-tag">Live</span>
       </a>
-      <nav style="align-items: center; gap: 1rem;">
+      <nav>
         <a href="/" id="nav-submit">Submit</a>
         <a href="/blog/" id="nav-notes">Notes</a>
-        <a href="/instructor/" id="nav-admin" class="button sm" style="text-decoration: none;" hidden>Dashboard <span aria-hidden="true">→</span></a>
-        
+        <a href="/instructor/" id="nav-admin" class="button sm" style="text-decoration:none;" hidden>Dashboard →</a>
         <div class="theme-selector-wrapper">
-          <i data-lucide="palette" style="width: 16px; height: 16px; color: var(--muted);"></i>
+          <i data-lucide="palette" style="width:15px;height:15px;color:var(--muted);flex-shrink:0;"></i>
           <select id="theme-selector" class="theme-dropdown">
             <option value="light">Light</option>
             <option value="dark">Dark</option>
@@ -34,7 +34,6 @@
             <option value="high-contrast">High Contrast</option>
           </select>
         </div>
-
         <a href="#" id="signout" hidden>Sign out</a>
       </nav>
     </div>
@@ -43,58 +42,62 @@
   <script type="module">
     import { api } from "/js/api.js";
     api.initTheme();
-    const selector = document.getElementById("theme-selector");
-    selector.value = document.documentElement.getAttribute("data-theme") || "light";
-    selector.addEventListener("change", (e) => api.setTheme(e.target.value));
+    const sel = document.getElementById("theme-selector");
+    sel.value = document.documentElement.getAttribute("data-theme") || "light";
+    sel.addEventListener("change", e => api.setTheme(e.target.value));
+    // Mark active nav
+    document.getElementById("nav-submit")?.classList.add("nav-active");
   </script>
 
   <main>
     <div class="hero">
-      <h1>Participate Now</h1>
-      <p>Join the active session and share your insights.</p>
+      <h1 id="hero-title">Today's Session</h1>
+      <p id="hero-sub">Join the active activity and share your response.</p>
+      <div class="hero-meta" id="hero-meta" hidden>
+        <span class="live-dot"></span>
+        <span id="who-am-i" class="muted" style="font-size:0.85rem;font-weight:600;"></span>
+      </div>
     </div>
 
+    <!-- Sign-in -->
     <section id="signin-card" class="card feature" hidden>
-      <div class="flex-center" style="flex-direction: column; text-align: center; padding: 1rem 0;">
-        <h2>Welcome to Class++</h2>
-        <p class="muted" style="margin-bottom: 1.5rem;">Please sign in with your <code id="domain-hint">@uwyo.edu</code> account to continue.</p>
+      <div class="flex-center" style="flex-direction:column;text-align:center;padding:1.25rem 0;">
+        <div style="font-size:2.5rem;margin-bottom:0.75rem;">👋</div>
+        <h2 style="margin:0 0 0.5rem;">Welcome to Class++</h2>
+        <p class="muted" style="margin-bottom:1.5rem;">Sign in with your <code id="domain-hint">@uwyo.edu</code> account to participate.</p>
         <div id="g_id_signin"></div>
         <div id="signin-status" class="status"></div>
       </div>
     </section>
 
-    <section id="loading" class="card flex-center" style="min-height: 200px;">
-      <div class="flex-center" style="flex-direction: column; gap: 1rem;">
-        <div class="tag open" style="padding: 0.5rem 1rem;">
-          <i data-lucide="loader" style="width: 16px; height: 16px; animation: spin 2s linear infinite;"></i>
-          Connecting to session...
-        </div>
-        <p class="muted">Hold tight, we're fetching the latest activities.</p>
+    <!-- Loading skeleton -->
+    <section id="loading">
+      <div class="card" style="padding:1.5rem;">
+        <div class="skeleton skeleton-line wide"></div>
+        <div class="skeleton skeleton-line medium" style="margin-bottom:1rem;"></div>
+        <div class="skeleton skeleton-line short"></div>
+      </div>
+      <div class="card" style="padding:1.5rem;">
+        <div class="skeleton skeleton-line medium"></div>
+        <div class="skeleton skeleton-line wide"></div>
       </div>
     </section>
 
-    <section id="picker" class="card" hidden>
-      <h2>Select Activity</h2>
-      <p class="muted" style="margin-bottom: 1.5rem;">The instructor has multiple activities open. Please pick one to start.</p>
-      <ul id="picker-list" class="activity-list"></ul>
+    <!-- Picker (multiple activities) -->
+    <section id="picker" hidden>
+      <h2 style="margin:0 0 0.4rem;">Open Activities</h2>
+      <p class="muted" style="margin:0 0 1.25rem;">Your instructor has multiple activities open — pick one to start.</p>
+      <div id="picker-list" class="activity-picker-grid"></div>
     </section>
 
+    <!-- Main activity card -->
     <section id="form-card" class="card feature" hidden>
-      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem;">
-        <div style="flex: 1;">
-          <p class="muted" id="who-am-i" style="margin: 0; font-size: 0.8rem; font-weight: 600;"></p>
-          <h2 id="prompt-text" style="margin: 0.5rem 0 0; font-size: 1.5rem; line-height: 1.3;">…</h2>
-        </div>
-        <div id="activity-type-tag" class="tag" style="margin-top: 0.5rem;"></div>
-      </div>
-      
-      <!-- Shared activity id (used by all sub-forms) -->
       <input type="hidden" id="activity-id" />
 
-      <!-- Poll (multiple choice tiles) -->
+      <!-- Poll tiles -->
       <div id="poll-card" hidden>
         <div id="poll-options-list" class="poll-tiles-grid"></div>
-        <div id="poll-status" class="status" style="margin-top:1rem;"></div>
+        <div id="poll-status" class="status"></div>
       </div>
 
       <!-- Rating scale -->
@@ -104,51 +107,69 @@
           <div id="rating-buttons" class="rating-row"></div>
           <div id="rating-labels" class="rating-label-row"></div>
         </div>
-        <button type="submit" id="rating-submit-btn" style="width: 100%; margin-top: 1.5rem;">
-          <span>Submit Rating</span>
-          <span aria-hidden="true">→</span>
+        <button type="submit" id="rating-submit-btn" style="width:100%;margin-top:1.5rem;">
+          Submit Rating →
         </button>
         <div id="rating-status" class="status" role="status"></div>
       </form>
 
-      <!-- Text submission / word cloud -->
+      <!-- Submission / word cloud -->
       <form id="submit-form" hidden>
         <div class="field">
           <label id="response-label" for="response">Your Response</label>
-          <textarea id="response" required placeholder="Type your answer here..."></textarea>
+          <textarea id="response" required placeholder="Type your answer here…"></textarea>
         </div>
         <div class="field">
-          <label for="file">Supporting Attachment <span class="muted">(Optional: Image, PDF, or Video)</span></label>
-          <input type="file" id="file" accept="image/*,video/*,application/pdf" style="width: 100%; padding: 0.5rem 0;" />
+          <label for="file">Attachment <span class="muted">(Optional — image, PDF, or video)</span></label>
+          <input type="file" id="file" accept="image/*,video/*,application/pdf" style="padding:0.5rem 0;" />
         </div>
-        <button type="submit" id="submit-btn" style="width: 100%; margin-top: 1rem;">
-          <span>Submit Response</span>
-          <span aria-hidden="true">→</span>
+        <button type="submit" id="submit-btn" style="width:100%;margin-top:0.5rem;">
+          Submit Response →
         </button>
         <div id="status" class="status" role="status"></div>
       </form>
-    </section>
 
-    <section id="empty" class="card flex-center" style="min-height: 250px; text-align: center;" hidden>
-      <div class="flex-center" style="flex-direction: column; gap: 1rem;">
-        <div style="margin-bottom: 0.5rem; color: var(--muted);">
-          <i data-lucide="check-circle" style="width: 48px; height: 48px;"></i>
-        </div>
-        <h2>All caught up!</h2>
-        <p class="muted">There are no open activities right now. Your instructor will open one when the session begins.</p>
-        <button onclick="location.reload()" class="secondary sm">Refresh Page</button>
+      <!-- Confirmation (shown after submit) -->
+      <div id="confirm-card" class="confirm-card" hidden>
+        <div class="confirm-icon">✓</div>
+        <h2>Response submitted!</h2>
+        <p>Thanks — your instructor can see it live.</p>
       </div>
     </section>
+
+    <!-- Empty / no open activities -->
+    <section id="empty" class="card flex-center" style="min-height:260px;text-align:center;" hidden>
+      <div class="flex-center" style="flex-direction:column;gap:1rem;">
+        <i data-lucide="clock" style="width:40px;height:40px;color:var(--subtle);"></i>
+        <div>
+          <h2 style="margin:0 0 0.4rem;">No open activities yet</h2>
+          <p class="muted">Your instructor will open one when the session starts.</p>
+        </div>
+        <div class="refresh-countdown" id="refresh-countdown">
+          <div class="refresh-ring"></div>
+          <span id="countdown-text">Checking again in <strong id="countdown-num">20</strong>s</span>
+        </div>
+      </div>
+    </section>
+
   </main>
 
+  <footer class="site">
+    <div class="inner">
+      <a class="footer-brand" href="/">
+        <span class="footer-brand-mark">C++</span>
+        Class++
+      </a>
+      <nav class="footer-links">
+        <a href="/">Submit</a>
+        <a href="/blog/">Notes</a>
+        <a href="/instructor/">Instructor</a>
+      </nav>
+      <span class="footer-copy">© 2026 Class++. University of Wyoming.</span>
+    </div>
+  </footer>
+
   <script type="module" src="/js/student.js"></script>
-  <script>
-    lucide.createIcons();
-  </script>
-  <style>
-    @keyframes spin {
-      100% { transform: rotate(360deg); }
-    }
-  </style>
+  <script>lucide.createIcons();</script>
 </body>
 </html>

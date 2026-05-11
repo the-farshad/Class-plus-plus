@@ -420,6 +420,7 @@ function renderActivities(list_data) {
   }
   list_data.forEach((a) => {
     const li = document.createElement("li");
+    li.dataset.type = a.type; // enables CSS left-border color per type
     const left = document.createElement("div");
     const promptEl = document.createElement("div");
     const label = TYPE_LABELS[a.type] || a.type.toUpperCase();
@@ -958,9 +959,14 @@ $("edit-activity-form").addEventListener("submit", async (e) => {
   }
 });
 
-$("modal-overlay").addEventListener("click", () => {
+function closeAllModals() {
   hide("modal-edit-class"); hide("modal-edit-activity"); hide("modal-qr");
   hide("modal-overlay");
+}
+
+$("modal-overlay").addEventListener("click", closeAllModals);
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") closeAllModals();
 });
 
 // ---------- Boot ----------
