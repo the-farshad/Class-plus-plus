@@ -64,9 +64,6 @@
         <button class="sidebar-nav-item" data-tab="tab-activities">
           <i data-lucide="zap" style="width:16px;height:16px;"></i> Activities
         </button>
-        <button class="sidebar-nav-item" data-tab="tab-first-session">
-          <i data-lucide="sparkles" style="width:16px;height:16px;"></i> First Session
-        </button>
         <button class="sidebar-nav-item" data-tab="tab-classes">
           <i data-lucide="users" style="width:16px;height:16px;"></i> Classes
         </button>
@@ -233,76 +230,6 @@
 
           <!-- Activity list -->
           <ul id="activities" class="activity-list"></ul>
-        </section>
-
-        <!-- First Session -->
-        <section id="tab-first-session">
-          <div class="tab-header">
-            <h1>First Session Pack</h1>
-          </div>
-          <p class="muted" style="margin:0 0 1.25rem;">Launch a ready-made set of icebreakers and survey questions. Students respond live via QR code or the submit link.</p>
-
-          <div class="card" style="margin-bottom:1rem;">
-            <div style="display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-end;">
-              <div class="field" style="flex:1;min-width:180px;margin:0;">
-                <label>Target Class</label>
-                <select id="fs-class-selector"><option value="">Global / No class</option></select>
-              </div>
-              <button id="btn-launch-first-session">
-                <i data-lucide="rocket" style="width:14px;height:14px;"></i> Launch All (8 questions)
-              </button>
-            </div>
-            <div id="fs-status" class="status"></div>
-          </div>
-
-          <div class="grid-2">
-            <div class="first-session-card">
-              <div class="fs-type-badge">Poll</div>
-              <h3>What year are you in?</h3>
-              <div class="fs-preview-pills">
-                <span>Freshman</span><span>Sophomore</span><span>Junior</span><span>Senior</span><span>Graduate</span>
-              </div>
-            </div>
-            <div class="first-session-card">
-              <div class="fs-type-badge">Poll</div>
-              <h3>Which department are you in?</h3>
-              <div class="fs-preview-pills">
-                <span>CS</span><span>CE</span><span>EE</span><span>Math</span><span>Physics</span><span>Other</span>
-              </div>
-            </div>
-            <div class="first-session-card">
-              <div class="fs-type-badge">Rating</div>
-              <h3>How comfortable are you with programming?</h3>
-              <p class="muted" style="margin:0.3rem 0 0;font-size:0.82rem;">1 = beginner · 10 = very experienced</p>
-            </div>
-            <div class="first-session-card">
-              <div class="fs-type-badge">Poll</div>
-              <h3>Which languages have you used before?</h3>
-              <div class="fs-preview-pills">
-                <span>Python</span><span>C</span><span>Java</span><span>JS</span><span>None yet</span>
-              </div>
-            </div>
-            <div class="first-session-card">
-              <div class="fs-type-badge">Word Cloud</div>
-              <h3>What do you hope to learn this semester?</h3>
-              <p class="muted" style="margin:0.3rem 0 0;font-size:0.82rem;">1–3 words → live word cloud</p>
-            </div>
-            <div class="first-session-card">
-              <div class="fs-type-badge">Poll</div>
-              <h3>How do you prefer to study?</h3>
-              <div class="fs-preview-pills">
-                <span>Alone</span><span>Groups</span><span>Tutoring</span><span>Videos</span><span>Trial & error</span>
-              </div>
-            </div>
-            <div class="first-session-card" style="grid-column:1/-1;">
-              <div class="fs-type-badge" style="background:var(--success-soft);color:var(--success);">Icebreaker × 2</div>
-              <h3>Open-ended questions (written submission)</h3>
-              <ul style="margin:0.5rem 0 0;padding-left:1.2rem;color:var(--muted);font-size:0.88rem;">
-                <li>If you could master one technology instantly, what would it be?</li>
-                <li>Share one fun or surprising fact about yourself.</li>
-              </ul>
-            </div>
-          </div>
         </section>
 
         <!-- Classes -->

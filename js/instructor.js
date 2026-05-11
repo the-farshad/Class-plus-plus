@@ -118,38 +118,36 @@ function buildParticipationDataset(activities) {
 }
 
 async function loadStats() {
+  // Load basic counters — must not fail silently
   try {
-    const [statsRes, activitiesRes] = await Promise.all([
-      api.getStats(),
-      api.listAllActivities(null),
-    ]);
-
+    const statsRes = await api.getStats();
     $("stat-students").textContent = statsRes.stats.students;
     $("stat-activities").textContent = statsRes.stats.activities;
+  } catch (err) {
+    $("stat-students").textContent = "err";
+    $("stat-activities").textContent = "err";
+    console.error("getStats failed", err);
+  }
 
-    // Update cache so filter dropdown also reflects latest
+  // Load activity list for chart + totals (independent of counters above)
+  try {
+    const activitiesRes = await api.listAllActivities(null);
     activitiesCache = activitiesRes.activities;
 
-    // Build real 30-day dataset
-    const { labels, counts } = buildParticipationDataset(activitiesRes.activities);
-
-    // Stat card: total activities created
     const totalCreated = activitiesRes.activities.length;
-    const openCount = activitiesRes.activities.filter(a => a.status === "open").length;
-
-    // Add extra stat chips if elements exist
     const statTotalEl = $("stat-total-activities");
     if (statTotalEl) statTotalEl.textContent = totalCreated;
-    const statOpenEl = $("stat-open-activities");
-    if (statOpenEl) statOpenEl.textContent = openCount;
 
+    $("export-csv-all").disabled = false;
+
+    const { labels, counts } = buildParticipationDataset(activitiesRes.activities);
     if (participationChart) participationChart.destroy();
-    const ctx = $("participation-chart").getContext("2d");
 
-    // Use CSS variable colours so chart respects theme
+    const chartEl = $("participation-chart");
+    if (!chartEl) return;
+    const ctx = chartEl.getContext("2d");
     const style = getComputedStyle(document.documentElement);
-    const brand1 = style.getPropertyValue("--brand").trim() || "#2563eb";
-    const brand2 = style.getPropertyValue("--brand").trim() || "#2563eb";
+    const brand = style.getPropertyValue("--brand").trim() || "#2563eb";
 
     participationChart = new Chart(ctx, {
       type: "bar",
@@ -158,8 +156,8 @@ async function loadStats() {
         datasets: [{
           label: "Activities created",
           data: counts,
-          backgroundColor: `color-mix(in srgb, ${brand1} 50%, transparent)`,
-          borderColor: brand1,
+          backgroundColor: `color-mix(in srgb, ${brand} 50%, transparent)`,
+          borderColor: brand,
           borderWidth: 0,
           borderRadius: 5,
           borderSkipped: false,
@@ -171,38 +169,24 @@ async function loadStats() {
         scales: {
           x: {
             grid: { display: false },
-            ticks: {
-              maxTicksLimit: 10,
-              color: style.getPropertyValue("--muted").trim() || "#6b7280",
-              font: { size: 11 },
-            },
+            ticks: { maxTicksLimit: 10, color: style.getPropertyValue("--muted").trim() || "#6b7280", font: { size: 11 } },
           },
           y: {
             beginAtZero: true,
-            ticks: {
-              stepSize: 1,
-              color: style.getPropertyValue("--muted").trim() || "#6b7280",
-              font: { size: 11 },
-            },
-            grid: {
-              color: style.getPropertyValue("--border").trim() || "#e5e7eb",
-            },
+            ticks: { stepSize: 1, color: style.getPropertyValue("--muted").trim() || "#6b7280", font: { size: 11 } },
+            grid: { color: style.getPropertyValue("--border").trim() || "#e5e7eb" },
           },
         },
         plugins: {
           legend: { display: false },
-          tooltip: {
-            callbacks: {
-              label: ctx => ` ${ctx.parsed.y} activit${ctx.parsed.y !== 1 ? "ies" : "y"}`,
-            },
-          },
+          tooltip: { callbacks: { label: c => ` ${c.parsed.y} activit${c.parsed.y !== 1 ? "ies" : "y"}` } },
         },
       },
     });
-
-    $("export-csv-all").disabled = false;
   } catch (err) {
-    console.error("Failed to load stats", err);
+    const statTotalEl = $("stat-total-activities");
+    if (statTotalEl) statTotalEl.textContent = "err";
+    console.error("listAllActivities failed", err);
   }
 }
 
@@ -290,7 +274,7 @@ async function loadClasses() {
 }
 
 function renderClassSelectors() {
-  ["class-selector", "activity-class-filter", "fs-class-selector"].forEach(selId => {
+  ["class-selector", "activity-class-filter"].forEach(selId => {
     const sel = $(selId);
     if (!sel) return;
     const val = sel.value;
@@ -969,77 +953,6 @@ $("copy-qr-link").addEventListener("click", () => {
   navigator.clipboard.writeText($("qr-url").textContent);
   $("copy-qr-link").textContent = "Copied!";
   setTimeout(() => { $("copy-qr-link").textContent = "Copy link"; }, 1500);
-});
-
-// ---------- First Session Pack ----------
-
-const FIRST_SESSION_QUESTIONS = [
-  {
-    prompt: "What year are you in?",
-    type: "poll",
-    options: ["Freshman", "Sophomore", "Junior", "Senior", "Graduate"],
-  },
-  {
-    prompt: "Which department are you in?",
-    type: "poll",
-    options: ["CS", "CE", "EE", "Math", "Physics", "Other"],
-  },
-  {
-    prompt: "Rate your overall programming experience (1 = complete beginner, 10 = very experienced)",
-    type: "rating",
-    options: [],
-  },
-  {
-    prompt: "Which programming languages have you used before? (pick closest)",
-    type: "poll",
-    options: ["Python", "C / C++", "Java", "JavaScript", "None yet"],
-  },
-  {
-    prompt: "What do you hope to learn this semester? (1–3 words)",
-    type: "word_cloud",
-    options: [],
-  },
-  {
-    prompt: "How do you prefer to study?",
-    type: "poll",
-    options: ["Alone", "Study group", "Tutoring", "Videos / tutorials", "Trial and error"],
-  },
-  {
-    prompt: "🧊 Icebreaker: If you could master one technology instantly, what would it be?",
-    type: "submission",
-    options: [],
-  },
-  {
-    prompt: "🧊 Icebreaker: Share one fun or surprising fact about yourself.",
-    type: "submission",
-    options: [],
-  },
-];
-
-$("btn-launch-first-session").addEventListener("click", async () => {
-  const btn = $("btn-launch-first-session");
-  const classId = $("fs-class-selector").value || null;
-  setStatus("fs-status", "Launching all 8 questions…");
-  btn.disabled = true;
-
-  try {
-    const created = [];
-    for (const q of FIRST_SESSION_QUESTIONS) {
-      const res = await api.createActivity(q.prompt, classId, q.type, q.options);
-      created.push(res.activity_id);
-    }
-    setStatus("fs-status", `Launched ${created.length} activities! Switching to Activities tab…`, "success");
-
-    // Switch to activities tab after a moment
-    setTimeout(() => {
-      document.querySelector('[data-tab="tab-activities"]').click();
-      loadActivities();
-    }, 1200);
-  } catch (err) {
-    setStatus("fs-status", err.message, "error");
-  } finally {
-    btn.disabled = false;
-  }
 });
 
 // ---------- Allowlist ----------
