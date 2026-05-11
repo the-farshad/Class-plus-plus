@@ -7,7 +7,7 @@
   <title>Class++ — Live Session</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@600;700;800&family=Lora:wght@400;500;600&family=Roboto+Mono:wght@400;500;600&display=swapfamily=Montserrat:wght@600;700;800family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@600;700;800&family=Lora:wght@400;500;600&family=Roboto+Mono:wght@400;500;600&display=swapfamily=Lora:wght@400;500;600family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@600;700;800&family=Lora:wght@400;500;600&family=Roboto+Mono:wght@400;500;600&display=swapfamily=Ubuntu:wght@400;500;700family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@600;700;800&family=Lora:wght@400;500;600&family=Roboto+Mono:wght@400;500;600&display=swapfamily=Roboto+Mono:wght@400;500;600family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@600;700;800&family=Lora:wght@400;500;600&family=Roboto+Mono:wght@400;500;600&display=swapdisplay=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@600;700;800&family=Lora:wght@400;500;600&family=Ubuntu:wght@400;500;700&family=Roboto+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/styles.css" />
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -39,7 +39,37 @@
   </script>
 
   <main>
-    <div class="hero">
+    <!-- Big landing hero (shown to signed-out visitors) -->
+    <section id="landing-hero" class="landing-hero" hidden>
+      <span class="eyebrow"><span class="live-dot"></span> Live classroom</span>
+      <h1>The classroom, <span class="accent">in real time.</span></h1>
+      <p class="lede">Class++ turns lectures into conversations. Answer polls, rate concepts, contribute to word clouds — your instructor sees the room as it happens.</p>
+      <div class="feature-strip">
+        <div class="feature-chip">
+          <span class="feature-chip-icon"><i data-lucide="bar-chart-2" style="width:16px;height:16px;"></i></span>
+          <span class="feature-chip-title">Polls</span>
+          <p class="feature-chip-desc">Tap an option. Results form live on the projector.</p>
+        </div>
+        <div class="feature-chip">
+          <span class="feature-chip-icon"><i data-lucide="sliders" style="width:16px;height:16px;"></i></span>
+          <span class="feature-chip-title">Ratings</span>
+          <p class="feature-chip-desc">Rate confidence or difficulty from 1–10.</p>
+        </div>
+        <div class="feature-chip">
+          <span class="feature-chip-icon"><i data-lucide="cloud" style="width:16px;height:16px;"></i></span>
+          <span class="feature-chip-title">Word clouds</span>
+          <p class="feature-chip-desc">Drop a word — watch the class converge.</p>
+        </div>
+        <div class="feature-chip">
+          <span class="feature-chip-icon"><i data-lucide="file-text" style="width:16px;height:16px;"></i></span>
+          <span class="feature-chip-title">Submissions</span>
+          <p class="feature-chip-desc">Code, photos, PDFs — turn in anything.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Compact session hero (shown to signed-in users) -->
+    <div id="session-hero" class="hero" hidden>
       <h1 id="hero-title">Today's Session</h1>
       <p id="hero-sub">Join the active activity and share your response.</p>
       <div class="hero-meta" id="hero-meta" hidden>
@@ -49,10 +79,11 @@
     </div>
 
     <!-- Sign-in -->
-    <section id="signin-card" class="card" hidden>
-      <h2 style="margin:0 0 0.35rem;">Sign in to participate</h2>
-      <p class="muted" style="margin:0 0 1.25rem;">Use your <code id="domain-hint">@uwyo.edu</code> Google account.</p>
-      <div id="g_id_signin"></div>
+    <section id="signin-card" class="signin-hero" hidden>
+      <div class="signin-hero-mark">C++</div>
+      <h2>Sign in to participate</h2>
+      <p>Use your <code id="domain-hint">@uwyo.edu</code> Google account to join your class.</p>
+      <div class="g-button-wrap" id="g_id_signin"></div>
       <div id="signin-status" class="status"></div>
     </section>
 
@@ -120,25 +151,20 @@
     </section>
 
     <!-- Empty / no open activities -->
-    <section id="empty" class="card" style="padding:2rem 1.5rem;" hidden>
-      <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0.35rem;">
-        <i data-lucide="clock" style="width:18px;height:18px;color:var(--subtle);flex-shrink:0;"></i>
-        <h2 style="margin:0;font-size:1rem;">No open activities yet</h2>
-      </div>
-      <p class="muted" style="margin:0 0 0 2rem;font-size:0.9rem;">You'll be notified as soon as your instructor opens one — no need to refresh.</p>
-      <div style="margin-top:1rem;margin-left:2rem;display:flex;align-items:center;gap:0.5rem;font-size:0.8rem;color:var(--subtle);">
-        <i data-lucide="radio" style="width:13px;height:13px;"></i>
-        <span>Listening for live updates…</span>
-      </div>
+    <section id="empty" class="card waiting-card" hidden>
+      <div class="waiting-radar"><span class="waiting-radar-core"></span></div>
+      <h2>No open activities yet</h2>
+      <p>You'll see your instructor's next poll, rating, or word cloud here the moment it goes live — no refresh needed.</p>
+      <span class="waiting-pill"><span class="live-dot"></span> Listening for live updates</span>
     </section>
 
   </main>
 
   <!-- Settings modal (requires login) -->
   <div id="modal-overlay-settings" class="modal-overlay" hidden></div>
-  <div id="modal-settings" class="modal-panel" hidden>
+  <div id="modal-settings" class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="modal-settings-title" hidden>
     <div class="modal-panel-header">
-      <span style="font-weight:700;font-size:0.95rem;">Settings</span>
+      <span id="modal-settings-title" style="font-weight:700;font-size:0.95rem;">Settings</span>
       <button id="close-settings" class="icon-btn" aria-label="Close"><i data-lucide="x" style="width:16px;height:16px;"></i></button>
     </div>
 
@@ -176,57 +202,52 @@
 
   <footer class="site">
     <div class="inner">
-      <a class="footer-brand" href="/">
-        <span class="footer-brand-mark">C++</span>
-        Class++
-      </a>
-      <nav class="footer-links">
-        <a href="/">Submit</a>
-        <a href="/blog/">Notes</a>
-        <a href="/instructor/">Instructor</a>
-      </nav>
-      <span class="footer-copy">© 2026 Class++. University of Wyoming.</span>
+      <div>
+        <a class="footer-brand" href="/">
+          <span class="footer-brand-mark">C++</span>
+          Class++
+        </a>
+        <p class="footer-tagline">A live classroom layer for in-person lectures — built for the University of Wyoming.</p>
+      </div>
+      <div>
+        <p class="footer-col-title">Use it</p>
+        <ul class="footer-col-links">
+          <li><a href="/">Submit a response</a></li>
+          <li><a href="/blog/">Browse notes</a></li>
+          <li><a href="/instructor/">Instructor dashboard</a></li>
+        </ul>
+      </div>
+      <div>
+        <p class="footer-col-title">Activity types</p>
+        <ul class="footer-col-links">
+          <li><a href="/">Polls &amp; pies</a></li>
+          <li><a href="/">Ratings (1–10)</a></li>
+          <li><a href="/">Word clouds</a></li>
+          <li><a href="/">Submissions</a></li>
+        </ul>
+      </div>
+      <div>
+        <p class="footer-col-title">Made by</p>
+        <ul class="footer-col-links">
+          <li><a href="https://thefarshad.com" target="_blank" rel="noopener">Farshad Ghorbanishovaneh</a></li>
+          <li><a href="/blog/">Course notes</a></li>
+        </ul>
+      </div>
+      <div class="footer-bottom">
+        <p class="footer-copy">© 2026 Class++. University of Wyoming.</p>
+        <div class="footer-meta">
+          <span>Live updates via SSE</span>
+          <span>·</span>
+          <span>v2026.05</span>
+        </div>
+      </div>
     </div>
   </footer>
 
   <script type="module" src="/js/student.js"></script>
-  <script>
-    lucide.createIcons();
-
-    // Settings modal wiring (theme select, open/close)
-    (function () {
-      const btn = document.getElementById("btn-settings");
-      const modal = document.getElementById("modal-settings");
-      const overlay = document.getElementById("modal-overlay-settings");
-      const closeBtn = document.getElementById("close-settings");
-      const sel = document.getElementById("theme-selector");
-
-      // Apply saved theme and keep select in sync
-      import("/js/api.js").then(({ api }) => {
-        api.initTheme();
-        sel.value = document.documentElement.getAttribute("data-theme") || "light";
-      });
-
-      sel.addEventListener("change", () => {
-        import("/js/api.js").then(({ api }) => api.setTheme(sel.value));
-      });
-
-      function openSettings() {
-        import("/js/api.js").then(({ session }) => {
-          const u = session.user;
-          if (u) document.getElementById("settings-email").textContent = u.email;
-        });
-        sel.value = document.documentElement.getAttribute("data-theme") || "light";
-        modal.hidden = false;
-        overlay.hidden = false;
-      }
-      function closeSettings() { modal.hidden = true; overlay.hidden = true; }
-
-      btn.addEventListener("click", openSettings);
-      closeBtn.addEventListener("click", closeSettings);
-      overlay.addEventListener("click", closeSettings);
-      document.addEventListener("keydown", e => { if (e.key === "Escape") closeSettings(); });
-    })();
+  <script type="module">
+    import { bootPage } from "/js/ui.js";
+    bootPage();
   </script>
 </body>
 </html>

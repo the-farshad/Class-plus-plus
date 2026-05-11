@@ -1,0 +1,176 @@
+/* ===============================
+   Class++ — Minimal UI
+   =============================== */
+
+/* ---------- Geometry & Motion ---------- */
+:root {
+  --radius-sm: 6px;
+  --radius:    10px;
+  --radius-lg: 14px;
+  --ease:      cubic-bezier(0.22, 1, 0.36, 1);
+  --font-mono: "Roboto Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+/* ---------- Light Theme ---------- */
+[data-theme="light"],
+:root:not([data-theme]) {
+  color-scheme: light;
+  --bg:               #f8f9fa;
+  --surface:          #ffffff;
+  --surface-2:        #f1f3f5;
+  --surface-elevated: #ffffff;
+  --text:             #111827;
+  --text-heading:     #111827;
+  --muted:            #6b7280;
+  --subtle:           #9ca3af;
+  --border:           #e5e7eb;
+  --border-strong:    #d1d5db;
+  --interactive:      #f3f4f6;
+
+  --brand:            #2563eb;
+  --brand-soft:       #eff6ff;
+  --brand-muted:      #bfdbfe;
+
+  --success:          #16a34a;
+  --success-soft:     #f0fdf4;
+  --error:            #dc2626;
+  --error-soft:       #fef2f2;
+  --warning:          #d97706;
+  --warning-soft:     #fffbeb;
+
+  --shadow-sm:  0 1px 2px rgba(0,0,0,.05);
+  --shadow:     0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.05);
+  --shadow-md:  0 4px 6px rgba(0,0,0,.06), 0 2px 4px rgba(0,0,0,.04);
+  --header-bg:  rgba(255,255,255,.92);
+}
+
+/* ---------- Dark Theme ---------- */
+[data-theme="dark"] {
+  color-scheme: dark;
+  --bg:               #0f1117;
+  --surface:          #1a1d27;
+  --surface-2:        #22263a;
+  --surface-elevated: #2a2e40;
+  --text:             #e8eaf0;
+  --text-heading:     #f5f6fa;
+  --muted:            #8b90a4;
+  --subtle:           #555b70;
+  --border:           #2e3347;
+  --border-strong:    #404663;
+  --interactive:      #1e2135;
+
+  --brand:            #4f8eff;
+  --brand-soft:       #1a2540;
+  --brand-muted:      #1e3a6e;
+
+  --success:          #22c55e;
+  --success-soft:     #0d2018;
+  --error:            #f87171;
+  --error-soft:       #2d0f0f;
+  --warning:          #fbbf24;
+  --warning-soft:     #2a1f06;
+
+  --shadow-sm:  0 1px 2px rgba(0,0,0,.4);
+  --shadow:     0 1px 3px rgba(0,0,0,.4);
+  --shadow-md:  0 4px 8px rgba(0,0,0,.4);
+  --header-bg:  rgba(15,17,23,.92);
+}
+
+/* ---------- UWYO Theme ---------- */
+[data-theme="uwyo"] {
+  color-scheme: light;
+  --bg:               #fdf8f0;
+  --surface:          #ffffff;
+  --surface-2:        #f5ede0;
+  --surface-elevated: #ffffff;
+  --text:             #3e2b1b;
+  --text-heading:     #2a1a0e;
+  --muted:            #6b523c;
+  --subtle:           #9c8470;
+  --border:           #e2d4c0;
+  --border-strong:    #c9b89a;
+  --interactive:      #f5ede0;
+
+  --brand:            #492F24;
+  --brand-soft:       #fef3e2;
+  --brand-muted:      #f5c880;
+
+  --success:          #2d6b41;
+  --success-soft:     #e8f5ec;
+  --error:            #9e2a2b;
+  --error-soft:       #fce8e8;
+  --warning:          #b45309;
+  --warning-soft:     #fef3c7;
+
+  --shadow-sm:  0 1px 2px rgba(73,47,36,.07);
+  --shadow:     0 1px 3px rgba(73,47,36,.1);
+  --shadow-md:  0 4px 6px rgba(73,47,36,.1);
+  --header-bg:  rgba(255,255,255,.92);
+  --font-family: 'Montserrat', "Inter", sans-serif;
+}
+
+/* ---------- Sepia Theme ---------- */
+[data-theme="sepia"] {
+  color-scheme: light;
+  --bg:               #f5edd8;
+  --surface:          #fdf8ef;
+  --surface-2:        #ece3cc;
+  --surface-elevated: #fdf8ef;
+  --text:             #433422;
+  --text-heading:     #2e2216;
+  --muted:            #705b43;
+  --subtle:           #9e876b;
+  --border:           #d8ccb5;
+  --border-strong:    #b9a98e;
+  --interactive:      #ece3cc;
+
+  --brand:            #7c5523;
+  --brand-soft:       #f5e8d5;
+  --brand-muted:      #d4a96a;
+
+  --success:          #2d6b41;
+  --success-soft:     #ddeee3;
+  --error:            #9e2a2b;
+  --error-soft:       #f5dede;
+  --warning:          #9e642a;
+  --warning-soft:     #f5e8d5;
+
+  --shadow-sm:  0 1px 2px rgba(67,52,34,.1);
+  --shadow:     0 1px 3px rgba(67,52,34,.12);
+  --shadow-md:  0 4px 6px rgba(67,52,34,.12);
+  --header-bg:  rgba(253,248,239,.92);
+  --font-family: 'Ubuntu', 'Lora', Georgia, serif;
+}
+
+/* ---------- High Contrast ---------- */
+[data-theme="high-contrast"] {
+  color-scheme: dark;
+  --bg:               #000000;
+  --surface:          #000000;
+  --surface-2:        #111111;
+  --surface-elevated: #1a1a1a;
+  --text:             #ffffff;
+  --text-heading:     #ffffff;
+  --muted:            #ffff00;
+  --subtle:           #cccccc;
+  --border:           #ffffff;
+  --border-strong:    #ffffff;
+  --interactive:      rgba(255,255,0,.08);
+
+  --brand:            #ffff00;
+  --brand-soft:       transparent;
+  --brand-muted:      #666600;
+
+  --success:          #00ff00;
+  --success-soft:     transparent;
+  --error:            #ff4444;
+  --error-soft:       transparent;
+  --warning:          #ffff00;
+  --warning-soft:     transparent;
+
+  --shadow-sm:  none;
+  --shadow:     none;
+  --shadow-md:  none;
+  --header-bg:  #000000;
+  --font-family: 'Roboto Mono', monospace;
+}

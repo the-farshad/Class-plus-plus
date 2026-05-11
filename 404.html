@@ -7,7 +7,7 @@
   <title>Class++ — 404 Not Found</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800family=Inter:wght@400;500;600;700;800&family=Roboto+Mono:wght@400;500;600&display=swapfamily=Montserrat:wght@600;700;800family=Inter:wght@400;500;600;700;800&family=Roboto+Mono:wght@400;500;600&display=swapfamily=Lora:wght@400;500;600family=Inter:wght@400;500;600;700;800&family=Roboto+Mono:wght@400;500;600&display=swapfamily=Ubuntu:wght@400;500;700family=Inter:wght@400;500;600;700;800&family=Roboto+Mono:wght@400;500;600&display=swapfamily=Roboto+Mono:wght@400;500;600family=Inter:wght@400;500;600;700;800&family=Roboto+Mono:wght@400;500;600&display=swapdisplay=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@600;700;800&family=Lora:wght@400;500;600&family=Ubuntu:wght@400;500;700&family=Roboto+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/styles.css" />
   <script src="https://unpkg.com/lucide@latest"></script>
 </head>
@@ -55,19 +55,30 @@
 
   <footer class="site">
     <div class="inner">
-      <a class="footer-brand" href="/">
-        <span class="footer-brand-mark">C++</span>
-        Class++
-      </a>
-      <nav class="footer-links">
-        <a href="/">Submit</a>
-        <a href="/blog/">Notes</a>
-        <a href="/instructor/">Instructor</a>
-      </nav>
-      <span class="footer-copy">© 2026 Class++. University of Wyoming.</span>
+      <div>
+        <a class="footer-brand" href="/">
+          <span class="footer-brand-mark">C++</span>
+          Class++
+        </a>
+        <p class="footer-tagline">A live classroom layer for in-person lectures.</p>
+      </div>
+      <div>
+        <p class="footer-col-title">Take me back</p>
+        <ul class="footer-col-links">
+          <li><a href="/">Submit a response</a></li>
+          <li><a href="/blog/">Browse notes</a></li>
+          <li><a href="/instructor/">Instructor dashboard</a></li>
+        </ul>
+      </div>
+      <div class="footer-bottom">
+        <p class="footer-copy">© 2026 Class++. University of Wyoming.</p>
+      </div>
     </div>
   </footer>
 
-  <script>lucide.createIcons();</script>
+  <script type="module">
+    import { bootPage } from "/js/ui.js";
+    bootPage();
+  </script>
 </body>
 </html>

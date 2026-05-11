@@ -84,6 +84,24 @@ async function del(path) {
   return handle(res);
 }
 
+// Map data-theme → the color the OS chrome should match.
+const THEME_COLORS = {
+  light:           "#2563eb",
+  dark:            "#0f1117",
+  uwyo:            "#492f24",
+  sepia:           "#f5edd8",
+  "high-contrast": "#000000",
+};
+function syncThemeColor(theme) {
+  let meta = document.querySelector('meta[name="theme-color"]');
+  if (!meta) {
+    meta = document.createElement("meta");
+    meta.name = "theme-color";
+    document.head.appendChild(meta);
+  }
+  meta.content = THEME_COLORS[theme] || THEME_COLORS.light;
+}
+
 export const api = {
   // Theme Management
   initTheme: () => {
@@ -91,10 +109,12 @@ export const api = {
     const system = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
     const theme = saved || system;
     document.documentElement.setAttribute("data-theme", theme);
+    syncThemeColor(theme);
   },
   setTheme: (theme) => {
     document.documentElement.setAttribute("data-theme", theme);
     localStorage.setItem("classpp.theme", theme);
+    syncThemeColor(theme);
     return theme;
   },
 

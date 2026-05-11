@@ -1,15 +1,5 @@
 import { api, session, API_BASE_URL } from "/js/api.js";
-
-const $ = (id) => document.getElementById(id);
-const show = (id) => { const el = $(id); if (el) el.hidden = false; };
-const hide = (id) => { const el = $(id); if (el) el.hidden = true; };
-
-function setStatusEl(id, msg, kind = "") {
-  const el = document.getElementById(id);
-  if (!el) return;
-  el.textContent = msg;
-  el.className = "status" + (kind ? ` ${kind}` : "");
-}
+import { $, show, hide, escapeHTML, setStatus as setStatusEl, mountSettingsDrawer } from "/js/ui.js";
 
 const TYPE_LABELS = {
   poll: "Poll", poll_pie: "Poll", rating: "Rating", word_cloud: "Word Cloud", submission: "Submission",
@@ -96,11 +86,6 @@ function showActivity(a) {
   }
 
   show("form-card");
-}
-
-function escapeHTML(s) {
-  return String(s ?? "").replace(/[&<>"']/g, c =>
-    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
 
 function renderPoll(a) {
@@ -220,6 +205,9 @@ async function showSignedInState() {
   const u = session.user;
   if (!u) return;
 
+  hide("landing-hero");
+  show("session-hero");
+
   const metaEl = $("hero-meta");
   const whoEl = $("who-am-i");
   if (whoEl) whoEl.textContent = u.email;
@@ -236,6 +224,8 @@ async function showSignedInState() {
 
 async function showSignInState() {
   hide("loading"); hide("picker"); hide("form-card"); hide("empty");
+  hide("session-hero");
+  show("landing-hero");
   show("signin-card");
   try {
     const cfg = await api.authConfig();
@@ -268,12 +258,6 @@ function renderGoogleButton(clientId) {
   };
   tryRender();
 }
-
-$("signout").addEventListener("click", () => {
-  disconnectSSE();
-  api.signOut();
-  location.reload();
-});
 
 $("rating-form").addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -314,6 +298,12 @@ $("submit-form").addEventListener("submit", async (e) => {
     setStatusEl("status", err.message, "error");
     if (btn) btn.disabled = false;
   }
+});
+
+mountSettingsDrawer({
+  api,
+  session,
+  onSignOut: () => { disconnectSSE(); api.signOut(); location.reload(); },
 });
 
 if (session.token) showSignedInState();

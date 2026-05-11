@@ -1,3 +1,5 @@
+import { escapeHTML } from "/js/ui.js";
+
 const POSTS_DIR = "/blog/posts";
 
 // ---------- Frontmatter parser ----------
@@ -42,12 +44,6 @@ function ensureMarkedConfigured() {
     }
   } catch { /* use library defaults */ }
   window.__markedClassPlusConfigured = true;
-}
-
-function escapeHTML(s) {
-  return String(s ?? "").replace(/[&<>"']/g, (c) => ({
-    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
-  }[c]));
 }
 
 // ---------- Estimated reading time ----------

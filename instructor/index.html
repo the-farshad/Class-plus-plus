@@ -6,7 +6,7 @@
   <title>Class++ — Instructor</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@600;700;800&family=Lora:wght@400;500;600&family=Roboto+Mono:wght@400;500;600&display=swapfamily=Montserrat:wght@600;700;800family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@600;700;800&family=Lora:wght@400;500;600&family=Roboto+Mono:wght@400;500;600&display=swapfamily=Lora:wght@400;500;600family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@600;700;800&family=Lora:wght@400;500;600&family=Roboto+Mono:wght@400;500;600&display=swapfamily=Ubuntu:wght@400;500;700family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@600;700;800&family=Lora:wght@400;500;600&family=Roboto+Mono:wght@400;500;600&display=swapfamily=Roboto+Mono:wght@400;500;600family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@600;700;800&family=Lora:wght@400;500;600&family=Roboto+Mono:wght@400;500;600&display=swapdisplay=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@600;700;800&family=Lora:wght@400;500;600&family=Ubuntu:wght@400;500;700&family=Roboto+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/styles.css" />
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -53,21 +53,21 @@
     <div id="dashboard" class="dashboard-layout" hidden>
 
       <!-- Sidebar -->
-      <aside class="dashboard-sidebar">
+      <aside class="dashboard-sidebar" role="tablist" aria-orientation="vertical" aria-label="Dashboard sections">
         <div class="sidebar-user">
           <p class="stat-label" style="margin:0 0 0.2rem;">Signed in as</p>
           <div id="who-am-i" style="font-weight:600;font-size:0.85rem;line-height:1.3;word-break:break-all;color:var(--text);"></div>
         </div>
-        <button class="sidebar-nav-item active" data-tab="tab-overview">
+        <button class="sidebar-nav-item active" role="tab" aria-selected="true" aria-controls="tab-overview" id="sb-overview" data-tab="tab-overview">
           <i data-lucide="layout-dashboard" style="width:16px;height:16px;"></i> Overview
         </button>
-        <button class="sidebar-nav-item" data-tab="tab-activities">
+        <button class="sidebar-nav-item" role="tab" aria-selected="false" aria-controls="tab-activities" id="sb-activities" data-tab="tab-activities">
           <i data-lucide="zap" style="width:16px;height:16px;"></i> Activities
         </button>
-        <button class="sidebar-nav-item" data-tab="tab-classes">
+        <button class="sidebar-nav-item" role="tab" aria-selected="false" aria-controls="tab-classes" id="sb-classes" data-tab="tab-classes">
           <i data-lucide="users" style="width:16px;height:16px;"></i> Classes
         </button>
-        <button class="sidebar-nav-item" data-tab="tab-access">
+        <button class="sidebar-nav-item" role="tab" aria-selected="false" aria-controls="tab-access" id="sb-access" data-tab="tab-access">
           <i data-lucide="lock" style="width:16px;height:16px;"></i> Access Control
         </button>
       </aside>
@@ -76,48 +76,71 @@
       <div class="dashboard-content">
 
         <!-- Overview -->
-        <section id="tab-overview" class="active">
+        <section id="tab-overview" class="active" role="tabpanel" aria-labelledby="sb-overview" tabindex="0">
           <div class="tab-header">
-            <h1>Overview</h1>
-            <button id="refresh-stats" class="secondary sm">
-              <i data-lucide="refresh-cw" style="width:13px;height:13px;"></i> Refresh
-            </button>
+            <div>
+              <h1>Overview</h1>
+              <p class="tab-subtitle">Snapshot of your classroom activity.</p>
+            </div>
+            <div style="display:flex;gap:0.5rem;align-items:center;">
+              <button id="export-csv-all" class="secondary sm" disabled>
+                <i data-lucide="download" style="width:13px;height:13px;"></i> Roster CSV
+              </button>
+              <button id="refresh-stats" class="secondary sm" aria-label="Refresh stats">
+                <i data-lucide="refresh-cw" style="width:13px;height:13px;"></i> Refresh
+              </button>
+            </div>
           </div>
 
           <div class="grid-2" style="margin-bottom:1.25rem;">
             <div class="card stat-card" style="margin-bottom:0;">
-              <p class="stat-label">Students</p>
-              <div id="stat-students" class="stat-num">—</div>
+              <div class="stat-card-header">
+                <p class="stat-label">Students</p>
+                <span class="stat-card-icon"><i data-lucide="users" style="width:15px;height:15px;"></i></span>
+              </div>
+              <div id="stat-students" class="stat-num brand">—</div>
             </div>
             <div class="card stat-card" style="margin-bottom:0;">
-              <p class="stat-label">Open Now</p>
-              <div id="stat-activities" class="stat-num" style="color:var(--success);">—</div>
+              <div class="stat-card-header">
+                <p class="stat-label">Open Now</p>
+                <span class="stat-card-icon success"><i data-lucide="zap" style="width:15px;height:15px;"></i></span>
+              </div>
+              <div id="stat-activities" class="stat-num success">—</div>
             </div>
             <div class="card stat-card" style="margin-bottom:0;">
-              <p class="stat-label">Total Activities</p>
+              <div class="stat-card-header">
+                <p class="stat-label">Total Activities</p>
+                <span class="stat-card-icon"><i data-lucide="layers" style="width:15px;height:15px;"></i></span>
+              </div>
               <div id="stat-total-activities" class="stat-num">—</div>
             </div>
             <div class="card stat-card" style="margin-bottom:0;">
-              <p class="stat-label">Export</p>
-              <button id="export-csv-all" class="secondary sm" disabled style="margin-top:0.5rem;">Download CSV</button>
+              <div class="stat-card-header">
+                <p class="stat-label">Classes</p>
+                <span class="stat-card-icon warning"><i data-lucide="book-open" style="width:15px;height:15px;"></i></span>
+              </div>
+              <div id="stat-classes" class="stat-num">—</div>
             </div>
           </div>
 
           <div class="card" style="margin-bottom:0;">
             <p class="stat-label" style="margin:0 0 0.85rem;">Activity created — last 30 days</p>
-            <div style="height:160px;"><canvas id="participation-chart"></canvas></div>
+            <div style="height:180px;"><canvas id="participation-chart"></canvas></div>
           </div>
         </section>
 
         <!-- Activities -->
-        <section id="tab-activities">
+        <section id="tab-activities" role="tabpanel" aria-labelledby="sb-activities" tabindex="0">
           <div class="tab-header">
-            <h1>Activities</h1>
+            <div>
+              <h1>Activities</h1>
+              <p class="tab-subtitle">Launch a poll, rating, word cloud, or open submission.</p>
+            </div>
             <div style="display:flex;gap:0.5rem;align-items:center;">
-              <select id="activity-class-filter" style="padding:0.38rem 0.6rem;font-size:0.85rem;width:auto;">
+              <select id="activity-class-filter" aria-label="Filter activities by class" style="padding:0.38rem 0.6rem;font-size:0.85rem;width:auto;">
                 <option value="">All classes</option>
               </select>
-              <button id="refresh-activities" class="secondary sm">
+              <button id="refresh-activities" class="secondary sm" aria-label="Refresh activity list">
                 <i data-lucide="refresh-cw" style="width:13px;height:13px;"></i>
               </button>
             </div>
@@ -194,7 +217,7 @@
               </div>
               <div style="display:flex;gap:0.4rem;align-items:center;">
                 <span id="live-badge" class="tag open" style="display:none;">Live</span>
-                <button id="btn-project" class="secondary sm" title="Open in new tab">
+                <button id="btn-project" class="secondary sm" title="Open in new tab" aria-label="Open in new tab">
                   <i data-lucide="external-link" style="width:13px;height:13px;"></i>
                 </button>
                 <button id="export-csv" class="secondary sm">
@@ -233,9 +256,12 @@
         </section>
 
         <!-- Classes -->
-        <section id="tab-classes">
+        <section id="tab-classes" role="tabpanel" aria-labelledby="sb-classes" tabindex="0">
           <div class="tab-header">
-            <h1>Classes</h1>
+            <div>
+              <h1>Classes</h1>
+              <p class="tab-subtitle">Manage rosters and class codes.</p>
+            </div>
           </div>
 
           <div class="card" style="margin-bottom:1rem;">
@@ -287,8 +313,13 @@
         </section>
 
         <!-- Access Control -->
-        <section id="tab-access">
-          <div class="tab-header"><h1>Access Control</h1></div>
+        <section id="tab-access" role="tabpanel" aria-labelledby="sb-access" tabindex="0">
+          <div class="tab-header">
+            <div>
+              <h1>Access Control</h1>
+              <p class="tab-subtitle">Allow guests outside <code>@uwyo.edu</code> and manage instructor roles.</p>
+            </div>
+          </div>
           <div class="grid-2">
             <div class="card">
               <h2>Guest Allowlist</h2>
@@ -335,10 +366,10 @@
     </div><!-- #dashboard -->
 
     <!-- QR Modal -->
-    <div id="modal-qr" class="modal-center" hidden>
+    <div id="modal-qr" class="modal-center" role="dialog" aria-modal="true" aria-labelledby="modal-qr-title" hidden>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
-        <h2 style="margin:0;">Scan to Join</h2>
-        <button id="close-qr" class="icon-btn"><i data-lucide="x" style="width:16px;height:16px;"></i></button>
+        <h2 id="modal-qr-title" style="margin:0;">Scan to Join</h2>
+        <button id="close-qr" class="icon-btn" aria-label="Close QR dialog"><i data-lucide="x" style="width:16px;height:16px;"></i></button>
       </div>
       <div id="qr-code" style="display:inline-block;padding:0.85rem;background:#fff;border-radius:10px;margin-bottom:1rem;"></div>
       <p id="qr-url" class="muted" style="font-size:0.78rem;word-break:break-all;margin:0 0 0.75rem;"></p>
@@ -346,10 +377,10 @@
     </div>
 
     <!-- Edit Class Modal -->
-    <div id="modal-edit-class" class="modal-center" hidden>
+    <div id="modal-edit-class" class="modal-center" role="dialog" aria-modal="true" aria-labelledby="modal-edit-class-title" hidden>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
-        <h2 style="margin:0;">Edit Class</h2>
-        <button id="close-edit-class" class="icon-btn"><i data-lucide="x" style="width:16px;height:16px;"></i></button>
+        <h2 id="modal-edit-class-title" style="margin:0;">Edit Class</h2>
+        <button id="close-edit-class" class="icon-btn" aria-label="Close edit class dialog"><i data-lucide="x" style="width:16px;height:16px;"></i></button>
       </div>
       <form id="edit-class-form">
         <input type="hidden" id="edit-class-id" />
@@ -361,10 +392,10 @@
     </div>
 
     <!-- Edit Activity Modal -->
-    <div id="modal-edit-activity" class="modal-center" hidden>
+    <div id="modal-edit-activity" class="modal-center" role="dialog" aria-modal="true" aria-labelledby="modal-edit-activity-title" hidden>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
-        <h2 style="margin:0;">Edit Activity</h2>
-        <button id="close-edit-activity" class="icon-btn"><i data-lucide="x" style="width:16px;height:16px;"></i></button>
+        <h2 id="modal-edit-activity-title" style="margin:0;">Edit Activity</h2>
+        <button id="close-edit-activity" class="icon-btn" aria-label="Close edit activity dialog"><i data-lucide="x" style="width:16px;height:16px;"></i></button>
       </div>
       <form id="edit-activity-form">
         <input type="hidden" id="edit-activity-id" />
@@ -398,10 +429,10 @@
 
   <!-- Settings modal (only accessible after login) -->
   <div id="modal-overlay-settings" class="modal-overlay" hidden></div>
-  <div id="modal-settings" class="modal-panel" hidden>
+  <div id="modal-settings" class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="modal-settings-title-i" hidden>
     <div class="modal-panel-header">
-      <span style="font-weight:700;font-size:0.95rem;">Settings</span>
-      <button id="close-settings" class="icon-btn"><i data-lucide="x" style="width:16px;height:16px;"></i></button>
+      <span id="modal-settings-title-i" style="font-weight:700;font-size:0.95rem;">Settings</span>
+      <button id="close-settings" class="icon-btn" aria-label="Close settings"><i data-lucide="x" style="width:16px;height:16px;"></i></button>
     </div>
     <div class="modal-panel-body">
       <div class="settings-row">
@@ -425,19 +456,44 @@
 
   <footer class="site">
     <div class="inner">
-      <a class="footer-brand" href="/">
-        <span class="footer-brand-mark">C++</span> Class++
-      </a>
-      <nav class="footer-links">
-        <a href="/">Student View</a>
-        <a href="/blog/">Notes</a>
-        <a href="/instructor/">Dashboard</a>
-      </nav>
-      <span class="footer-copy">© 2026 Class++. University of Wyoming.</span>
+      <div>
+        <a class="footer-brand" href="/">
+          <span class="footer-brand-mark">C++</span> Class++
+        </a>
+        <p class="footer-tagline">Instructor console — manage classes, launch live activities, view results.</p>
+      </div>
+      <div>
+        <p class="footer-col-title">Navigate</p>
+        <ul class="footer-col-links">
+          <li><a href="/">Student view</a></li>
+          <li><a href="/blog/">Notes</a></li>
+          <li><a href="/instructor/">Dashboard</a></li>
+        </ul>
+      </div>
+      <div>
+        <p class="footer-col-title">Tips</p>
+        <ul class="footer-col-links">
+          <li>Tap QR icon on any activity to share</li>
+          <li>Results refresh every 4s while open</li>
+        </ul>
+      </div>
+      <div>
+        <p class="footer-col-title">Made by</p>
+        <ul class="footer-col-links">
+          <li><a href="https://thefarshad.com" target="_blank" rel="noopener">Farshad Ghorbanishovaneh</a></li>
+        </ul>
+      </div>
+      <div class="footer-bottom">
+        <p class="footer-copy">© 2026 Class++. University of Wyoming.</p>
+        <div class="footer-meta"><span>Live updates via SSE</span></div>
+      </div>
     </div>
   </footer>
 
   <script type="module" src="/js/instructor.js"></script>
-  <script>lucide.createIcons();</script>
+  <script type="module">
+    import { bootPage } from "/js/ui.js";
+    bootPage();
+  </script>
 </body>
 </html>

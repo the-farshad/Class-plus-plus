@@ -1,10 +1,7 @@
 import { api, session, API_BASE_URL } from "/js/api.js";
+import { $, show, hide, escapeHTML, setStatus, mountSettingsDrawer } from "/js/ui.js";
 
 api.initTheme();
-
-const $ = (id) => document.getElementById(id);
-const show = (id) => { const el = $(id); if (el) el.hidden = false; };
-const hide = (id) => { const el = $(id); if (el) el.hidden = true; };
 
 let activitiesCache = [];
 let currentSubmissions = [];
@@ -16,19 +13,6 @@ let liveRefreshTimer = null;
 let participationChart = null;
 let liveChart = null;
 let ratingHistChart = null;
-
-function setStatus(targetId, msg, kind = "") {
-  const el = $(targetId);
-  if (!el) return;
-  el.textContent = msg;
-  el.className = "status" + (kind ? ` ${kind}` : "");
-}
-
-function escapeHTML(s) {
-  return String(s ?? "").replace(/[&<>"']/g, (c) => ({
-    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
-  }[c]));
-}
 
 // ---------- Sign-in ----------
 
@@ -220,44 +204,47 @@ $("export-csv-all").addEventListener("click", async () => {
 // ---------- Tabs ----------
 
 function initTabs() {
-  document.querySelectorAll(".sidebar-nav-item").forEach(btn => {
-    btn.addEventListener("click", (e) => {
-      document.querySelectorAll(".sidebar-nav-item").forEach(b => b.classList.remove("active"));
-      document.querySelectorAll(".dashboard-content > section").forEach(s => s.classList.remove("active"));
-      const target = e.currentTarget;
-      target.classList.add("active");
-      $(target.dataset.tab).classList.add("active");
-      // Refresh overview when its tab is activated
-      if (target.dataset.tab === "tab-overview") loadStats();
+  const tabs = [...document.querySelectorAll(".sidebar-nav-item")];
+
+  function activate(btn) {
+    tabs.forEach(b => {
+      const isActive = b === btn;
+      b.classList.toggle("active", isActive);
+      b.setAttribute("aria-selected", isActive ? "true" : "false");
+      b.setAttribute("tabindex", isActive ? "0" : "-1");
+    });
+    document.querySelectorAll(".dashboard-content > section").forEach(s => s.classList.remove("active"));
+    $(btn.dataset.tab).classList.add("active");
+    if (btn.dataset.tab === "tab-overview") loadStats();
+  }
+
+  tabs.forEach((btn, i) => {
+    btn.setAttribute("tabindex", btn.classList.contains("active") ? "0" : "-1");
+    btn.addEventListener("click", () => activate(btn));
+    btn.addEventListener("keydown", (e) => {
+      // Arrow keys move between tabs per ARIA tablist authoring practice
+      let target = null;
+      if (e.key === "ArrowDown" || e.key === "ArrowRight") target = tabs[(i + 1) % tabs.length];
+      else if (e.key === "ArrowUp" || e.key === "ArrowLeft") target = tabs[(i - 1 + tabs.length) % tabs.length];
+      else if (e.key === "Home") target = tabs[0];
+      else if (e.key === "End") target = tabs[tabs.length - 1];
+      if (target) {
+        e.preventDefault();
+        activate(target);
+        target.focus();
+      }
     });
   });
 }
 
 // ---------- Settings modal ----------
 
-(function () {
-  const btnSettings = $("btn-settings");
-  const modal = $("modal-settings");
-  const overlay = $("modal-overlay-settings");
-  const closeBtn = $("close-settings");
-  const sel = $("theme-selector");
+mountSettingsDrawer({
+  api,
+  session,
+  onSignOut: () => { api.signOut(); location.reload(); },
+});
 
-  sel.value = document.documentElement.getAttribute("data-theme") || "light";
-  sel.addEventListener("change", () => api.setTheme(sel.value));
-
-  function openSettings() {
-    sel.value = document.documentElement.getAttribute("data-theme") || "light";
-    modal.hidden = false;
-    overlay.hidden = false;
-  }
-  function closeSettings() { modal.hidden = true; overlay.hidden = true; }
-
-  btnSettings.addEventListener("click", openSettings);
-  closeBtn.addEventListener("click", closeSettings);
-  overlay.addEventListener("click", closeSettings);
-})();
-
-$("signout").addEventListener("click", () => { api.signOut(); location.reload(); });
 $("forbidden-signout").addEventListener("click", () => { api.signOut(); location.reload(); });
 
 // ---------- Classes ----------
@@ -266,9 +253,13 @@ async function loadClasses() {
   try {
     const res = await api.listClasses();
     classesCache = res.classes;
+    const statClasses = $("stat-classes");
+    if (statClasses) statClasses.textContent = classesCache.length;
     renderClassSelectors();
     renderClassList();
   } catch (err) {
+    const statClasses = $("stat-classes");
+    if (statClasses) statClasses.textContent = "err";
     console.error("Failed to load classes", err);
   }
 }
@@ -338,6 +329,7 @@ function renderClassList() {
     editBtn.className = "secondary sm";
     editBtn.innerHTML = `<i data-lucide="edit-2" style="width:13px;height:13px;"></i>`;
     editBtn.title = "Edit class";
+    editBtn.setAttribute("aria-label", `Edit class ${c.name}`);
     editBtn.addEventListener("click", () => {
       $("edit-class-id").value = c.id;
       $("edit-class-name").value = c.name;
@@ -350,6 +342,7 @@ function renderClassList() {
     delBtn.className = "secondary sm danger";
     delBtn.innerHTML = `<i data-lucide="trash-2" style="width:13px;height:13px;"></i>`;
     delBtn.title = "Delete class";
+    delBtn.setAttribute("aria-label", `Delete class ${c.name}`);
     delBtn.addEventListener("click", async () => {
       if (!confirm("Delete class and all its data?")) return;
       await api.deleteClass(c.id);
@@ -452,6 +445,7 @@ async function loadClassStudents() {
       delBtn.className = "secondary sm danger";
       delBtn.innerHTML = `<i data-lucide="user-minus" style="width:13px;height:13px;"></i>`;
       delBtn.title = `Remove ${s.student_email}`;
+      delBtn.setAttribute("aria-label", `Remove student ${s.student_email}`);
       delBtn.addEventListener("click", async () => {
         if (!confirm(`Remove ${s.student_email}?`)) return;
         await api.removeClassStudent(activeMgmtClass.id, s.student_email);
@@ -498,9 +492,9 @@ function addOptionRow(containerId, value = "") {
   const row = document.createElement("div");
   row.className = "option-row";
   row.innerHTML = `
-    <span class="option-letter">${LETTERS[idx] || idx + 1}</span>
-    <input type="text" placeholder="Option ${LETTERS[idx] || idx + 1}" value="${escapeHTML(value)}" required />
-    <button type="button" class="icon-btn remove-option-btn" title="Remove" tabindex="-1">
+    <span class="option-letter" aria-hidden="true">${LETTERS[idx] || idx + 1}</span>
+    <input type="text" placeholder="Option ${LETTERS[idx] || idx + 1}" aria-label="Option ${LETTERS[idx] || idx + 1}" value="${escapeHTML(value)}" required />
+    <button type="button" class="icon-btn remove-option-btn" title="Remove" aria-label="Remove this option" tabindex="-1">
       <i data-lucide="x" style="width:13px;height:13px;"></i>
     </button>`;
   row.querySelector(".remove-option-btn").addEventListener("click", () => {
@@ -657,6 +651,7 @@ function renderActivities(list_data) {
     editBtn.className = "secondary sm";
     editBtn.innerHTML = `<i data-lucide="edit-2" style="width:13px;height:13px;"></i>`;
     editBtn.title = "Edit prompt / difficulty";
+    editBtn.setAttribute("aria-label", `Edit activity: ${a.prompt}`);
     editBtn.addEventListener("click", () => {
       $("edit-activity-id").value = a.activity_id;
       $("edit-activity-type-val").value = a.type;
@@ -687,12 +682,14 @@ function renderActivities(list_data) {
     qrBtn.className = "secondary sm";
     qrBtn.innerHTML = `<i data-lucide="qr-code" style="width:13px;height:13px;"></i>`;
     qrBtn.title = "QR Code / Copy link";
+    qrBtn.setAttribute("aria-label", `Show QR code for: ${a.prompt}`);
     qrBtn.addEventListener("click", () => showQR(a));
 
     const delBtn2 = document.createElement("button");
     delBtn2.className = "secondary sm danger";
     delBtn2.innerHTML = `<i data-lucide="trash-2" style="width:13px;height:13px;"></i>`;
     delBtn2.title = "Delete activity";
+    delBtn2.setAttribute("aria-label", `Delete activity: ${a.prompt}`);
     delBtn2.addEventListener("click", async () => {
       if (!confirm(`Delete "${a.prompt}"?\nThis also removes all submissions and votes.`)) return;
       try {
