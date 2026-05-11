@@ -88,15 +88,33 @@
         <div id="activity-type-tag" class="tag" style="margin-top: 0.5rem;"></div>
       </div>
       
-      <div id="poll-card" class="card" style="background: var(--surface-2); border-color: var(--border); box-shadow: none;" hidden>
-        <div id="poll-options-list" class="row" style="flex-direction:column; gap:0.75rem; margin-top:0.5rem;"></div>
+      <!-- Shared activity id (used by all sub-forms) -->
+      <input type="hidden" id="activity-id" />
+
+      <!-- Poll (multiple choice tiles) -->
+      <div id="poll-card" hidden>
+        <div id="poll-options-list" class="poll-tiles-grid"></div>
         <div id="poll-status" class="status" style="margin-top:1rem;"></div>
       </div>
 
+      <!-- Rating scale -->
+      <form id="rating-form" hidden>
+        <input type="hidden" id="rating-hidden" />
+        <div class="rating-scale">
+          <div id="rating-buttons" class="rating-row"></div>
+          <div id="rating-labels" class="rating-label-row"></div>
+        </div>
+        <button type="submit" id="rating-submit-btn" style="width: 100%; margin-top: 1.5rem;">
+          <span>Submit Rating</span>
+          <span aria-hidden="true">→</span>
+        </button>
+        <div id="rating-status" class="status" role="status"></div>
+      </form>
+
+      <!-- Text submission / word cloud -->
       <form id="submit-form" hidden>
-        <input type="hidden" id="activity-id" />
         <div class="field">
-          <label for="response">Your Response</label>
+          <label id="response-label" for="response">Your Response</label>
           <textarea id="response" required placeholder="Type your answer here..."></textarea>
         </div>
         <div class="field">

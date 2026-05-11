@@ -819,3 +819,257 @@ hr {
 .dashboard-content > section.active {
   display: block;
 }
+
+/* ---------- Poll tiles (student view — Mentimeter style) ---------- */
+
+.poll-tiles-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.85rem;
+  margin-top: 0.5rem;
+}
+
+.poll-tile {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 1rem 1.15rem;
+  border-radius: var(--radius);
+  border: 2px solid var(--border);
+  background: var(--surface);
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.18s var(--ease);
+  text-align: left;
+  width: 100%;
+}
+
+.poll-tile:hover:not(:disabled) {
+  border-color: var(--brand-1);
+  background: var(--brand-grad-soft);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(99,102,241,0.15);
+}
+
+.poll-tile.selected {
+  border-color: var(--brand-1);
+  background: var(--brand-grad-soft);
+  color: var(--brand-1);
+  font-weight: 700;
+}
+
+.poll-tile:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.poll-tile-letter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  min-width: 2rem;
+  border-radius: 6px;
+  background: var(--brand-1);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 800;
+  font-family: var(--font-mono);
+}
+
+.poll-tile.selected .poll-tile-letter {
+  background: var(--brand-2);
+}
+
+/* ---------- Rating scale (student view — Slido style) ---------- */
+
+.rating-scale {
+  margin: 1rem 0;
+}
+
+.rating-row {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.rating-btn {
+  width: 3rem;
+  height: 3rem;
+  border-radius: var(--radius-sm);
+  border: 2px solid var(--border);
+  background: var(--surface);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.15s var(--ease);
+}
+
+.rating-btn:hover:not(:disabled) {
+  border-color: var(--brand-1);
+  background: var(--brand-grad-soft);
+  color: var(--brand-1);
+}
+
+.rating-btn.selected {
+  background: var(--brand-1);
+  border-color: var(--brand-1);
+  color: #fff;
+}
+
+.rating-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.rating-label-row {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+}
+
+/* ---------- Word Cloud display (instructor results) ---------- */
+
+.word-cloud {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.85rem;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  min-height: 160px;
+  background: var(--surface-2);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+
+.wc-word {
+  font-weight: 700;
+  cursor: default;
+  transition: opacity 0.2s;
+  /* color cycling */
+}
+
+.wc-word:nth-child(6n+1) { color: var(--brand-1); }
+.wc-word:nth-child(6n+2) { color: var(--brand-2); }
+.wc-word:nth-child(6n+3) { color: var(--success); }
+.wc-word:nth-child(6n+4) { color: var(--warning); }
+.wc-word:nth-child(6n+5) { color: #ec4899; }
+.wc-word:nth-child(6n+6) { color: #0ea5e9; }
+
+/* ---------- First Session cards ---------- */
+
+.first-session-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  transition: box-shadow 0.2s var(--ease), border-color 0.2s;
+}
+
+.first-session-card:hover {
+  border-color: var(--brand-1);
+  box-shadow: 0 4px 16px rgba(99,102,241,0.1);
+}
+
+.first-session-card h3 {
+  margin: 0.5rem 0 0.4rem;
+  font-size: 1rem;
+}
+
+.first-session-card p {
+  margin: 0 0 0.75rem;
+  font-size: 0.88rem;
+}
+
+.fs-type-badge {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  background: var(--brand-grad-soft);
+  color: var(--brand-1);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.25rem;
+}
+
+.fs-preview-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.fs-preview-pills span {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.2rem 0.7rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.fs-rating-preview {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.fs-rating-preview span {
+  width: 1.8rem;
+  height: 1.8rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.fs-word-preview {
+  font-size: 0.9rem;
+  color: var(--brand-1);
+  font-style: italic;
+}
+
+/* ---------- QR modal ---------- */
+
+#modal-qr #qr-code img,
+#modal-qr #qr-code canvas {
+  display: block;
+  margin: 0 auto;
+  border-radius: 8px;
+}
+
+/* ---------- Live badge ---------- */
+
+#live-badge {
+  animation: pulse 2s infinite;
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+}
+
+/* ---------- Responsive tweaks for new components ---------- */
+
+@media (max-width: 600px) {
+  .poll-tiles-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .rating-row {
+    gap: 0.35rem;
+  }
+  .rating-btn {
+    width: 2.5rem;
+    height: 2.5rem;
+    font-size: 1rem;
+  }
+}
