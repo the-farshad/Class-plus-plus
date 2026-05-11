@@ -1074,7 +1074,33 @@ tbody tr:hover { background: var(--interactive); }
 .dashboard-content > section { display: none; }
 .dashboard-content > section.active { display: block; animation: fadeUp 0.2s var(--ease) both; }
 
+/* ---------- Tab Header ---------- */
+.tab-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+}
+.tab-header h1 { margin: 0; }
+
+/* ---------- Centered Modals ---------- */
+.modal-center {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 100;
+  max-width: 480px;
+  width: calc(100% - 2rem);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  box-shadow: 0 20px 48px rgba(0,0,0,.28);
+}
+
 /* ---------- QR Modal ---------- */
+#modal-qr { text-align: center; }
 #modal-qr #qr-code img,
 #modal-qr #qr-code canvas {
   display: block;

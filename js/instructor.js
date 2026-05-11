@@ -1,5 +1,7 @@
 import { api, session, API_BASE_URL } from "/js/api.js";
 
+api.initTheme();
+
 const $ = (id) => document.getElementById(id);
 const show = (id) => { const el = $(id); if (el) el.hidden = false; };
 const hide = (id) => { const el = $(id); if (el) el.hidden = true; };
@@ -72,6 +74,7 @@ function enterDashboard() {
   }
   hide("signin-card"); hide("forbidden-card");
   show("dashboard");
+  show("btn-settings");
   $("who-am-i").textContent = u.email;
   show("signout");
 
@@ -206,14 +209,12 @@ async function loadStats() {
 $("refresh-stats").addEventListener("click", loadStats);
 
 $("export-csv-all").addEventListener("click", async () => {
+  const btn = $("export-csv-all");
+  btn.textContent = "Exporting…";
+  btn.disabled = true;
   try {
-    $("export-csv-all").textContent = "Exporting...";
     const res = await api.exportGlobalRoster();
-    if (!res.roster.length) {
-      alert("No students in database.");
-      $("export-csv-all").textContent = "Global Statistics";
-      return;
-    }
+    if (!res.roster.length) { alert("No students in database."); return; }
     const rows = [["Student Email", "Student ID", "Class Code", "Class Name"]];
     res.roster.forEach(r => rows.push([r.student_email, r.student_id || "", r.class_code || "", r.class_name || ""]));
     const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
@@ -224,10 +225,11 @@ $("export-csv-all").addEventListener("click", async () => {
     a.download = `global-roster-${new Date().toISOString().split("T")[0]}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-    $("export-csv-all").textContent = "Global Statistics";
   } catch (err) {
     alert("Export failed: " + err.message);
-    $("export-csv-all").textContent = "Global Statistics";
+  } finally {
+    btn.textContent = "Download CSV";
+    btn.disabled = false;
   }
 });
 
@@ -260,11 +262,6 @@ function initTabs() {
   sel.addEventListener("change", () => api.setTheme(sel.value));
 
   function openSettings() {
-    const u = session.user;
-    if (u) {
-      const emailEl = $("settings-email");
-      if (emailEl) emailEl.textContent = u.email;
-    }
     sel.value = document.documentElement.getAttribute("data-theme") || "light";
     modal.hidden = false;
     overlay.hidden = false;
@@ -297,7 +294,7 @@ function renderClassSelectors() {
     const sel = $(selId);
     if (!sel) return;
     const val = sel.value;
-    sel.innerHTML = '<option value="">Global / All Classes</option>';
+    sel.innerHTML = '<option value="">Global</option>';
     classesCache.forEach(c => {
       const opt = document.createElement("option");
       opt.value = c.id;
@@ -669,20 +666,10 @@ function renderActivities(list_data) {
     const qrBtn = document.createElement("button");
     qrBtn.className = "secondary sm";
     qrBtn.innerHTML = `<i data-lucide="qr-code" style="width:13px;height:13px;"></i>`;
-    qrBtn.title = "Show QR Code";
+    qrBtn.title = "QR Code / Copy link";
     qrBtn.addEventListener("click", () => showQR(a));
 
-    const linkBtn = document.createElement("button");
-    linkBtn.className = "secondary sm";
-    linkBtn.textContent = "Copy link";
-    linkBtn.addEventListener("click", () => {
-      const url = activityURL(a);
-      navigator.clipboard.writeText(url);
-      linkBtn.textContent = "Copied!";
-      setTimeout(() => (linkBtn.textContent = "Copy link"), 1500);
-    });
-
-    actions.append(toggle, view, editBtn, qrBtn, linkBtn);
+    actions.append(toggle, view, editBtn, qrBtn);
     li.append(left, actions);
     list.appendChild(li);
   });
@@ -714,7 +701,7 @@ async function showLiveResults(a) {
   currentActivityData = a;
   currentActivityId = a.activity_id;
 
-  hide("activities-list-container");
+  hide("activities");
   show("live-results-card");
 
   $("live-results-title").textContent = a.prompt;
@@ -928,7 +915,7 @@ $("close-live-results").addEventListener("click", () => {
   if (liveChart) { liveChart.destroy(); liveChart = null; }
   if (ratingHistChart) { ratingHistChart.destroy(); ratingHistChart = null; }
   hide("live-results-card");
-  show("activities-list-container");
+  show("activities");
 });
 
 $("btn-project").addEventListener("click", () => {
