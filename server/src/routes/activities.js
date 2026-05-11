@@ -7,8 +7,14 @@ export const activitiesRouter = Router();
 // Public to authed users — students need to pick activities.
 activitiesRouter.get("/", requireAuth, (req, res) => {
   const { class_id } = req.query;
-  let sql = "SELECT id AS activity_id, prompt, asset_url, type, poll_options FROM activities WHERE status = 'open'";
-  const params = [];
+  const now = Date.now();
+  let sql = `
+    SELECT id AS activity_id, prompt, asset_url, type, poll_options, difficulty 
+    FROM activities 
+    WHERE status = 'open' 
+    AND (scheduled_at IS NULL OR scheduled_at <= ?)
+  `;
+  const params = [now];
   if (class_id) {
     sql += " AND class_id = ?";
     params.push(class_id);
@@ -47,11 +53,13 @@ activitiesRouter.post("/admin", requireInstructor, (req, res) => {
   const classId = req.body && req.body.class_id ? parseInt(req.body.class_id, 10) : null;
   const type = req.body && req.body.type === "poll" ? "poll" : "submission";
   const pollOptions = type === "poll" ? JSON.stringify(req.body.poll_options || []) : null;
+  const difficulty = req.body && req.body.difficulty ? req.body.difficulty : 'easy';
+  const scheduledAt = req.body && req.body.scheduled_at ? parseInt(req.body.scheduled_at, 10) : null;
 
   if (!prompt) return res.status(400).json({ ok: false, error: "Missing prompt" });
   const info = db.prepare(
-    "INSERT INTO activities (prompt, status, asset_url, class_id, type, poll_options, created_at) VALUES (?, 'open', ?, ?, ?, ?, ?)"
-  ).run(prompt, assetUrl, classId, type, pollOptions, Date.now());
+    "INSERT INTO activities (prompt, status, asset_url, class_id, type, poll_options, difficulty, scheduled_at, created_at) VALUES (?, 'open', ?, ?, ?, ?, ?, ?, ?)"
+  ).run(prompt, assetUrl, classId, type, pollOptions, difficulty, scheduledAt, Date.now());
   res.json({ ok: true, activity_id: info.lastInsertRowid });
 });
 

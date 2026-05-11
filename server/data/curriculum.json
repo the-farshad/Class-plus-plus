@@ -1,0 +1,194 @@
+[
+  {
+    "prompt": "What is the correct way to declare an integer variable named \"count\" in C++?",
+    "difficulty": "easy",
+    "type": "poll",
+    "options": [
+      "int count;",
+      "count = int;",
+      "integer count;",
+      "var count: int;"
+    ],
+    "session": 1
+  },
+  {
+    "prompt": "Which header file is required to use std::cout and std::cin?",
+    "difficulty": "medium",
+    "type": "poll",
+    "options": [
+      "<iostream>",
+      "<stdio.h>",
+      "<conio.h>",
+      "<stdlib.h>"
+    ],
+    "session": 1
+  },
+  {
+    "prompt": "Given the following code in SimpleProg.cpp: \"cout << 5 / 2;\", what is the output?",
+    "difficulty": "hard",
+    "type": "poll",
+    "options": [
+      "2",
+      "2.5",
+      "2.0",
+      "Error"
+    ],
+    "session": 1
+  },
+  {
+    "prompt": "AI-PROOF: Trace the memory address behavior if we were to use a raw pointer to an uninitialized local variable in a loop. Why is the behavior technically \"undefined\" even if it prints the same address twice?",
+    "difficulty": "ai-proof",
+    "type": "submission",
+    "session": 1
+  },
+  {
+    "prompt": "AI-COLLAB: Use an AI tool to generate three different ways to format a float to 2 decimal places in C++. Which one is most efficient for high-frequency logging and why?",
+    "difficulty": "ai-collab",
+    "type": "submission",
+    "session": 1
+  },
+  {
+    "prompt": "Easy question for Session 2: Variable Naming",
+    "difficulty": "easy",
+    "type": "poll",
+    "options": [
+      "A",
+      "B",
+      "C",
+      "D"
+    ],
+    "session": 2
+  },
+  {
+    "prompt": "Medium question for Session 2: Data Types",
+    "difficulty": "medium",
+    "type": "poll",
+    "options": [
+      "A",
+      "B",
+      "C",
+      "D"
+    ],
+    "session": 2
+  },
+  {
+    "prompt": "Hard question for Session 2: Arithmetic Ops",
+    "difficulty": "hard",
+    "type": "poll",
+    "options": [
+      "A",
+      "B",
+      "C",
+      "D"
+    ],
+    "session": 2
+  },
+  {
+    "prompt": "AI-PROOF: Explain why signed overflow is undefined but unsigned overflow is defined as modulo.",
+    "difficulty": "ai-proof",
+    "type": "submission",
+    "session": 2
+  },
+  {
+    "prompt": "AI-COLLAB: Optimize this nested loop using AI advice.",
+    "difficulty": "ai-collab",
+    "type": "submission",
+    "session": 2
+  },
+  {
+    "prompt": "Easy question for Session 3: Cin basics",
+    "difficulty": "easy",
+    "type": "poll",
+    "options": [
+      "A",
+      "B",
+      "C",
+      "D"
+    ],
+    "session": 3
+  },
+  {
+    "prompt": "Medium question for Session 3: String basics",
+    "difficulty": "medium",
+    "type": "poll",
+    "options": [
+      "A",
+      "B",
+      "C",
+      "D"
+    ],
+    "session": 3
+  },
+  {
+    "prompt": "Hard question for Session 3: Char encoding",
+    "difficulty": "hard",
+    "type": "poll",
+    "options": [
+      "A",
+      "B",
+      "C",
+      "D"
+    ],
+    "session": 3
+  },
+  {
+    "prompt": "AI-PROOF: Why does cin >> string fail on spaces and how does it affect the buffer?",
+    "difficulty": "ai-proof",
+    "type": "submission",
+    "session": 3
+  },
+  {
+    "prompt": "AI-COLLAB: Use AI to write a robust input validator.",
+    "difficulty": "ai-collab",
+    "type": "submission",
+    "session": 3
+  },
+  {
+    "prompt": "Easy question for Session 4: If statements",
+    "difficulty": "easy",
+    "type": "poll",
+    "options": [
+      "A",
+      "B",
+      "C",
+      "D"
+    ],
+    "session": 4
+  },
+  {
+    "prompt": "Medium question for Session 4: Boolean logic",
+    "difficulty": "medium",
+    "type": "poll",
+    "options": [
+      "A",
+      "B",
+      "C",
+      "D"
+    ],
+    "session": 4
+  },
+  {
+    "prompt": "Hard question for Session 4: Switch blocks",
+    "difficulty": "hard",
+    "type": "poll",
+    "options": [
+      "A",
+      "B",
+      "C",
+      "D"
+    ],
+    "session": 4
+  },
+  {
+    "prompt": "AI-PROOF: Predict the outcome of this specific short-circuit evaluation edge case.",
+    "difficulty": "ai-proof",
+    "type": "submission",
+    "session": 4
+  },
+  {
+    "prompt": "AI-COLLAB: AI: Convert this complex if-else to a lookup table.",
+    "difficulty": "ai-collab",
+    "type": "submission",
+    "session": 4
+  }
+]
