@@ -48,8 +48,48 @@ classesRouter.get("/admin/global-roster", (req, res) => {
 
 // Class Roster
 classesRouter.get("/:id/students", (req, res) => {
-  const rows = db.prepare("SELECT * FROM class_students WHERE class_id = ?").all(req.params.id);
+  // Students plus per-student counts: how many submissions and poll
+  // votes they've made for activities in THIS class. Plus whether they
+  // have a password set (so the roster UI can show a green/red dot).
+  const sql = `
+    SELECT
+      cs.student_email, cs.student_id, cs.student_name,
+      (SELECT COUNT(DISTINCT s.activity_id)
+         FROM submissions s
+         JOIN activities a ON a.id = s.activity_id
+         WHERE s.email = cs.student_email AND a.class_id = cs.class_id
+      ) AS submission_count,
+      (SELECT COUNT(DISTINCT pv.activity_id)
+         FROM poll_votes pv
+         JOIN activities a ON a.id = pv.activity_id
+         WHERE pv.email = cs.student_email AND a.class_id = cs.class_id
+      ) AS vote_count,
+      EXISTS(SELECT 1 FROM user_passwords up WHERE up.email = cs.student_email) AS has_password
+    FROM class_students cs
+    WHERE cs.class_id = ?
+    ORDER BY cs.student_email
+  `;
+  const rows = db.prepare(sql).all(req.params.id);
   res.json({ ok: true, students: rows });
+});
+
+// Aggregate class stats: per-activity participation counts.
+classesRouter.get("/:id/stats", (req, res) => {
+  const totalStudents = db.prepare(
+    "SELECT COUNT(*) AS n FROM class_students WHERE class_id = ?"
+  ).get(req.params.id).n;
+
+  const acts = db.prepare(`
+    SELECT a.id, a.prompt, a.type, a.status, a.session_tag,
+      COALESCE((SELECT COUNT(DISTINCT email) FROM submissions  WHERE activity_id = a.id), 0)
+      + COALESCE((SELECT COUNT(DISTINCT email) FROM poll_votes WHERE activity_id = a.id), 0)
+        AS unique_responders
+    FROM activities a
+    WHERE a.class_id = ?
+    ORDER BY a.id DESC
+  `).all(req.params.id);
+
+  res.json({ ok: true, total_students: totalStudents, activities: acts });
 });
 
 classesRouter.post("/:id/students", (req, res) => {

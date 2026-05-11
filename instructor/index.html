@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@600;700;800&family=Lora:wght@400;500;600&family=Ubuntu:wght@400;500;700&family=Roboto+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/styles.css?v=66" />
+  <link rel="stylesheet" href="/css/styles.css?v=67" />
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -220,10 +220,13 @@
                     <i data-lucide="file-text" style="width:15px;height:15px;"></i> Submission
                   </button>
                   <button type="button" class="type-btn" data-type="poll">
-                    <i data-lucide="bar-chart-2" style="width:15px;height:15px;"></i> Poll
+                    <i data-lucide="circle-dot" style="width:15px;height:15px;"></i> Single choice
+                  </button>
+                  <button type="button" class="type-btn" data-type="poll_multi">
+                    <i data-lucide="check-square" style="width:15px;height:15px;"></i> Multiple choice
                   </button>
                   <button type="button" class="type-btn" data-type="poll_pie">
-                    <i data-lucide="pie-chart" style="width:15px;height:15px;"></i> Pie
+                    <i data-lucide="pie-chart" style="width:15px;height:15px;"></i> Pie poll
                   </button>
                   <button type="button" class="type-btn" data-type="rating">
                     <i data-lucide="sliders" style="width:15px;height:15px;"></i> Rating
@@ -556,9 +559,9 @@
 
   <div class="build-chip" data-version></div>
 
-  <script type="module" src="/js/instructor.js?v=66"></script>
+  <script type="module" src="/js/instructor.js?v=67"></script>
   <script type="module">
-    import { bootPage } from "/js/ui.js?v=66";
+    import { bootPage } from "/js/ui.js?v=67";
     bootPage();
   </script>
 </body>

@@ -5,9 +5,26 @@ import {
 } from "/js/ui.js";
 
 const TYPE_LABELS = {
-  poll: "Poll", poll_pie: "Poll", rating: "Rating",
-  word_cloud: "Word Cloud", submission: "Submission", ordering: "Order",
+  poll: "Single choice", poll_pie: "Single choice", poll_multi: "Multiple choice",
+  rating: "Rating", word_cloud: "Word Cloud", submission: "Submission", ordering: "Order",
 };
+
+// Render a Markdown string (untrusted source — sanitize) as HTML.
+// Falls back to escaped text until marked + DOMPurify finish loading.
+function md(text) {
+  if (window.marked && window.DOMPurify) {
+    return window.DOMPurify.sanitize(window.marked.parse(text || ""));
+  }
+  return `<p>${escapeHTML(text)}</p>`;
+}
+function mdInline(text) {
+  if (window.marked && window.DOMPurify) {
+    const m = window.marked;
+    const html = m.parseInline ? m.parseInline(text || "") : m.parse(text || "");
+    return window.DOMPurify.sanitize(html);
+  }
+  return escapeHTML(text);
+}
 
 // ---- SSE live updates ----
 let sseSource = null;
@@ -97,7 +114,7 @@ function showActivity(a) {
   const alreadySubmitted = (a.type !== "poll" && a.type !== "poll_pie") && localStorage.getItem(SUBMIT_KEY(a.activity_id));
   void alreadyVoted; // suppress lint — read below for poll branch
 
-  if (a.type === "poll" || a.type === "poll_pie") {
+  if (a.type === "poll" || a.type === "poll_pie" || a.type === "poll_multi") {
     show("poll-card");
     renderPoll(a);
   } else if (a.type === "ordering") {
@@ -146,41 +163,85 @@ function renderPoll(a) {
   container.innerHTML = "";
   const options = JSON.parse(a.poll_options || "[]");
   const letters = "ABCDEFGHIJKLMNOP";
-  const priorVote = localStorage.getItem(VOTE_KEY(a.activity_id));
+  const isMulti = a.type === "poll_multi";
+
+  // Prior answer is stored as a comma-separated list of indices for both
+  // single and multi (back-compat: old single string "3" still parses).
+  const priorRaw = localStorage.getItem(VOTE_KEY(a.activity_id));
+  const prior = priorRaw === null ? new Set()
+              : new Set(priorRaw.split(",").filter(s => s !== "").map(s => parseInt(s, 10)));
 
   options.forEach((opt, idx) => {
     const tile = document.createElement("button");
     tile.className = "poll-tile";
     tile.type = "button";
-    tile.innerHTML = `<span class="poll-tile-letter">${letters[idx] || idx + 1}</span><span class="poll-tile-text">${escapeHTML(opt)}</span>`;
-
-    if (priorVote !== null && String(idx) === priorVote) {
-      tile.classList.add("selected");
-    }
+    tile.dataset.index = idx;
+    const marker = isMulti
+      ? `<span class="poll-tile-checkbox" aria-hidden="true"></span>`
+      : `<span class="poll-tile-letter">${letters[idx] || idx + 1}</span>`;
+    tile.innerHTML = `${marker}<span class="poll-tile-text">${md(opt)}</span>`;
+    if (prior.has(idx)) tile.classList.add("selected");
 
     tile.addEventListener("click", async () => {
-      setStatusEl("poll-status", "Recording your vote…");
-      container.querySelectorAll(".poll-tile").forEach(b => b.disabled = true);
-      try {
-        await api.vote(a.activity_id, idx);
-        container.querySelectorAll(".poll-tile").forEach(b => b.classList.remove("selected"));
-        tile.classList.add("selected");
-        localStorage.setItem(VOTE_KEY(a.activity_id), String(idx));
-        setStatusEl("poll-status", "Vote recorded — live results below.", "success");
-        showPollResults(a);
-      } catch (err) {
-        container.querySelectorAll(".poll-tile").forEach(b => b.disabled = false);
-        setStatusEl("poll-status", err.message, "error");
+      if (isMulti) {
+        // Toggle this tile; submission happens via the Submit button.
+        tile.classList.toggle("selected");
+      } else {
+        // Single-select: immediate POST.
+        await submitPollAnswer(a, [idx], container, /*single*/ true);
       }
     });
 
     container.appendChild(tile);
   });
 
-  if (priorVote !== null) {
-    container.querySelectorAll(".poll-tile").forEach(b => b.disabled = true);
-    setStatusEl("poll-status", "You already voted — live results below.", "success");
+  // For multi-select: append a Submit button that the user clicks once
+  // they're happy with their selection.
+  if (isMulti) {
+    const submit = document.createElement("button");
+    submit.type = "button";
+    submit.id = "poll-multi-submit";
+    submit.textContent = prior.size ? "Update answer" : "Submit answer";
+    submit.style.width = "100%";
+    submit.style.marginTop = "0.85rem";
+    submit.addEventListener("click", async () => {
+      const picked = [...container.querySelectorAll(".poll-tile.selected")]
+        .map(el => parseInt(el.dataset.index, 10));
+      if (!picked.length) {
+        setStatusEl("poll-status", "Pick at least one option, then Submit.", "error");
+        return;
+      }
+      await submitPollAnswer(a, picked, container, /*single*/ false);
+    });
+    container.appendChild(submit);
+  }
+
+  if (prior.size) {
+    setStatusEl("poll-status", isMulti
+      ? "You already answered — change your selection and click Update."
+      : "You already answered — live results below.", "success");
+    if (!isMulti) container.querySelectorAll(".poll-tile").forEach(b => b.disabled = true);
     showPollResults(a);
+  }
+
+  if (window.lucide) window.lucide.createIcons();
+}
+
+async function submitPollAnswer(a, indices, container, single) {
+  setStatusEl("poll-status", "Recording your answer…");
+  if (single) container.querySelectorAll(".poll-tile").forEach(b => b.disabled = true);
+  try {
+    await api.vote(a.activity_id, indices.length === 1 && single ? indices[0] : null, indices);
+    container.querySelectorAll(".poll-tile").forEach(b => {
+      const idx = parseInt(b.dataset.index, 10);
+      b.classList.toggle("selected", indices.includes(idx));
+    });
+    localStorage.setItem(VOTE_KEY(a.activity_id), indices.join(","));
+    setStatusEl("poll-status", "Answer recorded — live results below.", "success");
+    showPollResults(a);
+  } catch (err) {
+    if (single) container.querySelectorAll(".poll-tile").forEach(b => b.disabled = false);
+    setStatusEl("poll-status", err.message, "error");
   }
 }
 
@@ -219,7 +280,7 @@ async function refreshPollResults(a, panel) {
     panel.innerHTML = `
       <div class="results-head">
         <span class="results-title"><i data-lucide="bar-chart-3"></i> Live results</span>
-        <span class="results-count">${total} vote${total !== 1 ? "s" : ""}</span>
+        <span class="results-count">${total} answer${total !== 1 ? "s" : ""}</span>
       </div>
       <div class="results-bars">
         ${options.map((opt, idx) => {
@@ -231,8 +292,8 @@ async function refreshPollResults(a, panel) {
             <div class="result-row${mine ? " mine" : ""}">
               <div class="result-row-head">
                 <span class="result-letter">${letters[idx] || idx + 1}</span>
-                <span class="result-label">${escapeHTML(opt)}</span>
-                ${mine ? `<span class="result-mine-badge"><i data-lucide="check"></i> Your vote</span>` : ""}
+                <span class="result-label">${mdInline(opt)}</span>
+                ${mine ? `<span class="result-mine-badge"><i data-lucide="check"></i> Your answer</span>` : ""}
                 <span class="result-pct">${pct}%</span>
               </div>
               <div class="result-bar"><div class="result-bar-fill" style="width:${widthPct}%"></div></div>
@@ -281,7 +342,7 @@ function renderOrdering(a) {
     li.innerHTML = `
       <span class="order-handle" aria-hidden="true"><i data-lucide="grip-vertical"></i></span>
       <span class="order-num">${displayIdx + 1}</span>
-      <span class="order-text">${escapeHTML(entry.item)}</span>`;
+      <span class="order-text">${mdInline(entry.item)}</span>`;
     list.appendChild(li);
   });
   if (window.lucide) window.lucide.createIcons();

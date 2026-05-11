@@ -640,7 +640,21 @@ async function loadClassStudents() {
     }
     res.students.forEach(s => {
       const li = document.createElement("li");
-      li.innerHTML = `<div>${escapeHTML(s.student_email)} <span class="muted">${escapeHTML(s.student_id || "")}</span></div>`;
+      const responses = (s.submission_count || 0) + (s.vote_count || 0);
+      const pwDot = s.has_password
+        ? `<span title="Password set" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--success);margin-right:0.4rem;"></span>`
+        : `<span title="No password yet" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--subtle);margin-right:0.4rem;"></span>`;
+      li.innerHTML = `
+        <div>
+          ${pwDot}<strong>${escapeHTML(s.student_email)}</strong>
+          ${s.student_name ? `<span class="muted"> · ${escapeHTML(s.student_name)}</span>` : ""}
+          ${s.student_id ? `<span class="muted"> · ${escapeHTML(s.student_id)}</span>` : ""}
+          <div class="meta" style="margin-top:0.2rem;">
+            <span style="color:var(--brand);font-weight:600;">${responses}</span>
+            response${responses === 1 ? "" : "s"}
+            (${s.vote_count || 0} poll · ${s.submission_count || 0} submission${(s.submission_count||0) === 1 ? "" : "s"})
+          </div>
+        </div>`;
 
       const actions = document.createElement("div");
       actions.className = "row";
@@ -693,8 +707,8 @@ document.querySelectorAll(".type-btn").forEach(btn => {
     btn.classList.add("active");
     const t = btn.dataset.type;
     $("activity-type").value = t;
-    // Poll, pie, and ordering all use the options builder.
-    const needsOptions = t === "poll" || t === "poll_pie" || t === "ordering";
+    // Poll, multi-poll, pie, and ordering all use the options builder.
+    const needsOptions = t === "poll" || t === "poll_multi" || t === "poll_pie" || t === "ordering";
     if (needsOptions) {
       show("poll-options-container");
       // Relabel hint based on type
@@ -803,7 +817,7 @@ $("new-form").addEventListener("submit", async (e) => {
   let type = uiType;
   let options = [];
 
-  if (uiType === "poll" || uiType === "poll_pie" || uiType === "ordering") {
+  if (uiType === "poll" || uiType === "poll_multi" || uiType === "poll_pie" || uiType === "ordering") {
     options = getOptionValues("poll-options-list");
     if (options.length < 2) {
       setStatus("new-status", uiType === "ordering"

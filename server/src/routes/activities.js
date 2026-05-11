@@ -92,11 +92,11 @@ activitiesRouter.post("/admin", requireInstructor, (req, res) => {
   const prompt = String(req.body && req.body.prompt || "").trim();
   const assetUrl = req.body && req.body.asset_url ? String(req.body.asset_url) : null;
   const classId = req.body && req.body.class_id ? parseInt(req.body.class_id, 10) : null;
-  const VALID_TYPES = new Set(["submission", "poll", "poll_pie", "rating", "word_cloud", "ordering"]);
+  const VALID_TYPES = new Set(["submission", "poll", "poll_pie", "poll_multi", "rating", "word_cloud", "ordering"]);
   const type = VALID_TYPES.has(req.body?.type) ? req.body.type : "submission";
-  // poll_options stores: poll choices for poll/poll_pie, OR the canonical
-  // (correct) order for ordering activities. Stored as JSON either way.
-  const pollOptions = ["poll", "poll_pie", "ordering"].includes(type)
+  // poll_options stores: choices for poll/poll_pie/poll_multi, OR the
+  // canonical (correct) order for ordering activities. Stored as JSON.
+  const pollOptions = ["poll", "poll_pie", "poll_multi", "ordering"].includes(type)
     ? JSON.stringify(req.body.poll_options || [])
     : null;
   const difficulty = req.body && req.body.difficulty ? req.body.difficulty : 'easy';
@@ -168,31 +168,49 @@ activitiesRouter.delete("/admin/:id", requireInstructor, (req, res) => {
   }
 });
 
-// Vote in a poll
+// Record an answer for a poll-style activity. Accepts either a single
+// option_index (poll / poll_pie) or an array option_indices (poll_multi).
+// Replaces the user's previous answer atomically.
 activitiesRouter.post("/:id/vote", requireAuth, (req, res) => {
-  const { option_index } = req.body;
   const activityId = req.params.id;
-  
-  if (option_index === undefined) return res.status(400).json({ ok: false, error: "Option index required" });
+  const { option_index, option_indices } = req.body || {};
+  const indices = Array.isArray(option_indices)
+    ? option_indices
+    : (option_index !== undefined ? [option_index] : []);
+  if (!indices.length) return res.status(400).json({ ok: false, error: "Option index required" });
 
   try {
-    db.prepare(
-      "INSERT OR REPLACE INTO poll_votes (activity_id, email, option_index, created_at) VALUES (?, ?, ?, ?)"
-    ).run(activityId, req.user.email, option_index, Date.now());
+    const tx = db.transaction((idxs) => {
+      // Wipe this user's previous answer(s) so re-answering replaces them
+      // (UNIQUE(activity_id,email) only allows one row in single-select).
+      db.prepare("DELETE FROM poll_votes WHERE activity_id = ? AND email = ?")
+        .run(activityId, req.user.email);
+      const ins = db.prepare(
+        "INSERT INTO poll_votes (activity_id, email, option_index, created_at) VALUES (?, ?, ?, ?)"
+      );
+      const now = Date.now();
+      for (const i of idxs) ins.run(activityId, req.user.email, i, now);
+    });
+    tx(indices);
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ ok: false, error: err.message });
   }
 });
 
-// Get poll results
+// Get tallied results for any option-bearing activity (poll, poll_pie,
+// poll_multi). Returns the original options + per-option vote counts.
 activitiesRouter.get("/:id/results", requireAuth, (req, res) => {
   const activity = db.prepare("SELECT * FROM activities WHERE id = ?").get(req.params.id);
-  if (!activity || activity.type !== 'poll') return res.status(404).json({ ok: false, error: "Poll not found" });
+  if (!activity) return res.status(404).json({ ok: false, error: "Activity not found" });
+  const tallyTypes = new Set(["poll", "poll_pie", "poll_multi"]);
+  if (!tallyTypes.has(activity.type)) {
+    return res.status(409).json({ ok: false, error: `No tally available for type '${activity.type}'` });
+  }
 
   const votes = db.prepare(
     "SELECT option_index, COUNT(*) as count FROM poll_votes WHERE activity_id = ? GROUP BY option_index"
   ).all(req.params.id);
 
-  res.json({ ok: true, options: JSON.parse(activity.poll_options), votes });
+  res.json({ ok: true, options: JSON.parse(activity.poll_options || "[]"), votes });
 });
