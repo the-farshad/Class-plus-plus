@@ -987,6 +987,24 @@ tbody tr:hover { background: var(--interactive); }
 }
 .fs-word-preview { font-size: 0.84rem; color: var(--brand); }
 
+/* ---------- Stat Cards ---------- */
+.stat-card { padding: 1.1rem 1.25rem; }
+.stat-label {
+  margin: 0 0 0.35rem;
+  font-size: 0.73rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  font-weight: 700;
+  color: var(--muted);
+}
+.stat-num {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: var(--brand);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
 /* ---------- Dashboard Layout ---------- */
 .dashboard-layout {
   display: grid;

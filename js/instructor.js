@@ -145,8 +145,8 @@ async function loadStats() {
 
     // Use CSS variable colours so chart respects theme
     const style = getComputedStyle(document.documentElement);
-    const brand1 = style.getPropertyValue("--brand-1").trim() || "#2563eb";
-    const brand2 = style.getPropertyValue("--brand-2").trim() || "#7c3aed";
+    const brand1 = style.getPropertyValue("--brand").trim() || "#2563eb";
+    const brand2 = style.getPropertyValue("--brand").trim() || "#2563eb";
 
     participationChart = new Chart(ctx, {
       type: "bar",

@@ -18,7 +18,7 @@
     <div class="inner">
       <a class="brand" href="/instructor/">
         <span class="brand-mark">C++</span>
-        <span>Class<span style="color: var(--brand-1)">++</span></span>
+        <span>Class<span style="color: var(--brand)">++</span></span>
         <span class="brand-tag">Instructor</span>
       </a>
       <nav style="align-items: center; gap: 1rem;">
@@ -48,7 +48,7 @@
     // no nav-active needed on instructor — all links are external
   </script>
 
-  <main style="max-width: 100%; padding: 0;">
+  <main style="max-width:100%;padding:0;">
     <section id="signin-card" class="card feature" style="max-width: 600px; margin: 4rem auto;" hidden>
       <div class="flex-center" style="flex-direction: column; text-align: center; padding: 1rem 0;">
         <h2>Instructor Sign-in</h2>
@@ -101,22 +101,22 @@
               <button id="refresh-stats" class="secondary sm">Refresh</button>
             </div>
           </div>
-          <div class="grid-2" style="margin-bottom: 1.5rem;">
-            <div class="card" style="margin-bottom:0;">
-              <p class="muted" style="margin:0 0 0.4rem;font-size:0.8rem;text-transform:uppercase;letter-spacing:0.06em;font-weight:700;">Total Students</p>
-              <div id="stat-students" style="font-size:2.8rem;font-weight:800;color:var(--brand-1);line-height:1;">--</div>
+          <div class="grid-2" style="margin-bottom:1.5rem;">
+            <div class="card stat-card" style="margin-bottom:0;">
+              <p class="stat-label">Total Students</p>
+              <div id="stat-students" class="stat-num">--</div>
             </div>
-            <div class="card" style="margin-bottom:0;">
-              <p class="muted" style="margin:0 0 0.4rem;font-size:0.8rem;text-transform:uppercase;letter-spacing:0.06em;font-weight:700;">Currently Open</p>
-              <div id="stat-activities" style="font-size:2.8rem;font-weight:800;color:var(--success);line-height:1;">--</div>
+            <div class="card stat-card" style="margin-bottom:0;">
+              <p class="stat-label">Currently Open</p>
+              <div id="stat-activities" class="stat-num" style="color:var(--success);">--</div>
             </div>
-            <div class="card" style="margin-bottom:0;">
-              <p class="muted" style="margin:0 0 0.4rem;font-size:0.8rem;text-transform:uppercase;letter-spacing:0.06em;font-weight:700;">Total Activities</p>
-              <div id="stat-total-activities" style="font-size:2.8rem;font-weight:800;color:var(--brand-2);line-height:1;">--</div>
+            <div class="card stat-card" style="margin-bottom:0;">
+              <p class="stat-label">Total Activities</p>
+              <div id="stat-total-activities" class="stat-num">--</div>
             </div>
-            <div class="card" style="margin-bottom:0;">
-              <p class="muted" style="margin:0 0 0.4rem;font-size:0.8rem;text-transform:uppercase;letter-spacing:0.06em;font-weight:700;">Open Activities</p>
-              <div id="stat-open-activities" style="font-size:2.8rem;font-weight:800;color:var(--warning);line-height:1;">--</div>
+            <div class="card stat-card" style="margin-bottom:0;">
+              <p class="stat-label">Open Activities</p>
+              <div id="stat-open-activities" class="stat-num" style="color:var(--warning);">--</div>
             </div>
           </div>
           <div class="card" style="margin-bottom:1.5rem;">
@@ -207,11 +207,11 @@
               <div class="grid-2" style="margin-bottom:1rem;">
                 <div class="card" style="margin:0; text-align:center;">
                   <div class="muted" style="font-size:0.85rem; margin-bottom:0.25rem;">Average</div>
-                  <div id="rating-avg" style="font-size:2.5rem; font-weight:800; color:var(--brand-1);">—</div>
+                  <div id="rating-avg" class="stat-num">—</div>
                 </div>
                 <div class="card" style="margin:0; text-align:center;">
                   <div class="muted" style="font-size:0.85rem; margin-bottom:0.25rem;">Responses</div>
-                  <div id="rating-count" style="font-size:2.5rem; font-weight:800; color:var(--brand-2);">—</div>
+                  <div id="rating-count" class="stat-num">—</div>
                 </div>
               </div>
               <canvas id="rating-histogram"></canvas>
@@ -313,7 +313,7 @@
             </div>
 
             <div class="first-session-card" style="grid-column: 1 / -1;">
-              <div class="fs-type-badge" style="background: var(--success-bg); color: var(--success);">🧊 Icebreaker</div>
+              <div class="fs-type-badge" style="background: var(--success-soft); color: var(--success);">🧊 Icebreaker</div>
               <h3>Icebreaker Questions (2 open-ended)</h3>
               <p class="muted">Each student shares something memorable.</p>
               <ul style="margin:0; padding-left:1.2rem; color: var(--text);">
