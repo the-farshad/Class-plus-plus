@@ -1197,10 +1197,15 @@ document.addEventListener("keydown", (e) => {
 // ---------- Boot ----------
 
 if (session.token) {
-  // Verify the stored token is still valid before showing the dashboard
+  // Verify token is still valid. api.js already clears session on 401.
+  // On any other error (network/500) we still enter the dashboard —
+  // a temporary server issue must not log the user out.
   api.getStats()
     .then(() => enterDashboard())
-    .catch(() => { session.clear(); showSignIn(); });
+    .catch(() => {
+      if (session.token) enterDashboard();   // token survived → still valid
+      else showSignIn();                      // api.js cleared it → 401
+    });
 } else {
   showSignIn();
 }

@@ -1055,6 +1055,7 @@ tbody tr:hover { background: var(--interactive); }
 .sidebar-nav-item {
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   gap: 0.6rem;
   padding: 0.6rem 0.75rem;
   font-weight: 500;
