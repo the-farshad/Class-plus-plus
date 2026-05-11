@@ -74,9 +74,11 @@ function enterDashboard() {
   }
   hide("signin-card"); hide("forbidden-card");
   show("dashboard");
-  $("who-am-i").textContent = `Signed in as ${u.email} (${u.role})`;
+  $("who-am-i").textContent = u.email;
   $("signout").hidden = false;
   
+  initTabs();
+  loadStats();
   loadClasses();
   loadActivities();
   loadAllowlist();
@@ -84,6 +86,56 @@ function enterDashboard() {
     show("instructors-card");
     loadInstructors();
   }
+}
+
+// ---------- Stats & Overview ----------
+async function loadStats() {
+  try {
+    const res = await api.getStats();
+    $("stat-students").textContent = res.stats.students;
+    $("stat-activities").textContent = res.stats.activities;
+    
+    // Placeholder chart data
+    const ctx = document.getElementById('participation-chart').getContext('2d');
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
+        datasets: [{
+          label: 'Submissions',
+          data: [12, 19, 3, 5, 2],
+          backgroundColor: 'rgba(79, 70, 229, 0.5)',
+          borderColor: 'rgba(79, 70, 229, 1)',
+          borderWidth: 1,
+          borderRadius: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: { y: { beginAtZero: true } },
+        plugins: { legend: { display: false } }
+      }
+    });
+  } catch (err) {
+    console.error("Failed to load stats", err);
+  }
+}
+
+$("refresh-stats").addEventListener("click", loadStats);
+
+// ---------- Tabs ----------
+function initTabs() {
+  document.querySelectorAll(".sidebar-nav-item").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      document.querySelectorAll(".sidebar-nav-item").forEach(b => b.classList.remove("active"));
+      document.querySelectorAll(".dashboard-content > section").forEach(s => s.classList.remove("active"));
+      
+      const target = e.currentTarget;
+      target.classList.add("active");
+      $(target.dataset.tab).classList.add("active");
+    });
+  });
 }
 
 $("signout").addEventListener("click", (e) => {
@@ -541,6 +593,25 @@ async function loadInstructors() {
         if (!confirm(`Remove ${row.email}?`)) return;
         try {
           await api.removeInstructor(row.email);
+          loadInstructors();
+        } catch (err) {
+          alert(err.message);
+        }
+      });
+
+      li.append(left, remove);
+      list.appendChild(li);
+    });
+  } catch (err) {
+    list.innerHTML = `<li class="muted">Error: ${escapeHTML(err.message)}</li>`;
+  }
+}
+
+// ---------- Boot ----------
+
+if (session.token) enterDashboard();
+else showSignIn();
+emoveInstructor(row.email);
           loadInstructors();
         } catch (err) {
           alert(err.message);

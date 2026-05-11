@@ -52,6 +52,14 @@ app.use("/admin/allowlist", allowlistRouter);
 app.use("/admin/instructors", instructorsRouter);
 app.use("/admin/classes", classesRouter);
 
+app.get("/admin/stats", requireInstructor, (req, res) => {
+  const students = db.prepare("SELECT COUNT(DISTINCT student_email) as count FROM class_students").get().count;
+  const classes = db.prepare("SELECT COUNT(*) as count FROM classes").get().count;
+  const activities = db.prepare("SELECT COUNT(*) as count FROM activities WHERE status = 'open'").get().count;
+  
+  res.json({ ok: true, stats: { students, classes, activities } });
+});
+
 app.use((err, _req, res, _next) => {
   if (err && err.message && err.message.startsWith("CORS:")) {
     return res.status(403).json({ ok: false, error: err.message });

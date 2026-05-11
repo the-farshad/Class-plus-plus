@@ -9,6 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/styles.css" />
   <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
   <header class="site">
@@ -18,10 +19,10 @@
         <span>Class<span style="color: var(--brand-1)">++</span></span>
         <span class="brand-tag">Instructor</span>
       </a>
-      <nav>
+      <nav style="align-items: center;">
         <a href="/">Student view</a>
         <a href="/blog/">Notes</a>
-        <button id="theme-toggle" class="secondary sm" style="padding: 0.4rem; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; box-shadow: none;">🌓</button>
+        <button id="theme-toggle" class="secondary sm" style="padding: 0.4rem; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; box-shadow: none;" title="Toggle Theme">🌓</button>
         <a href="#" id="signout" hidden>Sign out</a>
       </nav>
     </div>
@@ -33,177 +34,248 @@
     document.getElementById("theme-toggle").addEventListener("click", () => api.toggleTheme());
   </script>
 
-  <main>
-    <section id="signin-card" class="card feature" hidden>
-      <h2>Instructor sign-in</h2>
-      <p class="muted">Sign in with the Google account on the instructors list.</p>
-      <div id="g_id_signin"></div>
-      <div id="signin-status" class="status"></div>
+  <main style="max-width: 100%; padding: 0;">
+    <section id="signin-card" class="card feature" style="max-width: 600px; margin: 4rem auto;" hidden>
+      <div class="flex-center" style="flex-direction: column; text-align: center; padding: 1rem 0;">
+        <h2>Instructor Sign-in</h2>
+        <p class="muted">Sign in with the Google account on the authorized instructors list.</p>
+        <div id="g_id_signin" style="margin-top: 1rem;"></div>
+        <div id="signin-status" class="status"></div>
+      </div>
     </section>
 
-    <section id="forbidden-card" class="card" hidden>
-      <h2>Not authorized</h2>
+    <section id="forbidden-card" class="card" style="max-width: 600px; margin: 4rem auto; text-align: center;" hidden>
+      <h2>Not Authorized</h2>
       <p class="muted">Your account is signed in but doesn't have instructor access.</p>
-      <button id="forbidden-signout" class="secondary">Sign out</button>
+      <button id="forbidden-signout" class="secondary" style="margin-top: 1rem;">Sign out</button>
     </section>
 
-    <section id="dashboard" hidden>
-      <div class="hero" style="text-align:left; padding: 0.25rem 0 2rem;">
-        <h1>Instructor Dashboard</h1>
-        <p id="who-am-i" class="muted"></p>
-      </div>
-
-      <div class="grid-2">
-        <div class="card feature">
-          <h2>Active Session</h2>
-          <div id="class-selector-container" style="margin-bottom: 1.5rem;">
-            <label>Current Class</label>
-            <select id="class-selector" style="font-weight: 600; font-size: 1.1rem;">
-              <option value="">Global / No class</option>
-            </select>
-          </div>
-          <button id="manage-classes-btn" class="secondary" style="width: 100%;">Manage Classes &amp; Rosters</button>
+    <div id="dashboard" class="dashboard-layout" hidden>
+      
+      <!-- Sidebar Navigation -->
+      <aside class="dashboard-sidebar">
+        <div style="margin-bottom: 2rem;">
+          <p class="muted" style="margin:0; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700;">Signed in as</p>
+          <div id="who-am-i" style="font-weight: 600; line-height: 1.2;"></div>
         </div>
 
-        <div class="card">
-          <h2>Quick Actions</h2>
-          <div class="row" style="flex-direction: column; gap: 0.75rem;">
-            <button id="refresh" class="secondary" style="width: 100%;">Refresh All Data</button>
-            <button id="export-csv-all" class="secondary" style="width: 100%;" disabled title="Coming soon">Global Statistics</button>
-          </div>
-        </div>
-      </div>
+        <button class="sidebar-nav-item active" data-tab="tab-overview">
+          <span aria-hidden="true">📊</span> Overview & Stats
+        </button>
+        <button class="sidebar-nav-item" data-tab="tab-activities">
+          <span aria-hidden="true">⚡</span> Activities
+        </button>
+        <button class="sidebar-nav-item" data-tab="tab-classes">
+          <span aria-hidden="true">🏫</span> Classes & Rosters
+        </button>
+        <button class="sidebar-nav-item" data-tab="tab-access">
+          <span aria-hidden="true">🔐</span> Access Control
+        </button>
+      </aside>
 
-      <div id="class-management" class="card" hidden>
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-          <h2>Manage Classes</h2>
-          <button id="close-class-mgmt" class="secondary sm">Close</button>
-        </div>
-        <form id="new-class-form" class="row" style="gap:0.5rem; align-items:flex-end;">
-          <div class="field" style="flex:2; margin:0;">
-            <label>Class Name</label>
-            <input type="text" id="class-name" placeholder="Intro to C++" required />
+      <!-- Main Content Area -->
+      <div class="dashboard-content">
+        
+        <!-- Tab: Overview -->
+        <section id="tab-overview" class="active">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 1.5rem;">
+            <h1 style="margin:0;">Overview</h1>
+            <button id="refresh-stats" class="secondary sm">Refresh</button>
           </div>
-          <div class="field" style="flex:1; margin:0;">
-            <label>Code</label>
-            <input type="text" id="class-code" placeholder="CS101" />
-          </div>
-          <button type="submit">Create</button>
-        </form>
-        <ul id="class-list" class="activity-list" style="margin-top:1rem;"></ul>
-      </div>
 
-      <div id="student-management" class="card" hidden>
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-          <h2 id="student-mgmt-title">Manage Students</h2>
-          <button id="close-student-mgmt" class="secondary sm">Close</button>
-        </div>
-        <p class="muted">Add students to this class. Students on the roster will be able to see activities for this class.</p>
-        <form id="add-student-form" class="row" style="gap:0.5rem; align-items:flex-end;">
-          <div class="field" style="flex:2; margin:0;">
-            <label>Email</label>
-            <input type="email" id="student-email" placeholder="student@uwyo.edu" required />
+          <div class="grid-2" style="margin-bottom: 2rem;">
+            <div class="card" style="margin-bottom: 0;">
+              <h3 class="muted" style="margin: 0 0 0.5rem; font-size: 0.9rem;">Total Students</h3>
+              <div id="stat-students" style="font-size: 2.5rem; font-weight: 800; color: var(--brand-1);">--</div>
+            </div>
+            <div class="card" style="margin-bottom: 0;">
+              <h3 class="muted" style="margin: 0 0 0.5rem; font-size: 0.9rem;">Open Activities</h3>
+              <div id="stat-activities" style="font-size: 2.5rem; font-weight: 800; color: var(--warning);">--</div>
+            </div>
+            <div class="card" style="margin-bottom: 0; grid-column: 1 / -1;">
+              <h3 class="muted" style="margin: 0 0 1rem; font-size: 0.9rem;">Participation Trends (Coming Soon)</h3>
+              <canvas id="participation-chart" height="80"></canvas>
+            </div>
           </div>
-          <div class="field" style="flex:1; margin:0;">
-            <label>Student ID</label>
-            <input type="text" id="student-id-field" placeholder="W123456" />
-          </div>
-          <button type="submit">Add</button>
-        </form>
-        <ul id="student-list" class="activity-list" style="margin-top:1rem;"></ul>
-      </div>
+        </section>
 
-      <div class="card feature">
-        <h2>Launch Activity</h2>
-        <form id="new-form">
-          <div class="field">
-            <label for="prompt">Prompt / Question</label>
-            <textarea id="prompt" required placeholder="What will the cout statement print?"></textarea>
-          </div>
-          <div class="row" style="gap:1rem; margin-bottom: 1rem;">
-            <div class="field" style="margin:0; flex: 1;">
-              <label>Activity Type</label>
-              <select id="activity-type">
-                <option value="submission">Written Submission</option>
-                <option value="poll">Interactive Poll</option>
+        <!-- Tab: Activities -->
+        <section id="tab-activities">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 1.5rem;">
+            <h1 style="margin:0;">Activities</h1>
+            <div style="display: flex; gap: 0.5rem; align-items: center;">
+              <select id="activity-class-filter" style="padding: 0.4rem; font-size: 0.9rem; width: auto;">
+                <option value="">Global / All Classes</option>
               </select>
-            </div>
-            <div id="poll-options-container" class="field" style="flex:2; margin:0;" hidden>
-              <label>Poll Options (comma separated)</label>
-              <input type="text" id="poll-options" placeholder="Option A, Option B, Option C" />
+              <button id="refresh-activities" class="secondary sm">Refresh</button>
             </div>
           </div>
-          <button type="submit">
-            <span>Open Activity</span>
-            <span aria-hidden="true">＋</span>
-          </button>
-          <div id="new-status" class="status"></div>
-        </form>
-      </div>
 
-      <div class="card">
-        <div style="display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-bottom: 1.5rem;">
-          <h2 style="margin:0;">Recent Activities</h2>
-        </div>
-        <ul id="activities" class="activity-list"></ul>
-      </div>
+          <div class="card feature">
+            <h2>Launch New Activity</h2>
+            <form id="new-form">
+              <div class="field">
+                <label for="prompt">Prompt / Question</label>
+                <textarea id="prompt" required placeholder="What will the cout statement print?"></textarea>
+              </div>
+              <div class="row" style="gap:1rem; margin-bottom: 1rem;">
+                <div class="field" style="margin:0; flex: 1;">
+                  <label>Activity Type</label>
+                  <select id="activity-type">
+                    <option value="submission">Written Submission</option>
+                    <option value="poll">Interactive Poll</option>
+                  </select>
+                </div>
+                <div class="field" style="margin:0; flex: 1;">
+                  <label>Difficulty</label>
+                  <select id="activity-difficulty">
+                    <option value="easy">Easy</option>
+                    <option value="medium">Medium</option>
+                    <option value="hard">Hard</option>
+                    <option value="ai-proof">AI-Proof</option>
+                    <option value="ai-collab">AI-Collab</option>
+                  </select>
+                </div>
+                <div id="poll-options-container" class="field" style="flex:2; margin:0;" hidden>
+                  <label>Poll Options (comma separated)</label>
+                  <input type="text" id="poll-options" placeholder="Option A, Option B, Option C" />
+                </div>
+              </div>
+              <button type="submit">
+                <span>Create Activity</span>
+                <span aria-hidden="true">＋</span>
+              </button>
+              <div id="new-status" class="status"></div>
+            </form>
+          </div>
 
-      <div id="submissions-card" class="card" hidden>
-        <div style="display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-bottom: 1.5rem;">
-          <h2 id="submissions-title" style="margin:0;">Results</h2>
-          <button id="export-csv" class="secondary sm">Export CSV</button>
-        </div>
-        <div style="overflow-x: auto;">
-          <table id="submissions-table">
-            <thead>
-              <tr><th>Time</th><th>Student</th><th>Response</th><th>File</th></tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-        </div>
-      </div>
+          <div id="submissions-card" class="card" hidden>
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-bottom: 1.5rem;">
+              <h2 id="submissions-title" style="margin:0;">Results</h2>
+              <div class="row">
+                 <button id="close-submissions" class="secondary sm">Back to List</button>
+                 <button id="export-csv" class="sm">Export CSV</button>
+              </div>
+            </div>
+            <div style="overflow-x: auto;">
+              <table id="submissions-table">
+                <thead>
+                  <tr><th>Time</th><th>Student</th><th>Response</th><th>File</th></tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
 
-      <div class="grid-2">
-        <div class="card">
-          <h2>Guest Access</h2>
-          <p class="muted">Add specific emails to grant access to accounts outside the university domain.</p>
-          <form id="allow-form" class="row" style="flex-direction: column; gap: 0.75rem;">
-            <div class="field" style="margin: 0;">
-              <label for="allow-email">Email</label>
-              <input type="text" id="allow-email" placeholder="user@example.com" required />
-            </div>
-            <div class="field" style="margin: 0;">
-              <label for="allow-note">Reason</label>
-              <input type="text" id="allow-note" placeholder="Teaching Assistant" />
-            </div>
-            <button type="submit" class="secondary">Add to Allowlist</button>
-          </form>
-          <div id="allow-status" class="status"></div>
-          <ul id="allow-list" class="activity-list" style="margin-top: 1rem;"></ul>
-        </div>
+          <div id="activities-list-container">
+            <ul id="activities" class="activity-list"></ul>
+          </div>
+        </section>
 
-        <div id="instructors-card" class="card" hidden>
-          <h2>Instructors</h2>
-          <p class="muted">Manage dashboard access. Only Superadmins can add others.</p>
-          <form id="inst-form" class="row" style="flex-direction: column; gap: 0.75rem;">
-            <div class="field" style="margin: 0;">
-              <label for="inst-email">Email</label>
-              <input type="text" id="inst-email" placeholder="user@example.com" required />
+        <!-- Tab: Classes -->
+        <section id="tab-classes">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 1.5rem;">
+            <h1 style="margin:0;">Classes & Rosters</h1>
+          </div>
+
+          <div class="card">
+            <h2>Create Class</h2>
+            <form id="new-class-form" class="row" style="gap:0.5rem; align-items:flex-end;">
+              <div class="field" style="flex:2; margin:0;">
+                <label>Class Name</label>
+                <input type="text" id="class-name" placeholder="Intro to C++" required />
+              </div>
+              <div class="field" style="flex:1; margin:0;">
+                <label>Code</label>
+                <input type="text" id="class-code" placeholder="CS101" />
+              </div>
+              <button type="submit">Create</button>
+            </form>
+          </div>
+
+          <div id="student-management" class="card feature" hidden>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 1rem;">
+              <h2 id="student-mgmt-title" style="margin:0;">Manage Roster</h2>
+              <button id="close-student-mgmt" class="secondary sm">Close</button>
             </div>
-            <div class="field" style="margin: 0;">
-              <label for="inst-role">Role</label>
-              <select id="inst-role">
-                <option value="instructor">Instructor</option>
-                <option value="superadmin">Superadmin</option>
-              </select>
+            
+            <p class="muted">Add students individually or via Bulk CSV Upload.</p>
+            
+            <div class="row" style="gap: 1.5rem; margin-bottom: 1.5rem;">
+              <form id="add-student-form" class="row" style="flex:2; gap:0.5rem; align-items:flex-end;">
+                <div class="field" style="flex:2; margin:0;">
+                  <label>Email</label>
+                  <input type="email" id="student-email" placeholder="student@uwyo.edu" required />
+                </div>
+                <div class="field" style="flex:1; margin:0;">
+                  <label>Student ID / Username</label>
+                  <input type="text" id="student-id-field" placeholder="W123456" />
+                </div>
+                <button type="submit">Add Single</button>
+              </form>
+              
+              <div style="flex: 1; border-left: 1px solid var(--border); padding-left: 1.5rem;">
+                <label>Bulk CSV Upload (email, username)</label>
+                <input type="file" id="csv-upload" accept=".csv" style="margin-bottom: 0.5rem;" />
+                <button id="btn-csv-upload" class="secondary sm" style="width: 100%;">Upload CSV</button>
+                <div id="csv-status" class="status"></div>
+              </div>
             </div>
-            <button type="submit" class="secondary">Add Instructor</button>
-          </form>
-          <div id="inst-status" class="status"></div>
-          <ul id="inst-list" class="activity-list" style="margin-top: 1rem;"></ul>
-        </div>
+
+            <ul id="student-list" class="activity-list" style="margin-top:1rem;"></ul>
+          </div>
+
+          <ul id="class-list" class="activity-list"></ul>
+        </section>
+
+        <!-- Tab: Access Control -->
+        <section id="tab-access">
+          <h1 style="margin-bottom: 1.5rem;">Access Control</h1>
+
+          <div class="grid-2">
+            <div class="card">
+              <h2>Guest Allowlist</h2>
+              <p class="muted">Grant access to accounts outside the university domain.</p>
+              <form id="allow-form" class="row" style="flex-direction: column; gap: 0.75rem;">
+                <div class="field" style="margin: 0;">
+                  <label for="allow-email">Email</label>
+                  <input type="email" id="allow-email" placeholder="user@example.com" required />
+                </div>
+                <div class="field" style="margin: 0;">
+                  <label for="allow-note">Reason</label>
+                  <input type="text" id="allow-note" placeholder="Teaching Assistant" />
+                </div>
+                <button type="submit" class="secondary">Add to Allowlist</button>
+              </form>
+              <div id="allow-status" class="status"></div>
+              <ul id="allow-list" class="activity-list" style="margin-top: 1rem;"></ul>
+            </div>
+
+            <div id="instructors-card" class="card" hidden>
+              <h2>Instructors</h2>
+              <p class="muted">Only Superadmins can modify this list.</p>
+              <form id="inst-form" class="row" style="flex-direction: column; gap: 0.75rem;">
+                <div class="field" style="margin: 0;">
+                  <label for="inst-email">Email</label>
+                  <input type="email" id="inst-email" placeholder="user@example.com" required />
+                </div>
+                <div class="field" style="margin: 0;">
+                  <label for="inst-role">Role</label>
+                  <select id="inst-role">
+                    <option value="instructor">Instructor</option>
+                    <option value="superadmin">Superadmin</option>
+                  </select>
+                </div>
+                <button type="submit" class="secondary">Add Instructor</button>
+              </form>
+              <div id="inst-status" class="status"></div>
+              <ul id="inst-list" class="activity-list" style="margin-top: 1rem;"></ul>
+            </div>
+          </div>
+        </section>
+
       </div>
-    </section>
+    </div>
   </main>
 
   <script type="module" src="/js/instructor.js"></script>

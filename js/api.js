@@ -132,11 +132,13 @@ export const api = {
     get(`/submissions/by-activity/${encodeURIComponent(activityId)}`),
 
   // Classes
+  getStats: () => get("/admin/stats"),
   listClasses: () => get("/admin/classes"),
   createClass: (name, code, semester) => postJSON("/admin/classes", { name, code, semester }),
   deleteClass: (id) => del(`/admin/classes/${encodeURIComponent(id)}`),
   listClassStudents: (id) => get(`/admin/classes/${encodeURIComponent(id)}/students`),
   addClassStudent: (id, student) => postJSON(`/admin/classes/${encodeURIComponent(id)}/students`, student),
+  bulkAddClassStudents: (id, students) => postJSON(`/admin/classes/${encodeURIComponent(id)}/students/bulk`, { students }),
   removeClassStudent: (id, email) => del(`/admin/classes/${encodeURIComponent(id)}/students/${encodeURIComponent(email)}`),
 
   // Allowlist

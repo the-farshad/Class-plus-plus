@@ -115,9 +115,9 @@ header.site {
 }
 
 header.site .inner {
-  max-width: 880px;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 0.85rem 1.25rem;
+  padding: 1.25rem 1.5rem;
   display: flex;
   align-items: center;
   gap: 1.5rem;
@@ -126,25 +126,25 @@ header.site .inner {
 .brand {
   display: inline-flex;
   align-items: center;
-  gap: 0.6rem;
-  font-weight: 700;
-  font-size: 1.05rem;
-  letter-spacing: -0.01em;
+  gap: 0.8rem;
+  font-weight: 800;
+  font-size: 1.25rem;
+  letter-spacing: -0.02em;
   color: var(--text);
 }
 
 .brand:hover { text-decoration: none; }
 
 .brand-mark {
-  width: 30px;
-  height: 30px;
-  border-radius: 9px;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
   background: var(--brand-grad);
   display: inline-grid;
   place-items: center;
   color: #fff;
   font-weight: 800;
-  font-size: 0.9rem;
+  font-size: 1.1rem;
   letter-spacing: -0.02em;
   box-shadow: var(--shadow-glow);
 }
@@ -560,7 +560,64 @@ hr {
   header.site .inner { gap: 0.5rem; }
   .brand-tag { display: none; }
 }
-list li { flex-direction: column; align-items: stretch; }
-  header.site .inner { gap: 0.5rem; }
-  .brand-tag { display: none; }
+
+/* ---------- Dashboard Layout ---------- */
+.dashboard-layout {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+  align-items: start;
+}
+
+@media (max-width: 860px) {
+  .dashboard-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.dashboard-sidebar {
+  position: sticky;
+  top: 90px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sidebar-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  font-weight: 600;
+  color: var(--muted);
+  border-radius: var(--radius-sm);
+  transition: all 0.2s var(--ease);
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  text-align: left;
+  font-size: 0.95rem;
+}
+
+.sidebar-nav-item:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.sidebar-nav-item.active {
+  background: var(--brand-grad-soft);
+  color: var(--brand-1);
+  box-shadow: inset 3px 0 0 var(--brand-1);
+}
+
+.dashboard-content > section {
+  display: none;
+  animation: fadeUp 0.3s var(--ease) both;
+}
+
+.dashboard-content > section.active {
+  display: block;
 }

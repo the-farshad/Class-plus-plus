@@ -105,6 +105,9 @@ async function showSignedInState() {
   if (!u) return;
   $("who-am-i").textContent = `Signed in as ${u.email}`;
   $("signout").hidden = false;
+  if (u.role === "instructor" || u.role === "superadmin") {
+    show("nav-admin");
+  }
   await loadActivities();
 }
 

@@ -54,6 +54,31 @@ classesRouter.post("/:id/students", (req, res) => {
   }
 });
 
+classesRouter.post("/:id/students/bulk", (req, res) => {
+  const { students } = req.body;
+  if (!Array.isArray(students)) return res.status(400).json({ ok: false, error: "Expected an array of students" });
+  
+  try {
+    const stmt = db.prepare(
+      "INSERT OR REPLACE INTO class_students (class_id, student_email, student_id) VALUES (?, ?, ?)"
+    );
+    const insertMany = db.transaction((stds) => {
+      let count = 0;
+      for (const s of stds) {
+        if (!s.email) continue;
+        stmt.run(req.params.id, s.email.toLowerCase(), s.student_id || null);
+        count++;
+      }
+      return count;
+    });
+    
+    const added = insertMany(students);
+    res.json({ ok: true, added });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
 classesRouter.delete("/:id/students/:email", (req, res) => {
   try {
     db.prepare("DELETE FROM class_students WHERE class_id = ? AND student_email = ?")
