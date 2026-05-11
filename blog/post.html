@@ -8,14 +8,17 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@600;700;800&family=Lora:wght@400;500;600&family=Ubuntu:wght@400;500;700&family=Roboto+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/styles.css?v=53" />
+  <link rel="stylesheet" href="/css/styles.css?v=54" />
   <script src="https://unpkg.com/lucide@latest"></script>
   <!-- Prism: VS Code Dark+ community theme + line-numbers plugin (CSS first, JS deferred) -->
   <link href="https://cdn.jsdelivr.net/npm/prism-themes@1.9.0/themes/prism-vsc-dark-plus.min.css" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/plugins/line-numbers/prism-line-numbers.min.css" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js" defer></script>
-  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-cpp.min.js" defer></script>
+  <!-- Order matters: prism-c must load before prism-cpp because cpp does
+       Prism.languages.extend('c', ...) — without c loaded first that
+       extend silently fails and cpp never registers, so code stays plain. -->
   <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-c.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-cpp.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-bash.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/plugins/line-numbers/prism-line-numbers.min.js" defer></script>
 </head>
@@ -32,7 +35,7 @@
       </a>
 
       <nav class="primary-nav" aria-label="Primary navigation">
-        <a href="/" id="nav-submit" class="nav-link" hidden>
+        <a href="/" id="nav-submit" class="nav-link">
           <i data-lucide="zap"></i><span>Live</span>
         </a>
         <a href="/blog/" id="nav-notes" class="nav-link nav-active">
@@ -60,7 +63,7 @@
   </header>
 
   <script type="module">
-    import { api } from "/js/api.js?v=53";
+    import { api } from "/js/api.js?v=54";
     api.initTheme();
     document.getElementById("nav-notes")?.classList.add("nav-active");
   </script>
@@ -86,7 +89,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/marked@12/marked.min.js"></script>
   <script type="module">
-    import { renderPost } from "/js/blog.js?v=53";
+    import { renderPost } from "/js/blog.js?v=54";
     renderPost(document.getElementById("post"));
   </script>
 
@@ -111,8 +114,8 @@
   </div>
 
   <script type="module">
-    import { bootPage, mountSettingsDrawer } from "/js/ui.js?v=53";
-    import { api, session } from "/js/api.js?v=53";
+    import { bootPage, mountSettingsDrawer } from "/js/ui.js?v=54";
+    import { api, session } from "/js/api.js?v=54";
     bootPage();
     mountSettingsDrawer({ api, session });
   </script>

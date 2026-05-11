@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@600;700;800&family=Lora:wght@400;500;600&family=Ubuntu:wght@400;500;700&family=Roboto+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/styles.css?v=53" />
+  <link rel="stylesheet" href="/css/styles.css?v=54" />
   <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
@@ -20,7 +20,7 @@
       </a>
 
       <nav class="primary-nav" aria-label="Primary navigation">
-        <a href="/" id="nav-submit" class="nav-link" hidden>
+        <a href="/" id="nav-submit" class="nav-link">
           <i data-lucide="zap"></i><span>Live</span>
         </a>
         <a href="/blog/" id="nav-notes" class="nav-link nav-active">
@@ -48,7 +48,7 @@
   </header>
 
   <script type="module">
-    import { api } from "/js/api.js?v=53";
+    import { api } from "/js/api.js?v=54";
     api.initTheme();
     document.getElementById("nav-notes")?.classList.add("nav-active");
   </script>
@@ -93,7 +93,7 @@
   </main>
 
   <script type="module">
-    import { renderIndex } from "/js/blog.js?v=53";
+    import { renderIndex } from "/js/blog.js?v=54";
     renderIndex(document.getElementById("post-list"), {
       searchEl:     document.getElementById("post-search"),
       sortEl:       document.getElementById("post-sort"),
@@ -125,8 +125,8 @@
   </div>
 
   <script type="module">
-    import { bootPage, mountSettingsDrawer } from "/js/ui.js?v=53";
-    import { api, session } from "/js/api.js?v=53";
+    import { bootPage, mountSettingsDrawer } from "/js/ui.js?v=54";
+    import { api, session } from "/js/api.js?v=54";
     bootPage();
     mountSettingsDrawer({ api, session });
   </script>
