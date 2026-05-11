@@ -99,10 +99,3 @@ classesRouter.delete("/:id/students/:email", (req, res) => {
     res.status(500).json({ ok: false, error: err.message });
   }
 });
-id = ? AND student_email = ?")
-      .run(req.params.id, req.params.email.toLowerCase());
-    res.json({ ok: true });
-  } catch (err) {
-    res.status(500).json({ ok: false, error: err.message });
-  }
-});
