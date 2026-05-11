@@ -53,9 +53,15 @@ export function migrate() {
 export function bootstrapInstructors() {
   if (!config.initialInstructors.length) return;
   const stmt = db.prepare(
-    "INSERT OR IGNORE INTO instructors (email) VALUES (?)"
+    "INSERT OR IGNORE INTO instructors (email, role) VALUES (?, ?)"
+  );
+  const update = db.prepare(
+    "UPDATE instructors SET role = ? WHERE email = ?"
   );
   for (const email of config.initialInstructors) {
-    stmt.run(email.toLowerCase());
+    const e = email.toLowerCase();
+    // For now, we make all initial instructors superadmins so they can bootstrap the system.
+    stmt.run(e, "superadmin");
+    update.run("superadmin", e);
   }
 }

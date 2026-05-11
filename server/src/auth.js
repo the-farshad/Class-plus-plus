@@ -29,8 +29,8 @@ export function emailIsAllowed(email) {
 
 export function roleFor(email) {
   const e = email.toLowerCase();
-  const inst = db.prepare("SELECT 1 FROM instructors WHERE email = ?").get(e);
-  return inst ? "instructor" : "student";
+  const inst = db.prepare("SELECT role FROM instructors WHERE email = ?").get(e);
+  return inst ? inst.role : "student";
 }
 
 export function studentIdFor(email) {
@@ -43,7 +43,7 @@ export function issueAppJwt({ email, role }) {
   return jwt.sign(
     { sub: email.toLowerCase(), role },
     config.jwtSecret,
-    { algorithm: "HS256", expiresIn: "1h" }
+    { algorithm: "HS256", expiresIn: "4h" }
   );
 }
 
@@ -68,8 +68,18 @@ export function requireAuth(req, res, next) {
 export function requireInstructor(req, res, next) {
   const claims = readBearer(req);
   if (!claims) return res.status(401).json({ ok: false, error: "Unauthorized" });
-  if (claims.role !== "instructor") {
+  if (claims.role !== "instructor" && claims.role !== "superadmin") {
     return res.status(403).json({ ok: false, error: "Forbidden" });
+  }
+  req.user = { email: claims.sub, role: claims.role };
+  next();
+}
+
+export function requireSuperAdmin(req, res, next) {
+  const claims = readBearer(req);
+  if (!claims) return res.status(401).json({ ok: false, error: "Unauthorized" });
+  if (claims.role !== "superadmin") {
+    return res.status(403).json({ ok: false, error: "Forbidden: Superadmin access required" });
   }
   req.user = { email: claims.sub, role: claims.role };
   next();

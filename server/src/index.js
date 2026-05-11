@@ -9,6 +9,8 @@ import { activitiesRouter } from "./routes/activities.js";
 import { submissionsRouter } from "./routes/submissions.js";
 import { rosterRouter } from "./routes/roster.js";
 import { allowlistRouter } from "./routes/allowlist.js";
+import { instructorsRouter } from "./routes/instructors.js";
+import { classesRouter } from "./routes/classes.js";
 import { requireInstructor } from "./auth.js";
 
 migrate();
@@ -47,6 +49,8 @@ app.use(
 
 app.use("/admin/roster", rosterRouter);
 app.use("/admin/allowlist", allowlistRouter);
+app.use("/admin/instructors", instructorsRouter);
+app.use("/admin/classes", classesRouter);
 
 app.use((err, _req, res, _next) => {
   if (err && err.message && err.message.startsWith("CORS:")) {
@@ -61,4 +65,6 @@ app.use((err, _req, res, _next) => {
 
 app.listen(config.port, "127.0.0.1", () => {
   console.log(`classpp-api listening on http://127.0.0.1:${config.port}`);
+});
+rt}`);
 });

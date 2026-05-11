@@ -10,10 +10,49 @@ function setStatus(targetId, msg, kind = "") {
   el.className = "status" + (kind ? ` ${kind}` : "");
 }
 
-function showActivity({ activity_id, prompt }) {
-  $("activity-id").value = activity_id;
-  $("prompt-text").textContent = prompt;
+function showActivity(a) {
+  $("activity-id").value = a.activity_id;
+  $("prompt-text").textContent = a.prompt;
+  const typeTag = $("activity-type-tag");
+  typeTag.textContent = a.type === "poll" ? "Interactive Poll" : "Written Submission";
+  typeTag.className = "tag " + (a.type === "poll" ? "poll" : "open");
+
   hide("loading"); hide("picker"); hide("empty");
+  
+  if (a.type === "poll") {
+    hide("submit-form");
+    show("poll-card");
+    renderPoll(a);
+  } else {
+    hide("poll-card");
+    show("submit-form");
+    show("form-card");
+  }
+}
+
+function renderPoll(a) {
+  const container = $("poll-options-list");
+  container.innerHTML = "";
+  const options = JSON.parse(a.poll_options || "[]");
+  options.forEach((opt, idx) => {
+    const btn = document.createElement("button");
+    btn.className = "secondary";
+    btn.style.textAlign = "left";
+    btn.style.width = "100%";
+    btn.textContent = opt;
+    btn.addEventListener("click", async () => {
+      setStatus("poll-status", "Voting…");
+      try {
+        await api.vote(a.activity_id, idx);
+        setStatus("poll-status", "Vote recorded! Thanks.", "success");
+        // Disable all buttons after voting
+        container.querySelectorAll("button").forEach(b => b.disabled = true);
+      } catch (err) {
+        setStatus("poll-status", err.message, "error");
+      }
+    });
+    container.appendChild(btn);
+  });
   show("form-card");
 }
 
@@ -24,7 +63,7 @@ function showPicker(activities) {
   activities.forEach((a) => {
     const li = document.createElement("li");
     const span = document.createElement("span");
-    span.textContent = a.prompt;
+    span.innerHTML = `<strong>[${a.type.toUpperCase()}]</strong> ${a.prompt}`;
     const btn = document.createElement("button");
     btn.className = "sm";
     btn.textContent = "Choose →";
@@ -41,12 +80,14 @@ async function loadActivities() {
   try {
     const params = new URLSearchParams(location.search);
     const id = params.get("activity");
+    const classId = params.get("class");
+    
     if (id) {
       const res = await api.getActivity(id);
       showActivity(res.activity);
       return;
     }
-    const res = await api.listOpenActivities();
+    const res = await api.listOpenActivities(classId);
     if (!res.activities.length) { hide("loading"); show("empty"); return; }
     if (res.activities.length === 1) showActivity(res.activities[0]);
     else showPicker(res.activities);

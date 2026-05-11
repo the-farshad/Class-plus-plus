@@ -95,12 +95,15 @@ export const api = {
   signOut: () => session.clear(),
 
   // Activities
-  listOpenActivities: () => get("/activities"),
+  listOpenActivities: (classId) => get(`/activities${classId ? `?class_id=${classId}` : ""}`),
   getActivity: (id) => get(`/activities/${encodeURIComponent(id)}`),
-  listAllActivities: () => get("/activities/admin/all"),
-  createActivity: (prompt) => postJSON("/activities/admin", { prompt }),
+  listAllActivities: (classId) => get(`/activities/admin/all${classId ? `?class_id=${classId}` : ""}`),
+  createActivity: (prompt, classId, type, options) =>
+    postJSON("/activities/admin", { prompt, class_id: classId, type, poll_options: options }),
   setActivityStatus: (id, status) =>
     patchJSON(`/activities/admin/${encodeURIComponent(id)}`, { status }),
+  vote: (id, optionIndex) => postJSON(`/activities/${encodeURIComponent(id)}/vote`, { option_index: optionIndex }),
+  getResults: (id) => get(`/activities/${encodeURIComponent(id)}/results`),
 
   // Submissions
   submit: ({ activity_id, response, file }) => {
@@ -113,9 +116,23 @@ export const api = {
   listSubmissions: (activityId) =>
     get(`/submissions/by-activity/${encodeURIComponent(activityId)}`),
 
+  // Classes
+  listClasses: () => get("/admin/classes"),
+  createClass: (name, code, semester) => postJSON("/admin/classes", { name, code, semester }),
+  deleteClass: (id) => del(`/admin/classes/${encodeURIComponent(id)}`),
+  listClassStudents: (id) => get(`/admin/classes/${encodeURIComponent(id)}/students`),
+  addClassStudent: (id, student) => postJSON(`/admin/classes/${encodeURIComponent(id)}/students`, student),
+  removeClassStudent: (id, email) => del(`/admin/classes/${encodeURIComponent(id)}/students/${encodeURIComponent(email)}`),
+
   // Allowlist
   listAllowlist: () => get("/admin/allowlist"),
   addAllowlist: (email, note) => postJSON("/admin/allowlist", { email, note }),
   removeAllowlist: (email) =>
     del(`/admin/allowlist/${encodeURIComponent(email)}`),
+
+  // Instructors (Superadmin only)
+  listInstructors: () => get("/admin/instructors"),
+  addInstructor: (email, role) => postJSON("/admin/instructors", { email, role }),
+  removeInstructor: (email) =>
+    del(`/admin/instructors/${encodeURIComponent(email)}`),
 };

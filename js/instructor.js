@@ -7,6 +7,8 @@ const hide = (id) => { $(id).hidden = true; };
 let activitiesCache = [];
 let currentSubmissions = [];
 let currentActivityId = null;
+let classesCache = [];
+let currentClassId = null;
 
 function setStatus(targetId, msg, kind = "") {
   const el = $(targetId);
@@ -65,17 +67,23 @@ function renderGoogleButton(clientId) {
 function enterDashboard() {
   const u = session.user;
   if (!u) return showSignIn();
-  if (u.role !== "instructor") {
+  if (u.role !== "instructor" && u.role !== "superadmin") {
     hide("signin-card"); hide("dashboard");
     show("forbidden-card");
     return;
   }
   hide("signin-card"); hide("forbidden-card");
   show("dashboard");
-  $("who-am-i").textContent = `Signed in as ${u.email}`;
+  $("who-am-i").textContent = `Signed in as ${u.email} (${u.role})`;
   $("signout").hidden = false;
+  
+  loadClasses();
   loadActivities();
   loadAllowlist();
+  if (u.role === "superadmin") {
+    show("instructors-card");
+    loadInstructors();
+  }
 }
 
 $("signout").addEventListener("click", (e) => {
@@ -88,19 +96,174 @@ $("forbidden-signout").addEventListener("click", () => {
   location.reload();
 });
 
+// ---------- Classes ----------
+
+async function loadClasses() {
+  try {
+    const res = await api.listClasses();
+    classesCache = res.classes;
+    renderClassSelector();
+    renderClassList();
+  } catch (err) {
+    console.error("Failed to load classes", err);
+  }
+}
+
+function renderClassSelector() {
+  const sel = $("class-selector");
+  const val = sel.value;
+  sel.innerHTML = '<option value="">Global / No class</option>';
+  classesCache.forEach(c => {
+    const opt = document.createElement("option");
+    opt.value = c.id;
+    opt.textContent = `${c.code || ""} ${c.name}`.trim();
+    sel.appendChild(opt);
+  });
+  sel.value = val;
+}
+
+$("class-selector").addEventListener("change", (e) => {
+  currentClassId = e.target.value || null;
+  loadActivities();
+});
+
+$("manage-classes-btn").addEventListener("click", () => show("class-management"));
+$("close-class-mgmt").addEventListener("click", () => hide("class-management"));
+
+$("new-class-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const name = $("class-name").value.trim();
+  const code = $("class-code").value.trim();
+  try {
+    await api.createClass(name, code);
+    $("class-name").value = "";
+    $("class-code").value = "";
+    loadClasses();
+  } catch (err) {
+    alert(err.message);
+  }
+});
+
+function renderClassList() {
+  const list = $("class-list");
+  list.innerHTML = "";
+  if (!classesCache.length) {
+    list.innerHTML = '<li class="muted">No classes created yet.</li>';
+    return;
+  }
+  classesCache.forEach(c => {
+    const li = document.createElement("li");
+    const info = document.createElement("div");
+    info.innerHTML = `<strong>${escapeHTML(c.code || "")} ${escapeHTML(c.name)}</strong>`;
+    
+    const actions = document.createElement("div");
+    actions.className = "row";
+    
+    const rosterBtn = document.createElement("button");
+    rosterBtn.className = "sm";
+    rosterBtn.textContent = "Students";
+    rosterBtn.addEventListener("click", () => showStudentMgmt(c));
+
+    const delBtn = document.createElement("button");
+    delBtn.className = "secondary sm";
+    delBtn.textContent = "Delete";
+    delBtn.addEventListener("click", async () => {
+      if (!confirm("Delete class and all its data?")) return;
+      await api.deleteClass(c.id);
+      loadClasses();
+    });
+    
+    actions.append(rosterBtn, delBtn);
+    li.append(info, actions);
+    list.appendChild(li);
+  });
+}
+
+// ---------- Students ----------
+
+let activeMgmtClass = null;
+
+function showStudentMgmt(c) {
+  activeMgmtClass = c;
+  $("student-mgmt-title").textContent = `Students — ${c.code || ""} ${c.name}`;
+  show("student-management");
+  loadClassStudents();
+}
+
+$("close-student-mgmt").addEventListener("click", () => hide("student-management"));
+
+$("add-student-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const email = $("student-email").value.trim();
+  const student_id = $("student-id-field").value.trim();
+  try {
+    await api.addClassStudent(activeMgmtClass.id, { email, student_id });
+    $("student-email").value = "";
+    $("student-id-field").value = "";
+    loadClassStudents();
+  } catch (err) {
+    alert(err.message);
+  }
+});
+
+async function loadClassStudents() {
+  const list = $("student-list");
+  list.innerHTML = '<li class="muted">Loading…</li>';
+  try {
+    const res = await api.listClassStudents(activeMgmtClass.id);
+    list.innerHTML = "";
+    if (!res.students.length) {
+      list.innerHTML = '<li class="muted">No students in this class.</li>';
+      return;
+    }
+    res.students.forEach(s => {
+      const li = document.createElement("li");
+      li.innerHTML = `<div>${escapeHTML(s.student_email)} <span class="muted">${escapeHTML(s.student_id || "")}</span></div>`;
+      const delBtn = document.createElement("button");
+      delBtn.className = "secondary sm";
+      delBtn.textContent = "Remove";
+      delBtn.addEventListener("click", async () => {
+        if (!confirm(`Remove ${s.student_email}?`)) return;
+        await api.removeClassStudent(activeMgmtClass.id, s.student_email);
+        loadClassStudents();
+      });
+      li.appendChild(delBtn);
+      list.appendChild(li);
+    });
+  } catch (err) {
+    list.innerHTML = `<li class="muted">Error: ${escapeHTML(err.message)}</li>`;
+  }
+}
+
 // ---------- Activities ----------
+
+$("activity-type").addEventListener("change", (e) => {
+  if (e.target.value === "poll") show("poll-options-container");
+  else hide("poll-options-container");
+});
 
 $("refresh").addEventListener("click", loadActivities);
 
 $("new-form").addEventListener("submit", async (e) => {
   e.preventDefault();
   const prompt = $("prompt").value.trim();
+  const type = $("activity-type").value;
+  let options = [];
+  if (type === "poll") {
+    options = $("poll-options").value.split(",").map(s => s.trim()).filter(Boolean);
+    if (options.length < 2) {
+      setStatus("new-status", "Poll needs at least 2 options", "error");
+      return;
+    }
+  }
+
   if (!prompt) return;
   setStatus("new-status", "Creating…");
   try {
-    const res = await api.createActivity(prompt);
+    const res = await api.createActivity(prompt, currentClassId, type, options);
     setStatus("new-status", `Created (#${res.activity_id})`, "success");
     $("prompt").value = "";
+    $("poll-options").value = "";
     loadActivities();
   } catch (err) {
     setStatus("new-status", err.message, "error");
@@ -111,7 +274,7 @@ async function loadActivities() {
   const list = $("activities");
   list.innerHTML = `<li class="muted">Loading…</li>`;
   try {
-    const res = await api.listAllActivities();
+    const res = await api.listAllActivities(currentClassId);
     activitiesCache = res.activities;
     renderActivities();
   } catch (err) {
@@ -123,14 +286,14 @@ function renderActivities() {
   const list = $("activities");
   list.innerHTML = "";
   if (!activitiesCache.length) {
-    list.innerHTML = `<li class="muted">No activities yet.</li>`;
+    list.innerHTML = `<li class="muted">No activities for this class.</li>`;
     return;
   }
   activitiesCache.forEach((a) => {
     const li = document.createElement("li");
     const left = document.createElement("div");
     const promptEl = document.createElement("div");
-    promptEl.textContent = a.prompt;
+    promptEl.innerHTML = `<strong>[${a.type.toUpperCase()}]</strong> ${escapeHTML(a.prompt)}`;
     const meta = document.createElement("div");
     meta.className = "meta";
     const created = a.created_at
@@ -149,8 +312,8 @@ function renderActivities() {
 
     const view = document.createElement("button");
     view.className = "sm";
-    view.textContent = "Responses";
-    view.addEventListener("click", () => loadSubmissions(a));
+    view.textContent = a.type === "poll" ? "Results" : "Responses";
+    view.addEventListener("click", () => a.type === "poll" ? showPollResults(a) : loadSubmissions(a));
 
     const linkBtn = document.createElement("button");
     linkBtn.className = "secondary sm";
@@ -175,6 +338,30 @@ async function toggleStatus(a) {
     loadActivities();
   } catch (err) {
     alert(err.message);
+  }
+}
+
+async function showPollResults(a) {
+  currentActivityId = a.activity_id;
+  $("submissions-card").hidden = false;
+  $("submissions-title").textContent = `Poll Results — ${a.prompt}`;
+  const tbody = $("submissions-table").querySelector("tbody");
+  tbody.innerHTML = `<tr><td colspan="4" class="muted">Loading…</td></tr>`;
+  try {
+    const res = await api.getResults(a.activity_id);
+    tbody.innerHTML = "";
+    res.options.forEach((opt, idx) => {
+      const voteCount = res.votes.find(v => v.option_index === idx)?.count || 0;
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td colspan="2"><strong>${escapeHTML(opt)}</strong></td>
+        <td>${voteCount} votes</td>
+        <td>${res.votes.length ? Math.round((voteCount / res.votes.reduce((acc,v) => acc + v.count, 0)) * 100) : 0}%</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="4" class="muted">Error: ${escapeHTML(err.message)}</td></tr>`;
   }
 }
 
@@ -293,6 +480,68 @@ async function loadAllowlist() {
         try {
           await api.removeAllowlist(row.email);
           loadAllowlist();
+        } catch (err) {
+          alert(err.message);
+        }
+      });
+
+      li.append(left, remove);
+      list.appendChild(li);
+    });
+  } catch (err) {
+    list.innerHTML = `<li class="muted">Error: ${escapeHTML(err.message)}</li>`;
+  }
+}
+
+// ---------- Instructors ----------
+
+$("inst-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const email = $("inst-email").value.trim();
+  const role = $("inst-role").value;
+  setStatus("inst-status", "Adding…");
+  try {
+    await api.addInstructor(email, role);
+    setStatus("inst-status", `Added ${email}`, "success");
+    $("inst-email").value = "";
+    loadInstructors();
+  } catch (err) {
+    setStatus("inst-status", err.message, "error");
+  }
+});
+
+async function loadInstructors() {
+  const list = $("inst-list");
+  list.innerHTML = `<li class="muted">Loading…</li>`;
+  try {
+    const res = await api.listInstructors();
+    list.innerHTML = "";
+    if (!res.instructors.length) {
+      list.innerHTML = `<li class="muted">Empty.</li>`;
+      return;
+    }
+    res.instructors.forEach((row) => {
+      const li = document.createElement("li");
+      const left = document.createElement("div");
+      const email = document.createElement("div");
+      email.textContent = row.email;
+      const meta = document.createElement("div");
+      meta.className = "meta";
+      meta.textContent = row.role;
+      left.append(email, meta);
+
+      const remove = document.createElement("button");
+      remove.className = "secondary sm";
+      remove.textContent = "Remove";
+      if (row.email === session.user?.email) {
+        remove.disabled = true;
+        remove.title = "Cannot remove yourself";
+      }
+      remove.addEventListener("click", async () => {
+        if (!confirm(`Remove ${row.email}?`)) return;
+        try {
+          await api.removeInstructor(row.email);
+          loadInstructors();
         } catch (err) {
           alert(err.message);
         }
