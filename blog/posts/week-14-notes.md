@@ -3,48 +3,168 @@ slug: week-14-notes
 title: "Week 14: Debugging mixed I/O and vector statistics"
 date: "2026-05-24"
 summary: "Repair getline/cin interactions; load ints from file; mean and median with STL vector."
-tags: ["debugging","getline","vector","median","exceptions-readiness"]
+tags: ["debugging", "getline", "vector", "median", "exceptions-readiness"]
 week: 14
 ---
-# Week 14: Debugging careless I/O, iterator awareness, STL statistics
 
-**Lab 14** is a forensic exercise: buggy medical label generator scrambles **`getline`** vs **`>>`** sequences when names carry spaces—you patch until nurse/patient fields stay aligned.**Program 14** requests filename retry loops, guarded readers populating **`std::vector<int>`**, median/mean calculators split into standalone functions — classic capstone stressing robustness plus STL familiarity.
+# Week 14: Debugging, Statistics, and Wrapping Up
 
-Echo topics from Lecture 23–24 materials (exceptions, iterators) as optional enrichment even if assignments stay elementary.
+Two skills meet this week: reading code that is **already broken** and fixing it systematically, and computing **statistical summaries** (mean and median) of data loaded from a file.
 
-Median outline using sort + parity check (adapt to harness requirements):
+## Debugging systematically
+
+When you inherit buggy code, resist the urge to start changing things randomly. Work through these steps:
+
+1. **Read the expected behavior** — what should the program do?
+2. **Run it and observe the actual behavior** — what does it do instead?
+3. **Form a hypothesis** — what could cause this specific symptom?
+4. **Test the hypothesis** — add a `cout` or use the debugger to inspect state.
+5. **Fix one thing at a time** — confirm each fix before moving on.
+
+## The `cin` + `getline` name-reading bug
+
+A classic bug: a program reads a name with `cin >>` expecting one word, but full names have spaces, so `getline` is needed instead. Without the fix:
+
+```cpp
+std::string nurseName, patientName;
+
+std::cout << "Enter nurse's name: ";
+std::cin >> nurseName;           // reads only first word, leaves rest in buffer
+
+std::cout << "Enter patient's name: ";
+std::cin >> patientName;         // picks up second word of nurse's name!
+```
+
+For names with spaces, use `getline` throughout, and ensure there is no leftover newline before the first call:
+
+```cpp
+std::string nurseName, patientName;
+
+// If anything was read with >> before this, call:
+// std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+std::cout << "Enter nurse's name: ";
+std::getline(std::cin, nurseName);
+
+std::cout << "Enter patient's name: ";
+std::getline(std::cin, patientName);
+```
+
+Now "Josephine Nightingale" stays together as the nurse's name.
+
+## Computing the mean
 
 ```cpp
 #include <vector>
-#include <algorithm>
-#include <stdexcept>
+#include <numeric>   // for std::accumulate
 
-double median(std::vector<int> values) {
-  if (values.empty()) throw std::invalid_argument("empty");
-  auto mid = values.begin() + values.size() / 2;
-  std::nth_element(values.begin(), mid, values.end());
-  if (values.size() % 2 == 1) {
-    return *mid;
-  }
-  auto right = mid;
-  auto left = std::max_element(values.begin(), mid);
-  return (*left + *right) / 2.0;
+double mean(const std::vector<int>& v) {
+    if (v.empty()) return 0.0;
+    long long sum = 0;
+    for (int x : v) sum += x;
+    return static_cast<double>(sum) / static_cast<double>(v.size());
 }
 ```
 
-(Re-read your official PDF: some specs call for sorting fully or forbidding mutations—adapt accordingly.)
+Watch out for overflow: if the values are large and the vector is long, `int` can overflow. Use `long long` for the accumulator.
 
-## Pitfalls checklist
+## Computing the median
 
-- **Median with duplicates / even counts**—define tie-breaking exactly as rubric language.
-- **Empty files / read failures**—propagate return codes from `ReadData` before computing stats.
-- **Iterator invalidation**—if you resize while looping, reacquire iterators or index by subscript thoughtfully.
+The median is the middle value when the data is sorted. For even counts, it is the average of the two middle values.
 
-## Bridge to Lab 14 & Program 14
+```cpp
+#include <algorithm>   // for std::sort
 
-- **Lab 14**: Document what symptoms each bug produced before your fix—the narrative belongs in instructor-facing notes if requested.
-- **Program 14**: Demonstrate unreachable filename, successful parse, and statistical edge cases in the transcript.
+double median(std::vector<int> v) {   // pass by VALUE — we will sort it
+    if (v.empty()) return 0.0;
+    std::sort(v.begin(), v.end());
+
+    size_t n = v.size();
+    if (n % 2 == 1) {
+        return static_cast<double>(v[n / 2]);         // middle element
+    } else {
+        return (v[n/2 - 1] + v[n/2]) / 2.0;          // average of two middles
+    }
+}
+```
+
+Passing by value (not reference) means the sort happens on a copy—the caller's vector is unchanged. This is intentional when the caller still needs the original order.
+
+## Reading integers from a file into a vector
+
+```cpp
+#include <fstream>
+#include <vector>
+#include <string>
+#include <iostream>
+
+std::vector<int> readData(const std::string& filename, bool& ok) {
+    std::vector<int> data;
+    std::ifstream file(filename);
+    if (!file.is_open()) {
+        ok = false;
+        return data;
+    }
+    int val = 0;
+    while (file >> val) {
+        data.push_back(val);
+    }
+    ok = true;
+    return data;
+}
+```
+
+The function signals success/failure through the `bool&` parameter because the return value is already used for the data. An alternative is to return an empty vector and let the caller decide what "empty" means, but explicit status is clearer.
+
+## Prompting until a file opens
+
+```cpp
+std::string promptForFile() {
+    std::string name;
+    while (true) {
+        std::cout << "Enter filename: ";
+        std::cin >> name;
+        std::ifstream test(name);
+        if (test.is_open()) return name;
+        std::cout << "  Cannot open \"" << name << "\" — try again.\n";
+    }
+}
+```
+
+## Putting it all together
+
+```cpp
+int main() {
+    std::string filename = promptForFile();
+
+    bool ok = false;
+    std::vector<int> data = readData(filename, ok);
+    if (!ok || data.empty()) {
+        std::cout << "No data to process.\n";
+        return 1;
+    }
+
+    std::cout << "Count:  " << data.size()  << "\n";
+    std::cout << "Mean:   " << mean(data)   << "\n";
+    std::cout << "Median: " << median(data) << "\n";
+    return 0;
+}
+```
+
+## Looking ahead: exceptions
+
+`std::sort` and many STL operations can throw `std::bad_alloc` if memory runs out. A `try/catch` block gracefully handles these:
+
+```cpp
+try {
+    std::sort(v.begin(), v.end());
+} catch (const std::exception& e) {
+    std::cerr << "Error: " << e.what() << "\n";
+}
+```
+
+You will explore this further in later courses; for now, knowing the syntax exists is enough.
 
 ---
 
-You now have the full Spring term arc in note form—use search & sort on the Notes index to jump back by tag or week number.
+*The lab has you find and fix bugs in a provided program where full names break the I/O flow. The program loads integers from a file and computes mean and median.*

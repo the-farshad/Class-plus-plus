@@ -3,49 +3,151 @@ slug: week-2-notes
 title: "Week 2: Planning, selection, and bounded products"
 date: "2026-05-12"
 summary: "Pseudocode discipline; if/else menus; program multiplies every integer in an interval (order flexible)."
-tags: ["pseudocode","if-else","planning","loops","arithmetics"]
+tags: ["pseudocode", "if-else", "planning", "loops", "arithmetics"]
 week: 2
 ---
-# Week 2: Pseudocode, branching, and multiplying ranges
 
-This week pairs **Lab 02** with **Program 02** in Spring 2026. The lab stresses **planning** plus a single `if` ladder; the program introduces a bounded **product** accumulated with a loop—closely related to material on decisions and iteration in the text (calendar references through Ch. 4–5 territory).
+# Week 2: Decisions, Loops, and Thinking Before You Code
 
-## Concepts
+This week two ideas run in parallel: **how to plan a program** before writing any C++, and the **mechanics of making decisions and repeating work** inside that program.
 
-- **Planning first**: Pseudocode is an agreement with your future self—no angle brackets, only clear steps and branching.
-- **`if` / `else if` / `else` chains**: Each branch should be mutually exclusive where the assignment demands it. Decide what happens for out-of-range inputs *before* touching the keyboard.
-- **Looping products**: Multiplying consecutive integers is the same structural pattern as summing, except the neutral element is `1`, not `0`.
-- **Symmetric bounds**: When the user swaps “low” and “high,” the mathematical interval should not change. Capture both values, then normalize with two extra variables or `std::min` / `std::max` once you are allowed—early weeks often stick to straight comparisons.
+## Pseudocode: plan first, code second
+
+Pseudocode is a description of your algorithm in plain language. It is not C++—no semicolons, no braces. Its purpose is to let you work out the logic on paper so the coding step is mostly transcription.
+
+A reasonable pseudocode format for a simple menu program:
+
+```
+Display prompt asking for a number 1–4
+Read the number
+IF number == 1
+    Print "One is the loneliest number."
+ELSE IF number == 2
+    Print "Two can be as bad as one."
+ELSE IF number == 3
+    Print "Three is just confusing."
+ELSE IF number == 4
+    Print "Four means you are done."
+ELSE
+    Print "Input not in range."
+END IF
+```
+
+Notice that the out-of-range case is handled *explicitly*. Good pseudocode forces you to think about every branch, not just the happy path.
+
+## `if` / `else if` / `else`
+
+The C++ translation of the plan above is almost mechanical:
 
 ```cpp
 #include <iostream>
 
 int main() {
-  int start = 0;
-  int finish = 0;
-  std::cout << "Enter two berries picked per hour at start and end of shift: ";
-  std::cin >> start >> finish;
-  if (start > finish) {
-    int tmp = start;
-    start = finish;
-    finish = tmp;
-  }
-  long long basket = 1; // grows quickly; widen type if needed by spec
-  for (int bush = start; bush <= finish; ++bush) {
-    basket *= bush;
-  }
-  std::cout << "Throughput index (demo): " << basket << '\n';
-  return 0;
+    int choice = 0;
+    std::cout << "Enter a number (1-4): ";
+    std::cin >> choice;
+
+    if (choice == 1) {
+        std::cout << "One is the loneliest number.\n";
+    } else if (choice == 2) {
+        std::cout << "Two can be as bad as one.\n";
+    } else if (choice == 3) {
+        std::cout << "Three is just confusing.\n";
+    } else if (choice == 4) {
+        std::cout << "Four means you are done.\n";
+    } else {
+        std::cout << "Input not in range.\n";
+    }
+    return 0;
 }
 ```
 
-## Pitfalls checklist
+Key points:
+- `==` tests equality; `=` assigns. Confusing them is one of the most common bugs in C++.
+- Exactly one branch executes. Once a condition is true, the rest are skipped.
+- The final `else` catches everything not handled above—always include it when the input might be invalid.
 
-- **Off-by-one** loops after swapping bounds—test when `start == finish` separately; the degenerate interval should collapse to one factor.
-- **Overflow**: Products explode faster than sums; when instructions allow, move to wider integer types sooner rather than debugging mysterious negatives.
-- **Echoing dialogs**: Write your transcript from experiments you personally ran—not from PDF boilerplate wording.
+## Comparison and logical operators
 
-## Bridge to Lab 02 & Program 02
+| Operator | Meaning |
+|----------|---------|
+| `==` | equal to |
+| `!=` | not equal to |
+| `<`, `<=` | less than, less than or equal |
+| `>`, `>=` | greater than, greater than or equal |
+| `&&` | AND — both sides must be true |
+| `\|\|` | OR — at least one side must be true |
+| `!` | NOT — flips true/false |
 
-- **Lab 02**: Discrete menu keyed off one integer (`1 … 4` in the handout) plus out-of-range handling—no sentinel loop requested.
-- **Program 02**: Computes the product across every integer inside the inclusive interval dictated by user entry, tolerant of swapped ordering.
+Example: checking that a value is inside a range:
+
+```cpp
+if (x >= 1 && x <= 100) {
+    std::cout << "In range.\n";
+}
+```
+
+## Loops: the `for` loop
+
+A `for` loop is the right tool when you know in advance how many times you need to repeat something.
+
+```cpp
+// print the squares of 1 through 5
+for (int i = 1; i <= 5; ++i) {
+    std::cout << i << " squared = " << i * i << "\n";
+}
+```
+
+The three parts of the header:
+- `int i = 1` — initialization, runs once before the loop starts
+- `i <= 5` — condition checked before each iteration; loop ends when false
+- `++i` — update, runs after each iteration
+
+## Computing a product with a loop
+
+Summing a range uses `+= i`. Multiplying uses `*= i`, but the starting value must be `1` (not `0`—multiplying anything by 0 gives 0 forever).
+
+```cpp
+#include <iostream>
+
+int main() {
+    int low = 0, high = 0;
+    std::cout << "Enter two integers: ";
+    std::cin >> low >> high;
+
+    // make sure low <= high
+    if (low > high) {
+        int tmp = low;
+        low = high;
+        high = tmp;
+    }
+
+    long long product = 1;
+    for (int i = low; i <= high; ++i) {
+        product *= i;
+    }
+
+    std::cout << "Product from " << low << " to " << high
+              << " = " << product << "\n";
+    return 0;
+}
+```
+
+Two things to notice:
+- We swap `low` and `high` if the user entered them in the wrong order. The same interval `[3, 7]` should give the same product regardless of entry order.
+- We use `long long` because products grow very fast and overflow `int` quickly.
+
+## Edge cases to test
+
+Before submitting any program, run it on these classes of input:
+- The normal case (`low < high`)
+- Reversed order (`high < low`)
+- Same value (`low == high`) — should just be that one number
+- One of them is negative
+- Both negative
+
+Testing edge cases is what separates a working program from a lucky program.
+
+---
+
+*This week's lab has you write pseudocode and implement a menu with `if/else`. The program computes a series product over a user-specified interval.*

@@ -1,39 +1,126 @@
 ---
 slug: week-5-notes
-title: "Week 5: Float vs double precision and \u03c0 series"
+title: "Week 5: Float vs double precision and π series"
 date: "2026-05-15"
-summary: "Formatting with iomanip; reciprocal sums; alternating series for \u03c0 without pow/atan in the series step."
-tags: ["double","float","iomanip","series","numeric-error"]
+summary: "Formatting with iomanip; reciprocal sums; alternating series for π without pow/atan in the series step."
+tags: ["double", "float", "iomanip", "series", "numeric-error"]
 week: 5
 ---
-# Week 5: Precision tables and alternating series for π
 
-**Lab 05** compares **float vs. double** behavior on a reciprocal table similar to lecture’s `DoTable` demo—expect to adjust `iomanip` widths and `DBL_DIG`. **Program 05** evaluates a truncated **Madhava–Leibniz** style sum for π with user-chosen index limits, tight formatting, and no `pow` / `atan` shortcuts for the series term itself.
+# Week 5: Floating-Point Numbers and Why They Misbehave
 
-## Concepts
+Floating-point arithmetic is fast and flexible, but it is *not* exact. Understanding why, and knowing how to format output to expose the error, is an essential skill.
 
-- **Decimal vs. binary fractions**: `0.1` repeats in binary; summing millions of unlike magnitudes teaches you why `double` matters.
-- **`std::setprecision` + `fixed`**: Control significant figures for graders and for visual comparison between float/double runs.
-- **Alternating signs**: Track `(-1)^k` with a dedicated `sign` integer that flips each iteration—clearer than calling expensive helpers.
-- **Non-negative guard**: Reprompt until the limit meets the rubric—don’t silently clamp user error.
+## `float` vs `double`
 
-Illustrative term generator (not the full assignment loop):
+Both store approximate decimal numbers in binary. The difference is how many significant digits they carry:
+
+| Type | Approximate digits | Memory |
+|------|-------------------|--------|
+| `float` | ~7 | 4 bytes |
+| `double` | ~15–16 | 8 bytes |
+
+Always prefer `double` for scientific computation. `float` is only appropriate when memory is genuinely scarce (e.g., large arrays on embedded hardware).
 
 ```cpp
-double leibnizTerm(unsigned k) {
-  double sign = (k % 2u == 0u) ? 1.0 : -1.0;
-  double denom = static_cast<double>(2 * k + 1);
-  return 4.0 * sign / denom;
+float  f = 1.0f / 3.0f;  // ~0.333333343267...  (7 sig digits, then noise)
+double d = 1.0  / 3.0;   // ~0.333333333333333  (15 sig digits, then noise)
+```
+
+## Why binary fractions go wrong
+
+Decimal `0.1` cannot be represented exactly in binary (just as `1/3` cannot be represented exactly in decimal). This means even simple additions can drift:
+
+```cpp
+double x = 0.1 + 0.2;
+// x is 0.30000000000000004, not 0.3
+```
+
+This matters when you accumulate many operations—each step may introduce a tiny rounding error, and those errors pile up.
+
+## Formatting output with `<iomanip>`
+
+To see the full precision of a double, use stream manipulators:
+
+```cpp
+#include <iostream>
+#include <iomanip>
+
+int main() {
+    double value = 1.0 / 3.0;
+    std::cout << value << "\n";                           // 0.333333   (default 6 sig figs)
+    std::cout << std::fixed << std::setprecision(15)
+              << value << "\n";                           // 0.333333333333333
+    return 0;
 }
 ```
 
-## Pitfalls checklist
+Common manipulators:
 
-- **Printing more precision than the type holds**—align column widths with `DBL_DIG` commentary in your lab transcript.
-- **Using prohibited library helpers** in the series core when the PDF forbids them—read the bullet list literally.
-- **K vs. iteration count**: Know whether the loop inclusive upper bound matches the PDF variable name (off-by-one bugs love this assignment).
+| Manipulator | Effect |
+|-------------|--------|
+| `std::fixed` | decimal notation (not scientific) |
+| `std::scientific` | scientific notation `1.23e+04` |
+| `std::setprecision(n)` | `n` digits after decimal (with `fixed`) or `n` sig figs |
+| `std::setw(n)` | minimum field width (right-aligned) |
+| `std::left` / `std::right` | alignment within field |
 
-## Bridge to Lab 05 & Program 05
+These manipulators are *sticky*—once set, they stay in effect for all subsequent output until changed.
 
-- **Lab 05**: Side-by-side narrative in `Lab05Test.txt` explaining how float rounding diverged from double at the same recipe.
-- **Program 05**: Show convergence numerically in the transcript—larger admissible `k`, closer to catalog π on your platform.
+## Comparing float and double on a reciprocal sum
+
+Here is an experiment showing the drift difference. The sum `1 + 1/2 + 1/3 + ... + 1/n` has a known mathematical value that grows slowly. Computing it in `float` vs `double` reveals accumulated rounding error:
+
+```cpp
+#include <iostream>
+#include <iomanip>
+
+int main() {
+    int n = 1000000;
+    float  sumF = 0.0f;
+    double sumD = 0.0;
+
+    for (int i = 1; i <= n; ++i) {
+        sumF += 1.0f / static_cast<float>(i);
+        sumD += 1.0  / static_cast<double>(i);
+    }
+
+    std::cout << std::fixed << std::setprecision(10);
+    std::cout << "float  sum: " << sumF << "\n";
+    std::cout << "double sum: " << sumD << "\n";
+    // The float result diverges noticeably from the double
+    return 0;
+}
+```
+
+## Alternating series and sign tracking
+
+Some series alternate between adding and subtracting terms. A clean way to track the sign without calling `pow`:
+
+```cpp
+double sign = 1.0;
+for (int k = 0; k <= maxK; ++k) {
+    double term = sign / (2.0 * k + 1.0);
+    sum += term;
+    sign = -sign;     // flip for next iteration
+}
+```
+
+This pattern is useful whenever a formula has `(-1)^k` in it.
+
+## Prompting until a valid value
+
+When an assignment says "the index must be non-negative," implement that literally:
+
+```cpp
+int maxK = -1;
+while (maxK < 0) {
+    std::cout << "Enter max index k (>= 0): ";
+    std::cin >> maxK;
+    if (maxK < 0) std::cout << "  Must be non-negative.\n";
+}
+```
+
+---
+
+*The lab this week has you adapt an existing program from `float` to `double` and produce a comparison table. The program computes a well-known series—show convergence by increasing the limit.*
