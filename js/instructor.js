@@ -383,6 +383,31 @@ function showStudentMgmt(c) {
 
 $("close-student-mgmt").addEventListener("click", () => hide("student-management"));
 
+$("btn-csv-upload").addEventListener("click", async () => {
+  const file = $("csv-upload").files[0];
+  if (!file) { setStatus("csv-status", "Choose a CSV file first.", "error"); return; }
+  if (!activeMgmtClass) { setStatus("csv-status", "Open a class roster first.", "error"); return; }
+  setStatus("csv-status", "Parsing…");
+  try {
+    const text = await file.text();
+    const lines = text.trim().split(/\r?\n/).filter(l => l.trim());
+    // Skip header row if it starts with "email" (case-insensitive)
+    const dataLines = lines[0]?.toLowerCase().startsWith("email") ? lines.slice(1) : lines;
+    const students = dataLines.map(line => {
+      const parts = line.split(",").map(s => s.trim().replace(/^"|"$/g, ""));
+      return { email: parts[0] || "", student_id: parts[1] || "" };
+    }).filter(s => s.email && s.email.includes("@"));
+    if (!students.length) { setStatus("csv-status", "No valid email rows found.", "error"); return; }
+    setStatus("csv-status", `Uploading ${students.length} students…`);
+    const res = await api.bulkAddClassStudents(activeMgmtClass.id, students);
+    setStatus("csv-status", `Added ${res.added} students`, "success");
+    $("csv-upload").value = "";
+    loadClassStudents();
+  } catch (err) {
+    setStatus("csv-status", err.message, "error");
+  }
+});
+
 $("add-student-form").addEventListener("submit", async (e) => {
   e.preventDefault();
   const email = $("student-email").value.trim();
@@ -524,9 +549,21 @@ function renderActivities(list_data) {
     view.textContent = a.type === "submission" ? "Responses" : "Results";
     view.addEventListener("click", () => showLiveResults(a));
 
+    const editBtn = document.createElement("button");
+    editBtn.className = "secondary sm";
+    editBtn.innerHTML = `<i data-lucide="edit-2" style="width:13px;height:13px;"></i>`;
+    editBtn.title = "Edit prompt / difficulty";
+    editBtn.addEventListener("click", () => {
+      $("edit-activity-id").value = a.activity_id;
+      $("edit-activity-prompt").value = a.prompt;
+      $("edit-activity-difficulty").value = a.difficulty || "medium";
+      show("modal-edit-activity");
+      show("modal-overlay");
+    });
+
     const qrBtn = document.createElement("button");
     qrBtn.className = "secondary sm";
-    qrBtn.innerHTML = `<i data-lucide="qr-code" style="width:14px;height:14px;"></i>`;
+    qrBtn.innerHTML = `<i data-lucide="qr-code" style="width:13px;height:13px;"></i>`;
     qrBtn.title = "Show QR Code";
     qrBtn.addEventListener("click", () => showQR(a));
 
@@ -540,7 +577,7 @@ function renderActivities(list_data) {
       setTimeout(() => (linkBtn.textContent = "Copy link"), 1500);
     });
 
-    actions.append(toggle, view, qrBtn, linkBtn);
+    actions.append(toggle, view, editBtn, qrBtn, linkBtn);
     li.append(left, actions);
     list.appendChild(li);
   });
@@ -1051,5 +1088,11 @@ document.addEventListener("keydown", (e) => {
 
 // ---------- Boot ----------
 
-if (session.token) enterDashboard();
-else showSignIn();
+if (session.token) {
+  // Verify the stored token is still valid before showing the dashboard
+  api.getStats()
+    .then(() => enterDashboard())
+    .catch(() => { session.clear(); showSignIn(); });
+} else {
+  showSignIn();
+}

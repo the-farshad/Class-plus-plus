@@ -18,10 +18,10 @@
     <div class="inner">
       <a class="brand" href="/instructor/">
         <span class="brand-mark">C++</span>
-        <span>Class<span style="color: var(--brand)">++</span></span>
+        <span>Class++</span>
         <span class="brand-tag">Instructor</span>
       </a>
-      <nav style="align-items: center; gap: 1rem;">
+      <nav>
         <a href="/">Student view</a>
         <a href="/blog/">Notes</a>
         <div class="theme-selector-wrapper">
@@ -48,20 +48,18 @@
     // no nav-active needed on instructor — all links are external
   </script>
 
-  <main style="max-width:100%;padding:0;">
-    <section id="signin-card" class="card feature" style="max-width: 600px; margin: 4rem auto;" hidden>
-      <div class="flex-center" style="flex-direction: column; text-align: center; padding: 1rem 0;">
-        <h2>Instructor Sign-in</h2>
-        <p class="muted">Sign in with the Google account on the authorized instructors list.</p>
-        <div id="g_id_signin" style="margin-top: 1rem;"></div>
-        <div id="signin-status" class="status"></div>
-      </div>
+  <main style="max-width:100%;padding:0;flex:1;">
+    <section id="signin-card" class="card" style="max-width:520px;margin:3rem auto;" hidden>
+      <h2 style="margin:0 0 0.35rem;">Instructor Sign-in</h2>
+      <p class="muted" style="margin:0 0 1.25rem;">Sign in with the Google account on the authorized instructors list.</p>
+      <div id="g_id_signin"></div>
+      <div id="signin-status" class="status"></div>
     </section>
 
-    <section id="forbidden-card" class="card" style="max-width: 600px; margin: 4rem auto; text-align: center;" hidden>
-      <h2>Not Authorized</h2>
-      <p class="muted">Your account is signed in but doesn't have instructor access.</p>
-      <button id="forbidden-signout" class="secondary" style="margin-top: 1rem;">Sign out</button>
+    <section id="forbidden-card" class="card" style="max-width:520px;margin:3rem auto;" hidden>
+      <h2 style="margin:0 0 0.35rem;">Not authorized</h2>
+      <p class="muted" style="margin:0 0 1.25rem;">Your account is not on the instructor list.</p>
+      <button id="forbidden-signout" class="secondary sm">Sign out</button>
     </section>
 
     <div id="dashboard" class="dashboard-layout" hidden>
