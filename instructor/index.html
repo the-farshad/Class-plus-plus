@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@600;700;800&family=Lora:wght@400;500;600&family=Ubuntu:wght@400;500;700&family=Roboto+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/styles.css?v=55" />
+  <link rel="stylesheet" href="/css/styles.css?v=56" />
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -204,17 +204,7 @@
               </div>
 
               <div style="display:flex;gap:0.65rem;flex-wrap:wrap;align-items:flex-end;margin-top:0.75rem;">
-                <div class="field" style="margin:0;flex:1;min-width:110px;">
-                  <label>Difficulty</label>
-                  <select id="activity-difficulty">
-                    <option value="easy">Easy</option>
-                    <option value="medium">Medium</option>
-                    <option value="hard">Hard</option>
-                    <option value="ai-proof">AI-Proof</option>
-                    <option value="ai-collab">AI-Collab</option>
-                  </select>
-                </div>
-                <div class="field" style="margin:0;flex:1.5;min-width:130px;">
+                <div class="field" style="margin:0;flex:1;min-width:160px;">
                   <label>Class</label>
                   <select id="class-selector"><option value="">Global</option></select>
                 </div>
@@ -426,16 +416,6 @@
             <i data-lucide="plus" style="width:13px;height:13px;"></i> Add option
           </button>
         </div>
-        <div class="field">
-          <label>Difficulty</label>
-          <select id="edit-activity-difficulty">
-            <option value="easy">Easy</option>
-            <option value="medium">Medium</option>
-            <option value="hard">Hard</option>
-            <option value="ai-proof">AI-Proof</option>
-            <option value="ai-collab">AI-Collab</option>
-          </select>
-        </div>
         <button type="submit" style="width:100%;">Save</button>
         <div id="edit-activity-status" class="status"></div>
       </form>
@@ -474,9 +454,9 @@
 
   <div class="build-chip" data-version></div>
 
-  <script type="module" src="/js/instructor.js?v=55"></script>
+  <script type="module" src="/js/instructor.js?v=56"></script>
   <script type="module">
-    import { bootPage } from "/js/ui.js?v=55";
+    import { bootPage } from "/js/ui.js?v=56";
     bootPage();
   </script>
 </body>

@@ -693,13 +693,12 @@ function renderActivities(list_data) {
     const editBtn = document.createElement("button");
     editBtn.className = "secondary sm";
     editBtn.innerHTML = `<i data-lucide="edit-2" style="width:13px;height:13px;"></i>`;
-    editBtn.title = "Edit prompt / difficulty";
+    editBtn.title = "Edit prompt";
     editBtn.setAttribute("aria-label", `Edit activity: ${a.prompt}`);
     editBtn.addEventListener("click", () => {
       $("edit-activity-id").value = a.activity_id;
       $("edit-activity-type-val").value = a.type;
       $("edit-activity-prompt").value = a.prompt;
-      $("edit-activity-difficulty").value = a.difficulty || "medium";
 
       // Populate poll options if applicable
       const isPoll = a.type === "poll" || a.type === "poll_pie";
@@ -1257,9 +1256,8 @@ $("edit-activity-form").addEventListener("submit", async (e) => {
   const id = $("edit-activity-id").value;
   const type = $("edit-activity-type-val").value;
   const prompt = $("edit-activity-prompt").value.trim();
-  const difficulty = $("edit-activity-difficulty").value;
 
-  const payload = { prompt, difficulty };
+  const payload = { prompt };
 
   if (type === "poll" || type === "poll_pie") {
     const options = getOptionValues("edit-poll-options-list");
