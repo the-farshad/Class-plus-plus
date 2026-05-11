@@ -105,9 +105,11 @@ function syncThemeColor(theme) {
 export const api = {
   // Theme Management
   initTheme: () => {
+    // Sepia is the default for first-time visitors. Users who pick another
+    // theme via the settings drawer have it stored in localStorage and
+    // that always wins.
     const saved = localStorage.getItem("classpp.theme");
-    const system = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-    const theme = saved || system;
+    const theme = saved || "sepia";
     document.documentElement.setAttribute("data-theme", theme);
     syncThemeColor(theme);
   },
