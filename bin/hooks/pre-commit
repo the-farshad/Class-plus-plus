@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+# pre-commit hook: auto-bump js/version.js on every commit so each deployed
+# build has a fresh, monotonically increasing build number visible in the UI.
+#
+# Activated by: git config core.hooksPath bin/hooks
+# (already set in this clone; the file lives under bin/hooks so it's versioned.)
+#
+# Skipped automatically during merges, rebases, cherry-picks, and reverts so
+# the version number isn't bumped twice for what's really one logical change.
+
+set -euo pipefail
+
+GIT_DIR=$(git rev-parse --git-dir)
+
+# Skip during merge / rebase / cherry-pick / revert / am.
+if [[ -f "$GIT_DIR/MERGE_HEAD"   \
+   || -f "$GIT_DIR/CHERRY_PICK_HEAD" \
+   || -f "$GIT_DIR/REVERT_HEAD"  \
+   || -d "$GIT_DIR/rebase-merge" \
+   || -d "$GIT_DIR/rebase-apply" ]]; then
+  exit 0
+fi
+
+# Only bump if there's actually something staged — empty commits or amends
+# without changes shouldn't churn the build number.
+if git diff --cached --quiet; then
+  exit 0
+fi
+
+ROOT=$(git rev-parse --show-toplevel)
+"$ROOT/bin/bump-version" >&2
+git add "$ROOT/js/version.js"
