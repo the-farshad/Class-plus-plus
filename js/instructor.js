@@ -117,12 +117,45 @@ async function loadStats() {
         plugins: { legend: { display: false } }
       }
     });
+    
+    $("export-csv-all").disabled = false;
   } catch (err) {
     console.error("Failed to load stats", err);
   }
 }
 
 $("refresh-stats").addEventListener("click", loadStats);
+
+$("export-csv-all").addEventListener("click", async () => {
+  try {
+    $("export-csv-all").textContent = "Exporting...";
+    const res = await api.exportGlobalRoster();
+    if (!res.roster.length) {
+      alert("No students in database.");
+      $("export-csv-all").textContent = "Global Statistics";
+      return;
+    }
+    
+    const rows = [["Student Email", "Student ID", "Class Code", "Class Name"]];
+    res.roster.forEach(r => {
+      rows.push([r.student_email, r.student_id || "", r.class_code || "", r.class_name || ""]);
+    });
+    
+    const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `global-roster-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    $("export-csv-all").textContent = "Global Statistics";
+  } catch (err) {
+    alert("Export failed: " + err.message);
+    $("export-csv-all").textContent = "Global Statistics";
+  }
+});
+
 
 // ---------- Tabs ----------
 function initTabs() {
@@ -216,6 +249,18 @@ function renderClassList() {
     rosterBtn.textContent = "Students";
     rosterBtn.addEventListener("click", () => showStudentMgmt(c));
 
+    const editBtn = document.createElement("button");
+    editBtn.className = "secondary sm";
+    editBtn.innerHTML = `<i data-lucide="edit-2" style="width:14px;height:14px;"></i>`;
+    editBtn.title = "Edit Class";
+    editBtn.addEventListener("click", () => {
+      $("edit-class-id").value = c.id;
+      $("edit-class-name").value = c.name;
+      $("edit-class-code").value = c.code || "";
+      show("modal-edit-class");
+      show("modal-overlay");
+    });
+
     const delBtn = document.createElement("button");
     delBtn.className = "secondary sm";
     delBtn.textContent = "Delete";
@@ -225,11 +270,35 @@ function renderClassList() {
       loadClasses();
     });
     
-    actions.append(rosterBtn, delBtn);
+    actions.append(rosterBtn, editBtn, delBtn);
     li.append(info, actions);
     list.appendChild(li);
   });
+  if (window.lucide) window.lucide.createIcons();
 }
+
+// Edit Class Modal logic
+$("close-edit-class").addEventListener("click", () => { hide("modal-edit-class"); hide("modal-overlay"); });
+$("edit-class-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const id = $("edit-class-id").value;
+  const name = $("edit-class-name").value.trim();
+  const code = $("edit-class-code").value.trim();
+  setStatus("edit-class-status", "Saving...");
+  try {
+    await api.updateClass(id, { name, code });
+    setStatus("edit-class-status", "Saved!", "success");
+    setTimeout(() => {
+      hide("modal-edit-class");
+      hide("modal-overlay");
+      setStatus("edit-class-status", "");
+      loadClasses();
+    }, 500);
+  } catch (err) {
+    setStatus("edit-class-status", err.message, "error");
+  }
+});
+
 
 // ---------- Students ----------
 
@@ -622,6 +691,15 @@ emoveInstructor(row.email);
       list.appendChild(li);
     });
   } catch (err) {
+    list.innerHTML = `<li class="muted">Error: ${escapeHTML(err.message)}</li>`;
+  }
+}
+
+// ---------- Boot ----------
+
+if (session.token) enterDashboard();
+else showSignIn();
+ch (err) {
     list.innerHTML = `<li class="muted">Error: ${escapeHTML(err.message)}</li>`;
   }
 }

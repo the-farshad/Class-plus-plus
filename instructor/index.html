@@ -288,6 +288,58 @@
 
       </div>
     </div>
+
+    <!-- Modals -->
+    <div id="modal-edit-class" class="card feature" style="position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); z-index:100; max-width:500px; width:100%; box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);" hidden>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+        <h2 style="margin:0;">Edit Class</h2>
+        <button id="close-edit-class" class="secondary sm" style="padding:0.4rem; box-shadow:none;"><i data-lucide="x" style="width:16px;height:16px;"></i></button>
+      </div>
+      <form id="edit-class-form">
+        <input type="hidden" id="edit-class-id" />
+        <div class="field">
+          <label>Class Name</label>
+          <input type="text" id="edit-class-name" required />
+        </div>
+        <div class="field">
+          <label>Code</label>
+          <input type="text" id="edit-class-code" />
+        </div>
+        <button type="submit" style="width:100%;">Save Changes</button>
+        <div id="edit-class-status" class="status"></div>
+      </form>
+    </div>
+
+    <div id="modal-edit-activity" class="card feature" style="position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); z-index:100; max-width:600px; width:100%; box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);" hidden>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+        <h2 style="margin:0;">Edit Activity</h2>
+        <button id="close-edit-activity" class="secondary sm" style="padding:0.4rem; box-shadow:none;"><i data-lucide="x" style="width:16px;height:16px;"></i></button>
+      </div>
+      <form id="edit-activity-form">
+        <input type="hidden" id="edit-activity-id" />
+        <div class="field">
+          <label>Prompt / Question</label>
+          <textarea id="edit-activity-prompt" required rows="3"></textarea>
+        </div>
+        <div class="row" style="gap:1rem; margin-bottom: 1rem;">
+          <div class="field" style="margin:0; flex:1;">
+            <label>Difficulty</label>
+            <select id="edit-activity-difficulty">
+              <option value="easy">Easy</option>
+              <option value="medium">Medium</option>
+              <option value="hard">Hard</option>
+              <option value="ai-proof">AI-Proof</option>
+              <option value="ai-collab">AI-Collab</option>
+            </select>
+          </div>
+        </div>
+        <button type="submit" style="width:100%;">Save Changes</button>
+        <div id="edit-activity-status" class="status"></div>
+      </form>
+    </div>
+
+    <div id="modal-overlay" style="position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:90; backdrop-filter:blur(4px);" hidden></div>
+
   </main>
 
   <script type="module" src="/js/instructor.js"></script>
