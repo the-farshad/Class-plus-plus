@@ -1339,7 +1339,18 @@ tbody tr:hover { background: var(--interactive); }
 .signin-hero .g-button-wrap {
   display: flex;
   justify-content: center;
-  margin-top: 0.25rem;
+  align-items: center;
+  margin-top: 0.5rem;
+  padding: 0.9rem 1rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  min-height: 56px;
+}
+.signin-hero .g-button-wrap:empty::before {
+  content: "Loading Google sign-in…";
+  color: var(--muted);
+  font-size: 0.85rem;
 }
 
 /* ---------- Activity Picker ---------- */
