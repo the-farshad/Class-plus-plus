@@ -11,6 +11,7 @@ import { rosterRouter } from "./routes/roster.js";
 import { allowlistRouter } from "./routes/allowlist.js";
 import { instructorsRouter } from "./routes/instructors.js";
 import { classesRouter } from "./routes/classes.js";
+import { studentClassesRouter } from "./routes/student-classes.js";
 import { requireInstructor } from "./auth.js";
 
 migrate();
@@ -51,6 +52,7 @@ app.use("/admin/roster", rosterRouter);
 app.use("/admin/allowlist", allowlistRouter);
 app.use("/admin/instructors", instructorsRouter);
 app.use("/admin/classes", classesRouter);
+app.use("/classes", studentClassesRouter);
 
 app.get("/admin/stats", requireInstructor, (req, res) => {
   const students = db.prepare("SELECT COUNT(DISTINCT student_email) as count FROM class_students").get().count;

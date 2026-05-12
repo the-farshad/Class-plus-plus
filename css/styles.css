@@ -2003,6 +2003,31 @@ tbody tr:hover { background: var(--interactive); }
   font-weight: 600;
 }
 
+/* "Correct" toggle next to each option in the new-activity form. */
+.option-correct-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+  color: var(--subtle);
+  font-weight: 700;
+  font-size: 0.85rem;
+  margin: 0;
+}
+.option-correct-toggle input { position: absolute; opacity: 0; pointer-events: none; }
+.option-correct-toggle:has(input:checked) {
+  background: var(--success-soft);
+  border-color: var(--success);
+  color: var(--success);
+}
+
 /* ---------- Poll Options Builder ---------- */
 .option-row {
   display: flex;

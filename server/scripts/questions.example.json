@@ -8,7 +8,8 @@
       "`<stdio.h>`",
       "`<cstdlib>`",
       "`<string>`"
-    ]
+    ],
+    "correct_index": 0
   },
   {
     "session_tag": "week01",
@@ -20,6 +21,11 @@
       "`std::cin >> a; std::cin >> b; std::cin >> c; std::cin >> d;`",
       "`scanf(\"%d %d %d %d\", &a, &b, &c, &d);` *(C-style, but legal in C++)*",
       "`std::cin = a + b + c + d;`"
+    ],
+    "correct_indices": [
+      0,
+      2,
+      3
     ]
   },
   {
@@ -57,7 +63,8 @@
       "After each iteration",
       "Only once at the start of the program",
       "Never — you must `break` out manually"
-    ]
+    ],
+    "correct_index": 0
   },
   {
     "session_tag": "week02",
@@ -68,6 +75,10 @@
       "So the `while` loop is guaranteed to terminate",
       "Because C++ requires the smaller value on the left of `<`",
       "Because the running product would otherwise be negative"
+    ],
+    "correct_indices": [
+      0,
+      1
     ]
   },
   {
@@ -92,7 +103,8 @@
       "`120`",
       "`90`",
       "`72`"
-    ]
+    ],
+    "correct_index": 0
   },
   {
     "session_tag": "week03",
@@ -103,7 +115,8 @@
       "`while`",
       "`do … while`",
       "range-based `for`"
-    ]
+    ],
+    "correct_index": 2
   },
   {
     "session_tag": "week03",
@@ -115,6 +128,11 @@
       "`int i = 1; do { std::cout << i++ << ' '; } while (i <= 10);`",
       "`for (int i = 1; i < 10; ++i) std::cout << i << ' ';` *(off-by-one)*",
       "`for (int i = 0; i++ < 10; ) std::cout << i << ' ';`"
+    ],
+    "correct_indices": [
+      0,
+      1,
+      2
     ]
   },
   {
@@ -153,7 +171,8 @@
       "`bool` (true on success)",
       "`void` (mutates a reference parameter)",
       "`std::string` (returns the raw input)"
-    ]
+    ],
+    "correct_index": 0
   },
   {
     "session_tag": "week04",
@@ -165,6 +184,12 @@
       "`factorial(20)` overflows a 32-bit `int`",
       "Tail-call optimization is required for it to terminate",
       "It can also be written iteratively with the same result"
+    ],
+    "correct_indices": [
+      0,
+      1,
+      2,
+      4
     ]
   },
   {
@@ -201,7 +226,8 @@
       "`+1/11`",
       "`-1/9`",
       "`-1/13`"
-    ]
+    ],
+    "correct_index": 0
   },
   {
     "session_tag": "week05",
@@ -213,6 +239,11 @@
       "Use `((k % 2) == 0) ? 1 : -1`",
       "Multiply by the current loop index `k`",
       "Just rely on integer overflow"
+    ],
+    "correct_indices": [
+      0,
+      1,
+      2
     ]
   },
   {
@@ -240,7 +271,8 @@
       "`3.14159…`",
       "`2.8951…`",
       "`4.0000…`"
-    ]
+    ],
+    "correct_index": 0
   },
   {
     "session_tag": "week06",
@@ -251,7 +283,8 @@
       "`5`",
       "`6`",
       "`8`"
-    ]
+    ],
+    "correct_index": 0
   },
   {
     "session_tag": "week06",
@@ -263,6 +296,11 @@
       "`d = -2, h = 6, t = 1`  *(negative diameter)*",
       "`d = 0,  h = 6, t = 0`  *(zero diameter)*",
       "`d = 8,  h = 8, t = 4`"
+    ],
+    "correct_indices": [
+      0,
+      2,
+      3
     ]
   },
   {
@@ -298,7 +336,8 @@
       "`1` to `5`",
       "`0` to `5`",
       "`1` to `4`"
-    ]
+    ],
+    "correct_index": 0
   },
   {
     "session_tag": "week07",
@@ -310,6 +349,13 @@
       "Out-of-bounds access is undefined behavior, not a runtime check",
       "An array's size must be known at compile time (without VLAs)",
       "`a[i]` is exactly equivalent to `*(a + i)`"
+    ],
+    "correct_indices": [
+      0,
+      1,
+      2,
+      3,
+      4
     ]
   },
   {
@@ -336,6 +382,13 @@
       "`*(p + 2)`",
       "`*p + 2`  *(this is `(*p) + 2 = 3 + 2 = 5`)*",
       "`p[1] + 3`  *(this is `1 + 3 = 4`)*"
+    ],
+    "correct_indices": [
+      0,
+      1,
+      2,
+      3,
+      5
     ]
   },
   {
@@ -347,7 +400,8 @@
       "`12`",
       "`34`",
       "`16`"
-    ]
+    ],
+    "correct_index": 1
   },
   {
     "session_tag": "week08",
@@ -359,6 +413,11 @@
       "`for (int i=0; i<ROWS*COLS; ++i) g[i / COLS][i % COLS] = 0;`",
       "`for (int r=0; r<COLS; ++r) for (int c=0; c<ROWS; ++c) g[r][c] = 0;` *(swapped)*",
       "`for (int r=0; r<ROWS; ++r) g[r] = 0;`  *(invalid)*"
+    ],
+    "correct_indices": [
+      0,
+      1,
+      2
     ]
   },
   {
@@ -383,7 +442,8 @@
       "`15`",
       "`24`",
       "`21`"
-    ]
+    ],
+    "correct_index": 0
   },
   {
     "session_tag": "week09",
@@ -394,7 +454,8 @@
       "Pointer parameters that need to be dereferenced with `*m` and `*b`",
       "Local variables that don't escape the function",
       "Default arguments equal to the address-of"
-    ]
+    ],
+    "correct_index": 0
   },
   {
     "session_tag": "week09",
@@ -406,6 +467,11 @@
       "`double m = 0, b = 0; LLParams(xs, ys, n, m, b);`",
       "`LLParams(xs, ys, 5, 0.0, 0.0);` *(literals to references)*",
       "`LLParams(xs.data(), ys.data(), xs.size(), m, b);` *(if `xs`,`ys` are vectors)*"
+    ],
+    "correct_indices": [
+      0,
+      2,
+      4
     ]
   },
   {
@@ -429,7 +495,8 @@
       "`m = 1.5,  b = 0`",
       "`m = 1,    b = 1`",
       "`m = 2.5,  b = -2`"
-    ]
+    ],
+    "correct_index": 0
   },
   {
     "session_tag": "week10",
@@ -440,7 +507,8 @@
       "Only when `delete` is explicitly called",
       "Once at program startup",
       "Whenever a const member function is called"
-    ]
+    ],
+    "correct_index": 0
   },
   {
     "session_tag": "week10",
@@ -452,6 +520,11 @@
       "Destructor",
       "Default constructor",
       "Move constructor (Rule of Five only)"
+    ],
+    "correct_indices": [
+      0,
+      1,
+      2
     ]
   },
   {
@@ -476,6 +549,11 @@
       "Loop and copy each coefficient value from `other` into the new array",
       "Just write `this->coeffs_ = other.coeffs_;`  *(this is the BUG — shallow copy)*",
       "Leave `this->coeffs_` uninitialized and let the compiler handle it"
+    ],
+    "correct_indices": [
+      0,
+      1,
+      2
     ]
   },
   {
@@ -487,7 +565,8 @@
       "`'\\n'`",
       "`-1`",
       "`EOF`"
-    ]
+    ],
+    "correct_index": 0
   },
   {
     "session_tag": "week11",
@@ -499,6 +578,12 @@
       "`operator[]` (indexing)",
       "`operator<<` (stream output)",
       "`operator++` (increment — not meaningful for strings)"
+    ],
+    "correct_indices": [
+      0,
+      1,
+      2,
+      3
     ]
   },
   {
@@ -522,7 +607,8 @@
       "Compile error — references can't be reused",
       "Prints `\"hi\"` correctly because `a` still owns its own buffer",
       "Memory leak only; output is fine"
-    ]
+    ],
+    "correct_index": 0
   },
   {
     "session_tag": "week12",
@@ -533,7 +619,8 @@
       "`int* p = malloc(int);`",
       "`int p = new int;`",
       "`int* p = int();`"
-    ]
+    ],
+    "correct_index": 0
   },
   {
     "session_tag": "week12",
@@ -545,6 +632,11 @@
       "Forgetting to free in a class destructor that allocated with `new`",
       "Returning a `unique_ptr` from a function (it cleans up automatically)",
       "Using `new` inside a `try` block, throwing before `delete` (with no smart pointer)"
+    ],
+    "correct_indices": [
+      0,
+      2,
+      4
     ]
   },
   {
@@ -581,7 +673,8 @@
       "The **static** (compile-time) type of the pointer/reference",
       "The order classes are declared in",
       "Whether the call site is inside `main`"
-    ]
+    ],
+    "correct_index": 0
   },
   {
     "session_tag": "week13",
@@ -593,6 +686,12 @@
       "An abstract class has at least one pure virtual function (`= 0`)",
       "Slicing happens when you assign a derived object to a base **value** (not a reference / pointer)",
       "`override` is required by the compiler — without it, virtual dispatch fails"
+    ],
+    "correct_indices": [
+      0,
+      1,
+      2,
+      3
     ]
   },
   {
@@ -624,6 +723,11 @@
       "`d.speak();`  *(direct call on Dog)*",
       "`((Animal)d).speak();`  *(slicing — copy of Animal portion)*",
       "`static_cast<Animal>(d).speak();`  *(also slicing)*"
+    ],
+    "correct_indices": [
+      0,
+      1,
+      2
     ]
   },
   {
@@ -635,7 +739,8 @@
       "`std::list`",
       "`std::map`",
       "`std::set`"
-    ]
+    ],
+    "correct_index": 0
   },
   {
     "session_tag": "week14",
@@ -647,6 +752,12 @@
       "`for (size_t i = 0; i < v.size(); ++i) std::cout << v[i] << ' ';`",
       "`for (int i = 0; i <= v.size(); ++i) std::cout << v[i] << ' ';` *(off-by-one)*",
       "`std::for_each(v.begin(), v.end(), [](int x){ std::cout << x << ' '; });`"
+    ],
+    "correct_indices": [
+      0,
+      1,
+      2,
+      4
     ]
   },
   {

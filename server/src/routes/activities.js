@@ -118,14 +118,29 @@ activitiesRouter.post("/admin", requireInstructor, (req, res) => {
   const releaseAt = toMs(req.body && req.body.release_at);
   const dueAt = toMs(req.body && req.body.due_at);
 
+  // Correct answer:
+  //   poll, poll_pie   -> { "index": N }
+  //   poll_multi       -> { "indices": [a,b,...] }
+  //   ordering         -> not stored (canonical order)
+  //   else             -> null
+  let correctAnswer = null;
+  const ca = req.body && req.body.correct_answer;
+  if (type === "poll" || type === "poll_pie") {
+    const idx = ca && typeof ca.index === "number" ? ca.index : null;
+    if (idx !== null) correctAnswer = JSON.stringify({ index: idx });
+  } else if (type === "poll_multi") {
+    const arr = ca && Array.isArray(ca.indices) ? ca.indices.filter(n => Number.isInteger(n)) : null;
+    if (arr && arr.length) correctAnswer = JSON.stringify({ indices: arr });
+  }
+
   if (!prompt) return res.status(400).json({ ok: false, error: "Missing prompt" });
   const info = db.prepare(
     `INSERT INTO activities
        (prompt, status, asset_url, class_id, type, poll_options, difficulty,
-        scheduled_at, session_tag, release_at, due_at, created_at)
-     VALUES (?, 'open', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        scheduled_at, session_tag, release_at, due_at, correct_answer, created_at)
+     VALUES (?, 'open', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).run(prompt, assetUrl, classId, type, pollOptions, difficulty,
-        scheduledAt, sessionTag, releaseAt, dueAt, Date.now());
+        scheduledAt, sessionTag, releaseAt, dueAt, correctAnswer, Date.now());
   res.json({ ok: true, activity_id: info.lastInsertRowid });
   notifySSE();
 });

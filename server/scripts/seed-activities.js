@@ -58,8 +58,8 @@ if (wipe) {
 
 const insertActivity = db.prepare(`
   INSERT INTO activities
-    (prompt, type, status, poll_options, class_id, session_tag, release_at, due_at, created_at)
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    (prompt, type, status, poll_options, class_id, session_tag, release_at, due_at, correct_answer, created_at)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `);
 
 const now = Date.now();
@@ -72,6 +72,14 @@ entries.forEach((a, idx) => {
   // Pass {"status": "open"} in the JSON to override.
   const status = a.status === "open" ? "open" : "closed";
   const opts = a.options ? JSON.stringify(a.options) : null;
+  // Correct-answer payload: {"correct_index": N} for single-choice polls,
+  // {"correct_indices": [...]} for multi-choice. Stored as a JSON blob.
+  let correct = null;
+  if ((a.type === "poll" || a.type === "poll_pie") && typeof a.correct_index === "number") {
+    correct = JSON.stringify({ index: a.correct_index });
+  } else if (a.type === "poll_multi" && Array.isArray(a.correct_indices)) {
+    correct = JSON.stringify({ indices: a.correct_indices });
+  }
   insertActivity.run(
     a.prompt,
     a.type,
@@ -81,6 +89,7 @@ entries.forEach((a, idx) => {
     a.session_tag || null,
     toMs(a.release_at),
     toMs(a.due_at),
+    correct,
     now + idx
   );
   added++;

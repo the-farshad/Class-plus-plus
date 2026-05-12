@@ -387,7 +387,10 @@ function renderClassList() {
   classesCache.forEach(c => {
     const li = document.createElement("li");
     const info = document.createElement("div");
-    info.innerHTML = `<strong>${escapeHTML(c.code || "")} ${escapeHTML(c.name)}</strong>`;
+    info.innerHTML = `
+      <strong>${escapeHTML(c.code || "")} ${escapeHTML(c.name)}</strong>
+      ${c.join_code ? `<span class="muted" style="margin-left:0.5rem;font-family:var(--font-mono);font-size:0.78rem;">join: <strong style="color:var(--brand);">${escapeHTML(c.join_code)}</strong></span>` : ""}
+    `;
     const actions = document.createElement("div");
     actions.className = "row";
 
@@ -395,6 +398,45 @@ function renderClassList() {
     rosterBtn.className = "secondary sm";
     rosterBtn.innerHTML = `<i data-lucide="users" style="width:13px;height:13px;"></i> Roster`;
     rosterBtn.addEventListener("click", () => showStudentMgmt(c));
+
+    const qrBtn = document.createElement("button");
+    qrBtn.className = "secondary sm";
+    qrBtn.innerHTML = `<i data-lucide="qr-code" style="width:13px;height:13px;"></i> Join QR`;
+    qrBtn.title = "Share a QR code students can scan to self-enroll";
+    qrBtn.addEventListener("click", () => showClassJoinQR(c));
+
+    const statsBtn = document.createElement("button");
+    statsBtn.className = "secondary sm";
+    statsBtn.innerHTML = `<i data-lucide="bar-chart-3" style="width:13px;height:13px;"></i> Stats`;
+    statsBtn.title = "Per-activity correctness across this class";
+    statsBtn.addEventListener("click", () => showClassDetail(c));
+
+    const exportBtn = document.createElement("a");
+    exportBtn.className = "button secondary sm";
+    exportBtn.href = api.exportClassUrl(c.id);
+    exportBtn.target = "_blank";
+    exportBtn.rel = "noopener";
+    // Append the auth token as a query param so the static <a> works
+    // even though the API expects a Bearer header normally. We don't —
+    // export endpoint reads the Authorization header. Use a fetch instead.
+    exportBtn.removeAttribute("href");
+    exportBtn.role = "button";
+    exportBtn.innerHTML = `<i data-lucide="download" style="width:13px;height:13px;"></i> CSV`;
+    exportBtn.title = "Export the class to CSV";
+    exportBtn.addEventListener("click", async (e) => {
+      e.preventDefault();
+      try {
+        const url = api.exportClassUrl(c.id);
+        const r = await fetch(url, { headers: { Authorization: `Bearer ${session.token}` } });
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        const blob = await r.blob();
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = `class-${c.code || c.id}-${new Date().toISOString().slice(0,10)}.csv`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+      } catch (err) { toast("Export failed: " + err.message, "error"); }
+    });
 
     const editBtn = document.createElement("button");
     editBtn.className = "secondary sm";
@@ -427,7 +469,7 @@ function renderClassList() {
       catch (err) { toast(err.message, "error"); }
     });
 
-    actions.append(rosterBtn, editBtn, delBtn);
+    actions.append(rosterBtn, qrBtn, statsBtn, exportBtn, editBtn, delBtn);
     li.append(info, actions);
     list.appendChild(li);
   });
@@ -595,6 +637,143 @@ $("add-student-form").addEventListener("submit", async (e) => {
   }
 });
 
+// ---- Join QR / Stats / Student detail modals ----
+function ensureCenterModal(id, widthPx = 480) {
+  let m = document.getElementById(id);
+  if (!m) {
+    m = document.createElement("div");
+    m.id = id;
+    m.className = "modal-center";
+    m.setAttribute("role", "dialog");
+    m.setAttribute("aria-modal", "true");
+    document.body.appendChild(m);
+  }
+  m.style.maxWidth = widthPx + "px";
+  return m;
+}
+
+function showClassJoinQR(c) {
+  if (!c.join_code) { toast("This class has no join code yet — re-create it.", "warning"); return; }
+  const m = ensureCenterModal("modal-class-qr", 420);
+  const joinUrl = `${location.origin}/?join=${encodeURIComponent(c.join_code)}`;
+  m.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.85rem;">
+      <h2 style="margin:0;font-size:1.05rem;">Join ${escapeHTML(c.name)}</h2>
+      <button id="close-class-qr" class="icon-btn" aria-label="Close"><i data-lucide="x" style="width:16px;height:16px;"></i></button>
+    </div>
+    <div id="class-qr-target" style="display:flex;justify-content:center;padding:0.85rem;background:#fff;border-radius:var(--radius);margin-bottom:0.85rem;"></div>
+    <div style="text-align:center;margin-bottom:0.5rem;">
+      <span class="muted" style="font-size:0.8rem;">Join code</span>
+      <div style="font-family:var(--font-mono);font-weight:800;font-size:1.6rem;letter-spacing:0.15em;color:var(--brand);">${escapeHTML(c.join_code)}</div>
+    </div>
+    <div style="display:flex;gap:0.4rem;">
+      <input type="text" id="class-qr-url" readonly value="${escapeHTML(joinUrl)}" style="flex:1;font-family:var(--font-mono);font-size:0.78rem;" />
+      <button id="class-qr-copy" class="secondary sm"><i data-lucide="copy" style="width:13px;height:13px;"></i></button>
+    </div>`;
+  show("modal-overlay");
+  m.hidden = false;
+  if (window.QRCode) new window.QRCode(document.getElementById("class-qr-target"), { text: joinUrl, width: 220, height: 220 });
+  if (window.lucide) window.lucide.createIcons();
+  document.getElementById("close-class-qr").addEventListener("click", () => { hide("modal-overlay"); m.hidden = true; });
+  document.getElementById("class-qr-copy").addEventListener("click", () => {
+    navigator.clipboard.writeText(joinUrl).then(() => toast("Link copied", "success"));
+  });
+}
+
+async function showClassDetail(c) {
+  const m = ensureCenterModal("modal-class-detail", 800);
+  m.innerHTML = `<p class="muted" style="padding:1rem;">Loading…</p>`;
+  show("modal-overlay");
+  m.hidden = false;
+  try {
+    const r = await api.getClassDetail(c.id);
+    const rows = r.activities.map(a => `
+      <tr>
+        <td><span class="muted" style="font-size:0.75rem;">${a.session_tag ? escapeHTML(a.session_tag.replace(/^week/, "Wk ")) : ""}</span></td>
+        <td style="max-width:340px;">${escapeHTML(a.prompt.slice(0, 120))}${a.prompt.length > 120 ? "…" : ""}</td>
+        <td>${escapeHTML(a.type)}</td>
+        <td style="text-align:right;font-variant-numeric:tabular-nums;">${a.responders} / ${r.total_students}</td>
+        <td style="text-align:right;font-variant-numeric:tabular-nums;">${a.accuracy_pct == null ? "—" : a.accuracy_pct + "%"}</td>
+        <td style="text-align:right;font-variant-numeric:tabular-nums;">${a.correct}${a.ungraded ? ` <span class="muted">(${a.ungraded} ungraded)</span>` : ""}</td>
+      </tr>`).join("");
+    m.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.85rem;">
+        <h2 style="margin:0;">${escapeHTML(c.code || "")} ${escapeHTML(c.name)} — stats</h2>
+        <button id="close-class-detail" class="icon-btn" aria-label="Close"><i data-lucide="x" style="width:16px;height:16px;"></i></button>
+      </div>
+      <p class="muted" style="font-size:0.85rem;margin:0 0 0.85rem;"><strong>${r.total_students}</strong> students in class · <strong>${r.activities.length}</strong> activities</p>
+      <div style="max-height:60vh;overflow:auto;border:1px solid var(--border);border-radius:var(--radius);">
+        <table style="margin:0;font-size:0.82rem;">
+          <thead><tr><th>Week</th><th>Prompt</th><th>Type</th><th style="text-align:right;">Responders</th><th style="text-align:right;">Accuracy</th><th style="text-align:right;">Correct</th></tr></thead>
+          <tbody>${rows || `<tr><td colspan="6" class="muted">No activities yet.</td></tr>`}</tbody>
+        </table>
+      </div>`;
+    if (window.lucide) window.lucide.createIcons();
+    document.getElementById("close-class-detail").addEventListener("click", () => { hide("modal-overlay"); m.hidden = true; });
+  } catch (err) {
+    m.innerHTML = `<p style="padding:1rem;color:var(--error);">Couldn't load: ${escapeHTML(err.message)}</p>`;
+  }
+}
+
+async function showStudentDetail(classId, student) {
+  const m = ensureCenterModal("modal-student-detail", 760);
+  m.innerHTML = `<p class="muted" style="padding:1rem;">Loading…</p>`;
+  show("modal-overlay");
+  m.hidden = false;
+  try {
+    const r = await api.getStudentDetail(classId, student.student_email);
+    const t = r.totals;
+    const pct = (t.total_answered - t.ungraded) > 0
+      ? Math.round(100 * t.correct / (t.total_answered - t.ungraded)) : null;
+    const rows = r.activities.map(a => {
+      const tag = a.session_tag ? `<span class="muted" style="font-size:0.72rem;">${escapeHTML(a.session_tag.replace(/^week/, "Wk "))}</span>` : "";
+      let ans = "—", correct = "—";
+      if (a.answered) {
+        if (a.student_answer.poll_indices && a.poll_options) {
+          ans = [...a.student_answer.poll_indices].sort()
+            .map(i => escapeHTML(a.poll_options[i] || String(i))).join(" · ");
+        } else if (a.student_answer.submission != null) {
+          ans = `<code>${escapeHTML(a.student_answer.submission)}</code>`;
+        }
+      }
+      if (a.correct_answer && a.poll_options) {
+        if (a.correct_answer.index != null) correct = escapeHTML(a.poll_options[a.correct_answer.index] || "");
+        else if (Array.isArray(a.correct_answer.indices)) correct = a.correct_answer.indices.map(i => escapeHTML(a.poll_options[i] || "")).join(" · ");
+      } else if (a.type === "ordering") correct = "canonical order";
+      const mark = a.is_correct === true ? `<span style="color:var(--success);">✓</span>`
+                 : a.is_correct === false ? `<span style="color:var(--error);">✗</span>`
+                 : `<span class="muted">—</span>`;
+      return `
+        <tr>
+          <td>${tag}</td>
+          <td style="max-width:280px;">${escapeHTML(a.prompt.slice(0,100))}${a.prompt.length>100?"…":""}</td>
+          <td style="font-size:0.82rem;">${ans}</td>
+          <td style="font-size:0.82rem;color:var(--muted);">${correct}</td>
+          <td style="text-align:center;font-weight:700;">${mark}</td>
+        </tr>`;
+    }).join("");
+    m.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.85rem;">
+        <h2 style="margin:0;">${escapeHTML(student.student_email)}</h2>
+        <button id="close-student-detail" class="icon-btn" aria-label="Close"><i data-lucide="x" style="width:16px;height:16px;"></i></button>
+      </div>
+      <p class="muted" style="font-size:0.85rem;margin:0 0 0.85rem;">
+        Answered <strong>${t.total_answered}</strong> of <strong>${t.total_activities}</strong> ·
+        Correct <strong style="color:var(--success);">${t.correct}</strong>${pct != null ? ` (${pct}%)` : ""}${t.ungraded ? ` · <strong>${t.ungraded}</strong> ungraded` : ""}
+      </p>
+      <div style="max-height:60vh;overflow:auto;border:1px solid var(--border);border-radius:var(--radius);">
+        <table style="margin:0;font-size:0.82rem;">
+          <thead><tr><th>Week</th><th>Prompt</th><th>Their answer</th><th>Correct</th><th style="text-align:center;">OK</th></tr></thead>
+          <tbody>${rows || `<tr><td colspan="5" class="muted">No activities in this class.</td></tr>`}</tbody>
+        </table>
+      </div>`;
+    if (window.lucide) window.lucide.createIcons();
+    document.getElementById("close-student-detail").addEventListener("click", () => { hide("modal-overlay"); m.hidden = true; });
+  } catch (err) {
+    m.innerHTML = `<p style="padding:1rem;color:var(--error);">Couldn't load: ${escapeHTML(err.message)}</p>`;
+  }
+}
+
 function showGeneratedPassword(email, password) {
   let modal = document.getElementById("modal-generated-pw");
   if (!modal) {
@@ -655,17 +834,20 @@ async function loadClassStudents() {
       const pwDot = s.has_password
         ? `<span title="Password set" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--success);margin-right:0.4rem;"></span>`
         : `<span title="No password yet" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--subtle);margin-right:0.4rem;"></span>`;
-      li.innerHTML = `
-        <div>
-          ${pwDot}<strong>${escapeHTML(s.student_email)}</strong>
-          ${s.student_name ? `<span class="muted"> · ${escapeHTML(s.student_name)}</span>` : ""}
-          ${s.student_id ? `<span class="muted"> · ${escapeHTML(s.student_id)}</span>` : ""}
-          <div class="meta" style="margin-top:0.2rem;">
-            <span style="color:var(--brand);font-weight:600;">${responses}</span>
-            response${responses === 1 ? "" : "s"}
-            (${s.vote_count || 0} poll · ${s.submission_count || 0} submission${(s.submission_count||0) === 1 ? "" : "s"})
-          </div>
+      const headerDiv = document.createElement("div");
+      headerDiv.style.cursor = "pointer";
+      headerDiv.title = "Click for full activity breakdown";
+      headerDiv.innerHTML = `
+        ${pwDot}<strong>${escapeHTML(s.student_email)}</strong>
+        ${s.student_name ? `<span class="muted"> · ${escapeHTML(s.student_name)}</span>` : ""}
+        ${s.student_id ? `<span class="muted"> · ${escapeHTML(s.student_id)}</span>` : ""}
+        <div class="meta" style="margin-top:0.2rem;">
+          <span style="color:var(--brand);font-weight:600;">${responses}</span>
+          response${responses === 1 ? "" : "s"}
+          (${s.vote_count || 0} poll · ${s.submission_count || 0} submission${(s.submission_count||0) === 1 ? "" : "s"})
         </div>`;
+      headerDiv.addEventListener("click", () => showStudentDetail(activeMgmtClass.id, s));
+      li.appendChild(headerDiv);
 
       const actions = document.createElement("div");
       actions.className = "row";
@@ -758,6 +940,10 @@ function addOptionRow(containerId, value = "") {
   row.innerHTML = `
     <span class="option-letter" aria-hidden="true">${LETTERS[idx] || idx + 1}</span>
     <input type="text" placeholder="Option ${LETTERS[idx] || idx + 1}" aria-label="Option ${LETTERS[idx] || idx + 1}" value="${escapeHTML(value)}" required />
+    <label class="option-correct-toggle" title="Mark as a correct answer">
+      <input type="checkbox" class="option-correct" aria-label="Mark option ${LETTERS[idx] || idx + 1} correct" />
+      <span>✓</span>
+    </label>
     <button type="button" class="icon-btn remove-option-btn" title="Remove" aria-label="Remove this option" tabindex="-1">
       <i data-lucide="x" style="width:13px;height:13px;"></i>
     </button>`;
@@ -768,6 +954,13 @@ function addOptionRow(containerId, value = "") {
   });
   container.appendChild(row);
   if (window.lucide) window.lucide.createIcons();
+}
+
+// Read which option indices the instructor marked correct.
+function getCorrectIndices(containerId) {
+  return [...$(containerId).querySelectorAll(".option-row")]
+    .map((r, i) => r.querySelector(".option-correct").checked ? i : -1)
+    .filter(i => i >= 0);
 }
 
 function reindexOptions(containerId) {
@@ -834,6 +1027,7 @@ $("new-form").addEventListener("submit", async (e) => {
   let type = uiType;
   let options = [];
 
+  let correctAnswer = null;
   if (uiType === "poll" || uiType === "poll_multi" || uiType === "poll_pie" || uiType === "ordering") {
     options = getOptionValues("poll-options-list");
     if (options.length < 2) {
@@ -842,6 +1036,17 @@ $("new-form").addEventListener("submit", async (e) => {
         : "Add at least 2 options", "error");
       return;
     }
+    if (uiType === "poll" || uiType === "poll_pie") {
+      const idxs = getCorrectIndices("poll-options-list");
+      if (idxs.length === 1) correctAnswer = { index: idxs[0] };
+      else if (idxs.length > 1) {
+        setStatus("new-status", "Single-choice polls allow only one correct option (or none, for ungraded).", "error");
+        return;
+      }
+    } else if (uiType === "poll_multi") {
+      const idxs = getCorrectIndices("poll-options-list");
+      if (idxs.length) correctAnswer = { indices: idxs };
+    }
   }
 
   if (!prompt) return;
@@ -849,7 +1054,7 @@ $("new-form").addEventListener("submit", async (e) => {
   if (btn) btn.disabled = true;
   setStatus("new-status", "Creating…");
   try {
-    const res = await api.createActivity(prompt, classId, type, options, sessionTag, releaseAt, dueAt);
+    const res = await api.createActivity(prompt, classId, type, options, sessionTag, releaseAt, dueAt, correctAnswer);
     setStatus("new-status", `Launched! (#${res.activity_id})`, "success");
     $("prompt").value = "";
     // Reset Flatpickr fields too — clear the visible value and our stored ms.

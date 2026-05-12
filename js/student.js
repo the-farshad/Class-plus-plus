@@ -2,6 +2,7 @@ import { api, session, API_BASE_URL } from "/js/api.js";
 import {
   $, show, hide, escapeHTML, setStatus as setStatusEl,
   mountSettingsDrawer, updateUserPill, setupMicrosoftSignIn,
+  toast,
 } from "/js/ui.js";
 
 const TYPE_LABELS = {
@@ -439,6 +440,9 @@ async function showSignedInState() {
     show("nav-admin");
   }
 
+  // If the user just landed via a QR / ?join=CODE link, enroll them now.
+  await consumePendingJoin();
+
   connectSSE(); // start live push before first load
   await loadActivities();
 }
@@ -575,6 +579,34 @@ $("submit-form").addEventListener("submit", async (e) => {
     if (btn) btn.disabled = false;
   }
 });
+
+// Detect a pending class-join from the URL (?join=ABC123). Either run it
+// now (if signed in) or stash it for after sign-in.
+(function captureJoinCode() {
+  const url = new URL(location.href);
+  const code = (url.searchParams.get("join") || "").toUpperCase();
+  if (code && /^[A-Z2-9]{6}$/.test(code)) {
+    localStorage.setItem("classpp.pending_join", code);
+    // Strip from URL so the page is bookmarkable / shareable cleanly.
+    url.searchParams.delete("join");
+    history.replaceState({}, "", url.toString());
+  }
+})();
+
+async function consumePendingJoin() {
+  const code = localStorage.getItem("classpp.pending_join");
+  if (!code) return;
+  try {
+    const res = await api.selfEnrollByCode(code);
+    localStorage.removeItem("classpp.pending_join");
+    if (res && res.class) {
+      toast(`Joined <strong>${escapeHTML(res.class.name)}</strong> ✓`, "success");
+    }
+  } catch (err) {
+    localStorage.removeItem("classpp.pending_join");
+    toast("Couldn't join class: " + (err.message || "unknown error"), "error");
+  }
+}
 
 mountSettingsDrawer({
   api,

@@ -143,13 +143,14 @@ export const api = {
   listOpenActivities: (classId) => get(`/activities${classId ? `?class_id=${classId}` : ""}`),
   getActivity: (id) => get(`/activities/${encodeURIComponent(id)}`),
   listAllActivities: (classId) => get(`/activities/admin/all${classId ? `?class_id=${classId}` : ""}`),
-  createActivity: (prompt, classId, type, options, sessionTag = null, releaseAt = null, dueAt = null) =>
+  createActivity: (prompt, classId, type, options, sessionTag = null, releaseAt = null, dueAt = null, correctAnswer = null) =>
     postJSON("/activities/admin", {
       prompt, class_id: classId, type,
       poll_options: options,
       session_tag: sessionTag,
       release_at: releaseAt,
       due_at: dueAt,
+      correct_answer: correctAnswer,
     }),
   setActivityStatus: (id, status) =>
     patchJSON(`/activities/admin/${encodeURIComponent(id)}`, { status }),
@@ -174,9 +175,16 @@ export const api = {
   listSubmissions: (activityId) =>
     get(`/submissions/by-activity/${encodeURIComponent(activityId)}`),
 
+  // Self-enroll into a class via join code (student-facing).
+  selfEnrollByCode: (code) => postJSON(`/classes/by-code/${encodeURIComponent(code)}/enroll`, {}),
+
   // Classes
   getStats: () => get("/admin/stats"),
   listClasses: () => get("/admin/classes"),
+  getClassDetail: (id) => get(`/admin/classes/${encodeURIComponent(id)}/detail`),
+  getStudentDetail: (classId, email) =>
+    get(`/admin/classes/${encodeURIComponent(classId)}/students/${encodeURIComponent(email)}/detail`),
+  exportClassUrl: (id) => `${API_BASE_URL}/admin/classes/${encodeURIComponent(id)}/export`,
   createClass: (name, code, semester) => postJSON("/admin/classes", { name, code, semester }),
   updateClass: (id, payload) => patchJSON(`/admin/classes/${encodeURIComponent(id)}`, payload),
   deleteClass: (id) => del(`/admin/classes/${encodeURIComponent(id)}`),
