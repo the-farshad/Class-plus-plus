@@ -950,7 +950,7 @@ function renderActivities(list_data) {
     const label = TYPE_LABELS[a.type] || a.type;
     const isOpen = a.status === "open";
     const sessionBadge = a.session_tag
-      ? `<span class="type-badge" style="background:var(--surface-2);color:var(--text);"><i data-lucide="${a.session_tag.startsWith("prog") ? "code-2" : "flask-conical"}" style="width:11px;height:11px;"></i> ${a.session_tag.replace(/^prog/, "Prog ").replace(/^lab/, "Lab ")}</span>`
+      ? `<span class="type-badge" style="background:var(--surface-2);color:var(--text);"><i data-lucide="calendar-days" style="width:11px;height:11px;"></i> ${a.session_tag.replace(/^week/, "Week ").replace(/^prog/, "Prog ").replace(/^lab/, "Lab ")}</span>`
       : "";
     left.innerHTML = `
       <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.25rem;flex-wrap:wrap;">

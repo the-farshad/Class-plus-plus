@@ -1,27 +1,43 @@
 [
-  { "session_tag": "prog01", "type": "poll",
-    "prompt": "**Prog 01 · Easy.** Which header gives you `std::cin` and `std::cout`?",
-    "options": ["`<iostream>`", "`<stdio.h>`", "`<cstdlib>`", "`<string>`"] },
-  { "session_tag": "prog01", "type": "poll_multi",
-    "prompt": "**Prog 01 · Medium.** *Select **all** that are valid C++ statements that read four integers from the keyboard into `a`, `b`, `c`, `d`.*",
+  {
+    "session_tag": "week01",
+    "type": "poll",
+    "prompt": "**Week 01 · Easy.** Which header gives you `std::cin` and `std::cout`?",
+    "options": [
+      "`<iostream>`",
+      "`<stdio.h>`",
+      "`<cstdlib>`",
+      "`<string>`"
+    ]
+  },
+  {
+    "session_tag": "week01",
+    "type": "poll_multi",
+    "prompt": "**Week 01 · Medium.** *Select **all** that are valid C++ statements that read four integers from the keyboard into `a`, `b`, `c`, `d`.*",
     "options": [
       "`std::cin >> a >> b >> c >> d;`",
       "`std::cin >> a, b, c, d;`",
       "`std::cin >> a; std::cin >> b; std::cin >> c; std::cin >> d;`",
       "`scanf(\"%d %d %d %d\", &a, &b, &c, &d);` *(C-style, but legal in C++)*",
       "`std::cin = a + b + c + d;`"
-    ] },
-  { "session_tag": "prog01", "type": "ordering",
-    "prompt": "**Prog 01 · Hard.** *Drag these pseudocode steps into the correct order for the four-integer-sum program.*",
+    ]
+  },
+  {
+    "session_tag": "week01",
+    "type": "ordering",
+    "prompt": "**Week 01 · Hard.** *Drag these pseudocode steps into the correct order for the four-integer-sum program.*",
     "options": [
       "Declare four integer variables",
       "Prompt the user for four integers",
       "Read the four integers from input",
       "Compute the sum",
       "Output the result"
-    ] },
-  { "session_tag": "prog01", "type": "ordering",
-    "prompt": "**Prog 01 · AI-resistant.** *Drag these C++ statements into the **shortest valid order** that compiles, reads four ints from the user, prints their sum, and returns 0. There is exactly one correct order.*",
+    ]
+  },
+  {
+    "session_tag": "week01",
+    "type": "ordering",
+    "prompt": "**Week 01 · AI-resistant.** *Drag these C++ statements into the **shortest valid order** that compiles, reads four ints from the user, prints their sum, and returns 0. There is exactly one correct order.*",
     "options": [
       "`#include <iostream>`",
       "`int main() {`",
@@ -30,26 +46,34 @@
       "    `std::cout << a + b + c + d << std::endl;`",
       "    `return 0;`",
       "`}`"
-    ] },
-
-  { "session_tag": "prog02", "type": "poll",
-    "prompt": "**Prog 02 · Easy.** A `while` loop tests its condition…",
+    ]
+  },
+  {
+    "session_tag": "week02",
+    "type": "poll",
+    "prompt": "**Week 02 · Easy.** A `while` loop tests its condition…",
     "options": [
       "Before each iteration (including the first)",
       "After each iteration",
       "Only once at the start of the program",
       "Never — you must `break` out manually"
-    ] },
-  { "session_tag": "prog02", "type": "poll_multi",
-    "prompt": "**Prog 02 · Medium.** Why does the Prog 02 algorithm swap `value1` and `value2` when `value1 > value2`? *Pick all that apply.*",
+    ]
+  },
+  {
+    "session_tag": "week02",
+    "type": "poll_multi",
+    "prompt": "**Week 02 · Medium.** Why does the Prog 02 algorithm swap `value1` and `value2` when `value1 > value2`? *Pick all that apply.*",
     "options": [
       "So the loop counter (smaller value) increases toward the larger one",
       "So the `while` loop is guaranteed to terminate",
       "Because C++ requires the smaller value on the left of `<`",
       "Because the running product would otherwise be negative"
-    ] },
-  { "session_tag": "prog02", "type": "ordering",
-    "prompt": "**Prog 02 · Hard.** *Sort the steps of the running-product algorithm into execution order.*",
+    ]
+  },
+  {
+    "session_tag": "week02",
+    "type": "ordering",
+    "prompt": "**Week 02 · Hard.** *Sort the steps of the running-product algorithm into execution order.*",
     "options": [
       "Prompt for two integers `value1` and `value2`",
       "Read both values",
@@ -57,25 +81,46 @@
       "Set `accumulator = value1`",
       "While `value1 < value2`: increment `value1`, then `accumulator *= value1`",
       "Output `accumulator`"
-    ] },
-  { "session_tag": "prog02", "type": "poll",
-    "prompt": "**Prog 02 · AI-resistant.** With `value1 = 3` and `value2 = 6`, the loop runs:\n```text\nwhile value1 < value2:\n    value1 = value1 + 1\n    accumulator = accumulator * value1\n```\nstarting with `accumulator = 3`. **What is the final value of `accumulator`?**",
-    "options": ["`360`", "`120`", "`90`", "`72`"] },
-
-  { "session_tag": "prog03", "type": "poll",
-    "prompt": "**Prog 03 · Easy.** Which loop **always** executes its body at least once?",
-    "options": ["`for`", "`while`", "`do … while`", "range-based `for`"] },
-  { "session_tag": "prog03", "type": "poll_multi",
-    "prompt": "**Prog 03 · Medium.** Which of these correctly print the integers from 1 to 10? *Select all valid options.*",
+    ]
+  },
+  {
+    "session_tag": "week02",
+    "type": "poll",
+    "prompt": "**Week 02 · AI-resistant.** With `value1 = 3` and `value2 = 6`, the loop runs:\n```text\nwhile value1 < value2:\n    value1 = value1 + 1\n    accumulator = accumulator * value1\n```\nstarting with `accumulator = 3`. **What is the final value of `accumulator`?**",
+    "options": [
+      "`360`",
+      "`120`",
+      "`90`",
+      "`72`"
+    ]
+  },
+  {
+    "session_tag": "week03",
+    "type": "poll",
+    "prompt": "**Week 03 · Easy.** Which loop **always** executes its body at least once?",
+    "options": [
+      "`for`",
+      "`while`",
+      "`do … while`",
+      "range-based `for`"
+    ]
+  },
+  {
+    "session_tag": "week03",
+    "type": "poll_multi",
+    "prompt": "**Week 03 · Medium.** Which of these correctly print the integers from 1 to 10? *Select all valid options.*",
     "options": [
       "`for (int i = 1; i <= 10; ++i) std::cout << i << ' ';`",
       "`int i = 1; while (i <= 10) { std::cout << i << ' '; ++i; }`",
       "`int i = 1; do { std::cout << i++ << ' '; } while (i <= 10);`",
       "`for (int i = 1; i < 10; ++i) std::cout << i << ' ';` *(off-by-one)*",
       "`for (int i = 0; i++ < 10; ) std::cout << i << ' ';`"
-    ] },
-  { "session_tag": "prog03", "type": "ordering",
-    "prompt": "**Prog 03 · Hard.** *Drag these steps into the right order so the loop counts integers strictly between `lo` and `hi` (endpoints excluded).*",
+    ]
+  },
+  {
+    "session_tag": "week03",
+    "type": "ordering",
+    "prompt": "**Week 03 · Hard.** *Drag these steps into the right order so the loop counts integers strictly between `lo` and `hi` (endpoints excluded).*",
     "options": [
       "Set `counter = 0`",
       "Set `loopctl = lo + 1`",
@@ -83,9 +128,12 @@
       "    `counter = counter + 1`",
       "    `loopctl  = loopctl + 1`",
       "Output `counter`"
-    ] },
-  { "session_tag": "prog03", "type": "ordering",
-    "prompt": "**Prog 03 · AI-resistant.** *Drag the lines into a correct **`do-while`** version of the strictly-between-endpoints counter (`lo = 4`, `hi = 9`). Mind the off-by-one — `do-while` always runs the body once, so the initialization differs.*",
+    ]
+  },
+  {
+    "session_tag": "week03",
+    "type": "ordering",
+    "prompt": "**Week 03 · AI-resistant.** *Drag the lines into a correct **`do-while`** version of the strictly-between-endpoints counter (`lo = 4`, `hi = 9`). Mind the off-by-one — `do-while` always runs the body once, so the initialization differs.*",
     "options": [
       "`int counter = 0;`",
       "`int loopctl = lo;`",
@@ -94,30 +142,46 @@
       "    `if (loopctl < hi) counter = counter + 1;`",
       "`} while (loopctl < hi);`",
       "`std::cout << counter;`"
-    ] },
-
-  { "session_tag": "prog04", "type": "poll",
-    "prompt": "**Prog 04 · Easy.** What's the simplest return type for a `prompt()` function that loops until the user enters a non-negative integer?",
-    "options": ["`int` (returns the validated value)", "`bool` (true on success)", "`void` (mutates a reference parameter)", "`std::string` (returns the raw input)"] },
-  { "session_tag": "prog04", "type": "poll_multi",
-    "prompt": "**Prog 04 · Medium.** Which of these are **true** about a recursive `factorial(n)` for non-negative `n`? *Select all that apply.*",
+    ]
+  },
+  {
+    "session_tag": "week04",
+    "type": "poll",
+    "prompt": "**Week 04 · Easy.** What's the simplest return type for a `prompt()` function that loops until the user enters a non-negative integer?",
+    "options": [
+      "`int` (returns the validated value)",
+      "`bool` (true on success)",
+      "`void` (mutates a reference parameter)",
+      "`std::string` (returns the raw input)"
+    ]
+  },
+  {
+    "session_tag": "week04",
+    "type": "poll_multi",
+    "prompt": "**Week 04 · Medium.** Which of these are **true** about a recursive `factorial(n)` for non-negative `n`? *Select all that apply.*",
     "options": [
       "It needs a base case for `n == 0` (or `n <= 1`)",
       "Each call adds a new frame to the call stack",
       "`factorial(20)` overflows a 32-bit `int`",
       "Tail-call optimization is required for it to terminate",
       "It can also be written iteratively with the same result"
-    ] },
-  { "session_tag": "prog04", "type": "ordering",
-    "prompt": "**Prog 04 · Hard.** *Order the C++ statements to form a correct recursive factorial.*",
+    ]
+  },
+  {
+    "session_tag": "week04",
+    "type": "ordering",
+    "prompt": "**Week 04 · Hard.** *Order the C++ statements to form a correct recursive factorial.*",
     "options": [
       "`int factorial(int n) {`",
       "    `if (n <= 1) return 1;`",
       "    `return n * factorial(n - 1);`",
       "`}`"
-    ] },
-  { "session_tag": "prog04", "type": "ordering",
-    "prompt": "**Prog 04 · AI-resistant.** *Drag the call-stack events for `factorial(4)` into the order they happen at runtime — pushes first, then returns bubbling up.*",
+    ]
+  },
+  {
+    "session_tag": "week04",
+    "type": "ordering",
+    "prompt": "**Week 04 · AI-resistant.** *Drag the call-stack events for `factorial(4)` into the order they happen at runtime — pushes first, then returns bubbling up.*",
     "options": [
       "Push frame `factorial(4)`",
       "Push frame `factorial(3)`",
@@ -126,22 +190,35 @@
       "`factorial(2)` returns `2 * 1 = 2`",
       "`factorial(3)` returns `3 * 2 = 6`",
       "`factorial(4)` returns `4 * 6 = 24`"
-    ] },
-
-  { "session_tag": "prog05", "type": "poll",
-    "prompt": "**Prog 05 · Easy.** The Madhava–Leibniz series for `π/4` is `1 − 1/3 + 1/5 − 1/7 + …`. The **next** term after `+1/9` is:",
-    "options": ["`-1/11`", "`+1/11`", "`-1/9`", "`-1/13`"] },
-  { "session_tag": "prog05", "type": "poll_multi",
-    "prompt": "**Prog 05 · Medium.** Which patterns produce alternating signs across loop iterations? *Pick all that work.*",
+    ]
+  },
+  {
+    "session_tag": "week05",
+    "type": "poll",
+    "prompt": "**Week 05 · Easy.** The Madhava–Leibniz series for `π/4` is `1 − 1/3 + 1/5 − 1/7 + …`. The **next** term after `+1/9` is:",
+    "options": [
+      "`-1/11`",
+      "`+1/11`",
+      "`-1/9`",
+      "`-1/13`"
+    ]
+  },
+  {
+    "session_tag": "week05",
+    "type": "poll_multi",
+    "prompt": "**Week 05 · Medium.** Which patterns produce alternating signs across loop iterations? *Pick all that work.*",
     "options": [
       "Initialize `int sign = 1;` and at each iteration `sign = -sign;`",
       "Use `pow(-1, k)` each iteration",
       "Use `((k % 2) == 0) ? 1 : -1`",
       "Multiply by the current loop index `k`",
       "Just rely on integer overflow"
-    ] },
-  { "session_tag": "prog05", "type": "ordering",
-    "prompt": "**Prog 05 · Hard.** *Drag the lines into a correct π-approximation function (using a simple alternating sign).*",
+    ]
+  },
+  {
+    "session_tag": "week05",
+    "type": "ordering",
+    "prompt": "**Week 05 · Hard.** *Drag the lines into a correct π-approximation function (using a simple alternating sign).*",
     "options": [
       "`double computePi(int n) {`",
       "    `double sum = 0.0;`",
@@ -152,61 +229,93 @@
       "    `}`",
       "    `return 4.0 * sum;`",
       "`}`"
-    ] },
-  { "session_tag": "prog05", "type": "poll",
-    "prompt": "**Prog 05 · AI-resistant.** With the alternating-sign Madhava–Leibniz loop and `n = 4` terms, the partial sum is:\n```text\n1 − 1/3 + 1/5 − 1/7\n```\n**Multiplying by 4 (which is what the algorithm does), the printed value of π ≈ ?**",
+    ]
+  },
+  {
+    "session_tag": "week05",
+    "type": "poll",
+    "prompt": "**Week 05 · AI-resistant.** With the alternating-sign Madhava–Leibniz loop and `n = 4` terms, the partial sum is:\n```text\n1 − 1/3 + 1/5 − 1/7\n```\n**Multiplying by 4 (which is what the algorithm does), the printed value of π ≈ ?**",
     "options": [
       "`3.3397…` (4 × 0.83492…)",
       "`3.14159…`",
       "`2.8951…`",
       "`4.0000…`"
-    ] },
-
-  { "session_tag": "prog06", "type": "poll",
-    "prompt": "**Prog 06 · Easy.** The cylinder wall thickness `t` must satisfy `t ≤ ½·min(d, h)`. With `d = 10`, `h = 6`, what is the maximum allowed `t`?",
-    "options": ["`3`", "`5`", "`6`", "`8`"] },
-  { "session_tag": "prog06", "type": "poll_multi",
-    "prompt": "**Prog 06 · Medium.** Which inputs are **invalid** for the cylinder geometry? *Select all that violate constraints.*",
+    ]
+  },
+  {
+    "session_tag": "week06",
+    "type": "poll",
+    "prompt": "**Week 06 · Easy.** The cylinder wall thickness `t` must satisfy `t ≤ ½·min(d, h)`. With `d = 10`, `h = 6`, what is the maximum allowed `t`?",
+    "options": [
+      "`3`",
+      "`5`",
+      "`6`",
+      "`8`"
+    ]
+  },
+  {
+    "session_tag": "week06",
+    "type": "poll_multi",
+    "prompt": "**Week 06 · Medium.** Which inputs are **invalid** for the cylinder geometry? *Select all that violate constraints.*",
     "options": [
       "`d = 10, h = 6, t = 4`  *(t > ½·min)*",
       "`d = 10, h = 6, t = 3`",
       "`d = -2, h = 6, t = 1`  *(negative diameter)*",
       "`d = 0,  h = 6, t = 0`  *(zero diameter)*",
       "`d = 8,  h = 8, t = 4`"
-    ] },
-  { "session_tag": "prog06", "type": "ordering",
-    "prompt": "**Prog 06 · Hard.** *Order the input-validation flow for the cylinder thickness.*",
+    ]
+  },
+  {
+    "session_tag": "week06",
+    "type": "ordering",
+    "prompt": "**Week 06 · Hard.** *Order the input-validation flow for the cylinder thickness.*",
     "options": [
       "Prompt the user for thickness `t`",
       "Read `t`",
       "If `t < 0`, print error and re-prompt",
       "If `t > ½·min(d, h)`, print error and re-prompt",
       "Return `t`"
-    ] },
-  { "session_tag": "prog06", "type": "ordering",
-    "prompt": "**Prog 06 · AI-resistant.** *Drag these `validateThickness` steps into the right execution order — input first, then **per-input** checks in the right order, then the return.*",
+    ]
+  },
+  {
+    "session_tag": "week06",
+    "type": "ordering",
+    "prompt": "**Week 06 · AI-resistant.** *Drag these `validateThickness` steps into the right execution order — input first, then **per-input** checks in the right order, then the return.*",
     "options": [
       "Prompt `\"Enter wall thickness: \"`",
       "Read `t` from the user",
       "While `t < 0`: print `\"Thickness must be non-negative\"`, re-prompt, re-read",
       "While `t > 0.5 * std::min(d, h)`: print `\"Thickness exceeds half the smaller of d and h\"`, re-prompt, re-read",
       "Return `t`"
-    ] },
-
-  { "session_tag": "prog07", "type": "poll",
-    "prompt": "**Prog 07 · Easy.** Given `int a[5];`, the valid index range for `a[i]` is:",
-    "options": ["`0` to `4`", "`1` to `5`", "`0` to `5`", "`1` to `4`"] },
-  { "session_tag": "prog07", "type": "poll_multi",
-    "prompt": "**Prog 07 · Medium.** Which statements about C-style arrays are **true**? *Select all.*",
+    ]
+  },
+  {
+    "session_tag": "week07",
+    "type": "poll",
+    "prompt": "**Week 07 · Easy.** Given `int a[5];`, the valid index range for `a[i]` is:",
+    "options": [
+      "`0` to `4`",
+      "`1` to `5`",
+      "`0` to `5`",
+      "`1` to `4`"
+    ]
+  },
+  {
+    "session_tag": "week07",
+    "type": "poll_multi",
+    "prompt": "**Week 07 · Medium.** Which statements about C-style arrays are **true**? *Select all.*",
     "options": [
       "Passing an array to a function decays it to a pointer (size is lost)",
       "`sizeof(a)/sizeof(a[0])` gives the length only when `a` is a real array, not a pointer",
       "Out-of-bounds access is undefined behavior, not a runtime check",
       "An array's size must be known at compile time (without VLAs)",
       "`a[i]` is exactly equivalent to `*(a + i)`"
-    ] },
-  { "session_tag": "prog07", "type": "ordering",
-    "prompt": "**Prog 07 · Hard.** *Drag the lines to form a correct loop that reads `n` integers into `a[]` from a file stream `in`.*",
+    ]
+  },
+  {
+    "session_tag": "week07",
+    "type": "ordering",
+    "prompt": "**Week 07 · Hard.** *Drag the lines to form a correct loop that reads `n` integers into `a[]` from a file stream `in`.*",
     "options": [
       "`int n;`",
       "`in >> n;`",
@@ -214,9 +323,12 @@
       "`for (int i = 0; i < n; ++i) {`",
       "    `in >> a[i];`",
       "`}`"
-    ] },
-  { "session_tag": "prog07", "type": "poll_multi",
-    "prompt": "**Prog 07 · AI-resistant.** Given:\n```cpp\nint a[5] = {3, 1, 4, 1, 5};\nint *p = a;\n```\n*Select **all** expressions whose value is `4`.*",
+    ]
+  },
+  {
+    "session_tag": "week07",
+    "type": "poll_multi",
+    "prompt": "**Week 07 · AI-resistant.** Given:\n```cpp\nint a[5] = {3, 1, 4, 1, 5};\nint *p = a;\n```\n*Select **all** expressions whose value is `4`.*",
     "options": [
       "`a[2]`",
       "`*(a + 2)`",
@@ -224,22 +336,35 @@
       "`*(p + 2)`",
       "`*p + 2`  *(this is `(*p) + 2 = 3 + 2 = 5`)*",
       "`p[1] + 3`  *(this is `1 + 3 = 4`)*"
-    ] },
-
-  { "session_tag": "prog08", "type": "poll",
-    "prompt": "**Prog 08 · Easy.** Declaring `int grid[3][4];` reserves how many `int` slots in memory?",
-    "options": ["`7`", "`12`", "`34`", "`16`"] },
-  { "session_tag": "prog08", "type": "poll_multi",
-    "prompt": "**Prog 08 · Medium.** When iterating a 2D array `int g[ROWS][COLS]`, which loop bodies visit every cell exactly once? *Pick all that work.*",
+    ]
+  },
+  {
+    "session_tag": "week08",
+    "type": "poll",
+    "prompt": "**Week 08 · Easy.** Declaring `int grid[3][4];` reserves how many `int` slots in memory?",
+    "options": [
+      "`7`",
+      "`12`",
+      "`34`",
+      "`16`"
+    ]
+  },
+  {
+    "session_tag": "week08",
+    "type": "poll_multi",
+    "prompt": "**Week 08 · Medium.** When iterating a 2D array `int g[ROWS][COLS]`, which loop bodies visit every cell exactly once? *Pick all that work.*",
     "options": [
       "`for (int r=0; r<ROWS; ++r) for (int c=0; c<COLS; ++c) g[r][c] = 0;`",
       "`for (int c=0; c<COLS; ++c) for (int r=0; r<ROWS; ++r) g[r][c] = 0;`",
       "`for (int i=0; i<ROWS*COLS; ++i) g[i / COLS][i % COLS] = 0;`",
       "`for (int r=0; r<COLS; ++r) for (int c=0; c<ROWS; ++c) g[r][c] = 0;` *(swapped)*",
       "`for (int r=0; r<ROWS; ++r) g[r] = 0;`  *(invalid)*"
-    ] },
-  { "session_tag": "prog08", "type": "ordering",
-    "prompt": "**Prog 08 · Hard.** *Drag the lines to compute the row sums of a 3×4 grid into `rowSum[3]`.*",
+    ]
+  },
+  {
+    "session_tag": "week08",
+    "type": "ordering",
+    "prompt": "**Week 08 · Hard.** *Drag the lines to compute the row sums of a 3×4 grid into `rowSum[3]`.*",
     "options": [
       "`int rowSum[3] = {0, 0, 0};`",
       "`for (int r = 0; r < 3; ++r) {`",
@@ -247,135 +372,197 @@
       "        `rowSum[r] += grid[r][c];`",
       "    `}`",
       "`}`"
-    ] },
-  { "session_tag": "prog08", "type": "poll",
-    "prompt": "**Prog 08 · AI-resistant.** A 3×4 grid is filled with the numbers 1..12 in **row-major** order:\n```text\n  1  2  3  4\n  5  6  7  8\n  9 10 11 12\n```\n**What is the sum of column 2** (i.e. `g[0][1] + g[1][1] + g[2][1]`)?",
-    "options": ["`18`", "`15`", "`24`", "`21`"] },
-
-  { "session_tag": "prog09", "type": "poll",
-    "prompt": "**Prog 09 · Easy.** In the `LLParams(...)` declaration, `double &m` and `double &b` are…",
+    ]
+  },
+  {
+    "session_tag": "week08",
+    "type": "poll",
+    "prompt": "**Week 08 · AI-resistant.** A 3×4 grid is filled with the numbers 1..12 in **row-major** order:\n```text\n  1  2  3  4\n  5  6  7  8\n  9 10 11 12\n```\n**What is the sum of column 2** (i.e. `g[0][1] + g[1][1] + g[2][1]`)?",
+    "options": [
+      "`18`",
+      "`15`",
+      "`24`",
+      "`21`"
+    ]
+  },
+  {
+    "session_tag": "week09",
+    "type": "poll",
+    "prompt": "**Week 09 · Easy.** In the `LLParams(...)` declaration, `double &m` and `double &b` are…",
     "options": [
       "Reference parameters — the function writes the slope and intercept *back through them*",
       "Pointer parameters that need to be dereferenced with `*m` and `*b`",
       "Local variables that don't escape the function",
       "Default arguments equal to the address-of"
-    ] },
-  { "session_tag": "prog09", "type": "poll_multi",
-    "prompt": "**Prog 09 · Medium.** Which calls correctly invoke `void LLParams(const double x[], const double y[], int n, double &m, double &b);`? *Pick all valid calls.*",
+    ]
+  },
+  {
+    "session_tag": "week09",
+    "type": "poll_multi",
+    "prompt": "**Week 09 · Medium.** Which calls correctly invoke `void LLParams(const double x[], const double y[], int n, double &m, double &b);`? *Pick all valid calls.*",
     "options": [
       "`LLParams(xs, ys, n, slope, intercept);`",
       "`LLParams(xs, ys, n, &slope, &intercept);` *(taking address)*",
       "`double m = 0, b = 0; LLParams(xs, ys, n, m, b);`",
       "`LLParams(xs, ys, 5, 0.0, 0.0);` *(literals to references)*",
       "`LLParams(xs.data(), ys.data(), xs.size(), m, b);` *(if `xs`,`ys` are vectors)*"
-    ] },
-  { "session_tag": "prog09", "type": "ordering",
-    "prompt": "**Prog 09 · Hard.** *Drag the steps in the correct order for a least-squares-fit driver program.*",
+    ]
+  },
+  {
+    "session_tag": "week09",
+    "type": "ordering",
+    "prompt": "**Week 09 · Hard.** *Drag the steps in the correct order for a least-squares-fit driver program.*",
     "options": [
       "Read `n`",
       "Read `n` `(x, y)` pairs into two arrays",
       "Declare `double m, b;`",
       "Call `LLParams(x, y, n, m, b)`",
       "Print `m` and `b`"
-    ] },
-  { "session_tag": "prog09", "type": "poll",
-    "prompt": "**Prog 09 · AI-resistant.** Best-fit line through the points `(1,1), (2,3), (3,5), (4,7)`. Using the least-squares formulas:\n```text\nm = (n·Σxy − Σx·Σy) / (n·Σx² − (Σx)²)\nb = (Σy − m·Σx) / n\n```\n**What are `m` and `b`?**",
+    ]
+  },
+  {
+    "session_tag": "week09",
+    "type": "poll",
+    "prompt": "**Week 09 · AI-resistant.** Best-fit line through the points `(1,1), (2,3), (3,5), (4,7)`. Using the least-squares formulas:\n```text\nm = (n·Σxy − Σx·Σy) / (n·Σx² − (Σx)²)\nb = (Σy − m·Σx) / n\n```\n**What are `m` and `b`?**",
     "options": [
       "`m = 2,    b = -1`",
       "`m = 1.5,  b = 0`",
       "`m = 1,    b = 1`",
       "`m = 2.5,  b = -2`"
-    ] },
-
-  { "session_tag": "prog10", "type": "poll",
-    "prompt": "**Prog 10 · Easy.** A class's *destructor* is invoked…",
+    ]
+  },
+  {
+    "session_tag": "week10",
+    "type": "poll",
+    "prompt": "**Week 10 · Easy.** A class's *destructor* is invoked…",
     "options": [
       "Automatically when the object goes out of scope (or `delete` is called for heap objects)",
       "Only when `delete` is explicitly called",
       "Once at program startup",
       "Whenever a const member function is called"
-    ] },
-  { "session_tag": "prog10", "type": "poll_multi",
-    "prompt": "**Prog 10 · Medium.** Which members are part of the *Rule of Three* for a class that manages a resource (like the `Polynomial` class)? *Select all three.*",
+    ]
+  },
+  {
+    "session_tag": "week10",
+    "type": "poll_multi",
+    "prompt": "**Week 10 · Medium.** Which members are part of the *Rule of Three* for a class that manages a resource (like the `Polynomial` class)? *Select all three.*",
     "options": [
       "Copy constructor",
       "Copy-assignment operator (`operator=`)",
       "Destructor",
       "Default constructor",
       "Move constructor (Rule of Five only)"
-    ] },
-  { "session_tag": "prog10", "type": "ordering",
-    "prompt": "**Prog 10 · Hard.** *Drag the steps in the order they happen when `Polynomial p2 = p1;` runs (where `p1` is an existing object).*",
+    ]
+  },
+  {
+    "session_tag": "week10",
+    "type": "ordering",
+    "prompt": "**Week 10 · Hard.** *Drag the steps in the order they happen when `Polynomial p2 = p1;` runs (where `p1` is an existing object).*",
     "options": [
       "Compiler matches `p2 = p1` as initialization-by-copy",
       "The copy constructor `Polynomial(const Polynomial&)` is called for `p2`",
       "`p2` allocates its own internal storage",
       "Each coefficient is copied from `p1` to `p2`",
       "`p2` is now a fully independent object"
-    ] },
-  { "session_tag": "prog10", "type": "poll_multi",
-    "prompt": "**Prog 10 · AI-resistant.** A correct *deep-copy* `Polynomial` copy constructor `Polynomial(const Polynomial& other)` must do **all** of the following. *Pick every required step.*",
+    ]
+  },
+  {
+    "session_tag": "week10",
+    "type": "poll_multi",
+    "prompt": "**Week 10 · AI-resistant.** A correct *deep-copy* `Polynomial` copy constructor `Polynomial(const Polynomial& other)` must do **all** of the following. *Pick every required step.*",
     "options": [
       "Copy `other.degree_` into `this->degree_`",
       "Allocate a **new** coefficients array of the right size",
       "Loop and copy each coefficient value from `other` into the new array",
       "Just write `this->coeffs_ = other.coeffs_;`  *(this is the BUG — shallow copy)*",
       "Leave `this->coeffs_` uninitialized and let the compiler handle it"
-    ] },
-
-  { "session_tag": "prog11", "type": "poll",
-    "prompt": "**Prog 11 · Easy.** In the `String1030` class, the in-storage sentinel that marks the end of a string is…",
-    "options": ["`'\\0'`", "`'\\n'`", "`-1`", "`EOF`"] },
-  { "session_tag": "prog11", "type": "poll_multi",
-    "prompt": "**Prog 11 · Medium.** Which operators are commonly overloaded for a string-like class? *Pick all that make sense.*",
+    ]
+  },
+  {
+    "session_tag": "week11",
+    "type": "poll",
+    "prompt": "**Week 11 · Easy.** In the `String1030` class, the in-storage sentinel that marks the end of a string is…",
+    "options": [
+      "`'\\0'`",
+      "`'\\n'`",
+      "`-1`",
+      "`EOF`"
+    ]
+  },
+  {
+    "session_tag": "week11",
+    "type": "poll_multi",
+    "prompt": "**Week 11 · Medium.** Which operators are commonly overloaded for a string-like class? *Pick all that make sense.*",
     "options": [
       "`operator+` (concatenation)",
       "`operator==` (equality)",
       "`operator[]` (indexing)",
       "`operator<<` (stream output)",
       "`operator++` (increment — not meaningful for strings)"
-    ] },
-  { "session_tag": "prog11", "type": "ordering",
-    "prompt": "**Prog 11 · Hard.** *Drag the lines into the right order for a `String1030` copy constructor that performs a deep copy.*",
+    ]
+  },
+  {
+    "session_tag": "week11",
+    "type": "ordering",
+    "prompt": "**Week 11 · Hard.** *Drag the lines into the right order for a `String1030` copy constructor that performs a deep copy.*",
     "options": [
       "`String1030::String1030(const String1030& other) {`",
       "    `len_ = other.len_;`",
       "    `data_ = new char[len_ + 1];`",
       "    `for (int i = 0; i <= len_; ++i) data_[i] = other.data_[i];`",
       "`}`"
-    ] },
-  { "session_tag": "prog11", "type": "poll",
-    "prompt": "**Prog 11 · AI-resistant.** A `String1030` has a buggy copy constructor that does `data_ = other.data_;`  Then:\n```cpp\nString1030 a(\"hi\");\n{\n    String1030 b = a;        // shallow copy\n}                            // b's destructor frees data_\nstd::cout << a;              // ???\n```\n**What's the most likely consequence on the marked line?**",
+    ]
+  },
+  {
+    "session_tag": "week11",
+    "type": "poll",
+    "prompt": "**Week 11 · AI-resistant.** A `String1030` has a buggy copy constructor that does `data_ = other.data_;`  Then:\n```cpp\nString1030 a(\"hi\");\n{\n    String1030 b = a;        // shallow copy\n}                            // b's destructor frees data_\nstd::cout << a;              // ???\n```\n**What's the most likely consequence on the marked line?**",
     "options": [
       "Use-after-free (undefined behavior — could segfault, garbage, or crash later)",
       "Compile error — references can't be reused",
       "Prints `\"hi\"` correctly because `a` still owns its own buffer",
       "Memory leak only; output is fine"
-    ] },
-
-  { "session_tag": "prog12", "type": "poll",
-    "prompt": "**Prog 12 · Easy.** Which call allocates a single `int` on the heap?",
-    "options": ["`int* p = new int;`", "`int* p = malloc(int);`", "`int p = new int;`", "`int* p = int();`"] },
-  { "session_tag": "prog12", "type": "poll_multi",
-    "prompt": "**Prog 12 · Medium.** Which operations cause a memory leak in C++? *Pick all that leak.*",
+    ]
+  },
+  {
+    "session_tag": "week12",
+    "type": "poll",
+    "prompt": "**Week 12 · Easy.** Which call allocates a single `int` on the heap?",
+    "options": [
+      "`int* p = new int;`",
+      "`int* p = malloc(int);`",
+      "`int p = new int;`",
+      "`int* p = int();`"
+    ]
+  },
+  {
+    "session_tag": "week12",
+    "type": "poll_multi",
+    "prompt": "**Week 12 · Medium.** Which operations cause a memory leak in C++? *Pick all that leak.*",
     "options": [
       "`int* p = new int(7); p = nullptr;`  *(no `delete` first)*",
       "`int* p = new int[10]; delete p;`  *(wrong delete form, but mostly UB)*",
       "Forgetting to free in a class destructor that allocated with `new`",
       "Returning a `unique_ptr` from a function (it cleans up automatically)",
       "Using `new` inside a `try` block, throwing before `delete` (with no smart pointer)"
-    ] },
-  { "session_tag": "prog12", "type": "ordering",
-    "prompt": "**Prog 12 · Hard.** *Drag the steps for safely allocating, using, and freeing a heap array.*",
+    ]
+  },
+  {
+    "session_tag": "week12",
+    "type": "ordering",
+    "prompt": "**Week 12 · Hard.** *Drag the steps for safely allocating, using, and freeing a heap array.*",
     "options": [
       "`int* a = new int[n];`",
       "Loop and fill `a[i]` with values",
       "Use `a[i]` to compute the result",
       "`delete[] a;`",
       "`a = nullptr;`  *(optional but defensive)*"
-    ] },
-  { "session_tag": "prog12", "type": "ordering",
-    "prompt": "**Prog 12 · AI-resistant.** *Drag the heap-state events into the order they happen at runtime for this code:*\n```cpp\nint* a = new int[5];\na[2] = 99;\ndelete[] a;\nstd::cout << a[2];   // ⚠ undefined\n```",
+    ]
+  },
+  {
+    "session_tag": "week12",
+    "type": "ordering",
+    "prompt": "**Week 12 · AI-resistant.** *Drag the heap-state events into the order they happen at runtime for this code:*\n```cpp\nint* a = new int[5];\na[2] = 99;\ndelete[] a;\nstd::cout << a[2];   // ⚠ undefined\n```",
     "options": [
       "Heap allocates 5 contiguous `int` slots",
       "`a` points at the start of that block; the 5 slots have unspecified contents",
@@ -383,27 +570,35 @@
       "`delete[] a` returns the 5-int block to the heap",
       "`a` is now a **dangling pointer** — it still holds the old address but the memory is no longer owned",
       "Reading `a[2]` is undefined behavior — may print 99, garbage, or crash"
-    ] },
-
-  { "session_tag": "prog13", "type": "poll",
-    "prompt": "**Prog 13 · Easy.** A virtual function is dispatched based on…",
+    ]
+  },
+  {
+    "session_tag": "week13",
+    "type": "poll",
+    "prompt": "**Week 13 · Easy.** A virtual function is dispatched based on…",
     "options": [
       "The **dynamic** (runtime) type of the object",
       "The **static** (compile-time) type of the pointer/reference",
       "The order classes are declared in",
       "Whether the call site is inside `main`"
-    ] },
-  { "session_tag": "prog13", "type": "poll_multi",
-    "prompt": "**Prog 13 · Medium.** Which statements about inheritance and polymorphism are **true**? *Pick all.*",
+    ]
+  },
+  {
+    "session_tag": "week13",
+    "type": "poll_multi",
+    "prompt": "**Week 13 · Medium.** Which statements about inheritance and polymorphism are **true**? *Pick all.*",
     "options": [
       "A base class destructor should be `virtual` if the class will be deleted polymorphically",
       "`final` prevents further overriding of a virtual function",
       "An abstract class has at least one pure virtual function (`= 0`)",
       "Slicing happens when you assign a derived object to a base **value** (not a reference / pointer)",
       "`override` is required by the compiler — without it, virtual dispatch fails"
-    ] },
-  { "session_tag": "prog13", "type": "ordering",
-    "prompt": "**Prog 13 · Hard.** *Drag these lines into a correct minimal class hierarchy with virtual dispatch.*",
+    ]
+  },
+  {
+    "session_tag": "week13",
+    "type": "ordering",
+    "prompt": "**Week 13 · Hard.** *Drag these lines into a correct minimal class hierarchy with virtual dispatch.*",
     "options": [
       "`class Shape {`",
       "  `public:`",
@@ -417,31 +612,47 @@
       "  `private:`",
       "    `double r_;`",
       "`};`"
-    ] },
-  { "session_tag": "prog13", "type": "poll_multi",
-    "prompt": "**Prog 13 · AI-resistant.** Given:\n```cpp\nstruct Animal { virtual void speak() const { std::cout << \"...\"; } virtual ~Animal() = default; };\nstruct Dog : Animal { void speak() const override { std::cout << \"woof\"; } };\nAnimal* a = new Dog();\nDog d;\nAnimal& r = d;\n```\n*Which calls print `\"woof\"`? Pick all that do.*",
+    ]
+  },
+  {
+    "session_tag": "week13",
+    "type": "poll_multi",
+    "prompt": "**Week 13 · AI-resistant.** Given:\n```cpp\nstruct Animal { virtual void speak() const { std::cout << \"...\"; } virtual ~Animal() = default; };\nstruct Dog : Animal { void speak() const override { std::cout << \"woof\"; } };\nAnimal* a = new Dog();\nDog d;\nAnimal& r = d;\n```\n*Which calls print `\"woof\"`? Pick all that do.*",
     "options": [
       "`a->speak();`  *(virtual via base pointer)*",
       "`r.speak();`  *(virtual via base reference)*",
       "`d.speak();`  *(direct call on Dog)*",
       "`((Animal)d).speak();`  *(slicing — copy of Animal portion)*",
       "`static_cast<Animal>(d).speak();`  *(also slicing)*"
-    ] },
-
-  { "session_tag": "prog14", "type": "poll",
-    "prompt": "**Prog 14 · Easy.** Which STL container provides O(1) random access by index?",
-    "options": ["`std::vector`", "`std::list`", "`std::map`", "`std::set`"] },
-  { "session_tag": "prog14", "type": "poll_multi",
-    "prompt": "**Prog 14 · Medium.** Which iterator-using snippets correctly print every element of a `std::vector<int> v`? *Pick all valid.*",
+    ]
+  },
+  {
+    "session_tag": "week14",
+    "type": "poll",
+    "prompt": "**Week 14 · Easy.** Which STL container provides O(1) random access by index?",
+    "options": [
+      "`std::vector`",
+      "`std::list`",
+      "`std::map`",
+      "`std::set`"
+    ]
+  },
+  {
+    "session_tag": "week14",
+    "type": "poll_multi",
+    "prompt": "**Week 14 · Medium.** Which iterator-using snippets correctly print every element of a `std::vector<int> v`? *Pick all valid.*",
     "options": [
       "`for (int x : v) std::cout << x << ' ';`",
       "`for (auto it = v.begin(); it != v.end(); ++it) std::cout << *it << ' ';`",
       "`for (size_t i = 0; i < v.size(); ++i) std::cout << v[i] << ' ';`",
       "`for (int i = 0; i <= v.size(); ++i) std::cout << v[i] << ' ';` *(off-by-one)*",
       "`std::for_each(v.begin(), v.end(), [](int x){ std::cout << x << ' '; });`"
-    ] },
-  { "session_tag": "prog14", "type": "ordering",
-    "prompt": "**Prog 14 · Hard.** *Drag the lines into a working program that reads ints, sorts them, and prints the result using STL.*",
+    ]
+  },
+  {
+    "session_tag": "week14",
+    "type": "ordering",
+    "prompt": "**Week 14 · Hard.** *Drag the lines into a working program that reads ints, sorts them, and prints the result using STL.*",
     "options": [
       "`#include <vector>`",
       "`#include <algorithm>`",
@@ -453,12 +664,16 @@
       "    `std::sort(v.begin(), v.end());`",
       "    `for (int n : v) std::cout << n << ' ';`",
       "`}`"
-    ] },
-  { "session_tag": "prog14", "type": "ordering",
-    "prompt": "**Prog 14 · AI-resistant.** *Drag these STL operations into the order needed to **deduplicate** a `std::vector<int> v` while preserving the smallest values first.*",
+    ]
+  },
+  {
+    "session_tag": "week14",
+    "type": "ordering",
+    "prompt": "**Week 14 · AI-resistant.** *Drag these STL operations into the order needed to **deduplicate** a `std::vector<int> v` while preserving the smallest values first.*",
     "options": [
       "`std::sort(v.begin(), v.end());`",
       "`auto last = std::unique(v.begin(), v.end());`",
       "`v.erase(last, v.end());`"
-    ] }
+    ]
+  }
 ]

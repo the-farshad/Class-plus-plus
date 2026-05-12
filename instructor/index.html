@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@600;700;800&family=Lora:wght@400;500;600&family=Ubuntu:wght@400;500;700&family=Roboto+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/styles.css?v=70" />
+  <link rel="stylesheet" href="/css/styles.css?v=71" />
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -182,26 +182,15 @@
               <select id="activity-class-filter" aria-label="Filter activities by class" style="padding:0.38rem 0.6rem;font-size:0.85rem;width:auto;">
                 <option value="">All classes</option>
               </select>
-              <select id="activity-session-filter" aria-label="Filter activities by session" style="padding:0.38rem 0.6rem;font-size:0.85rem;width:auto;">
-                <option value="">All sessions</option>
-                <optgroup label="Programs">
-                  <option value="prog01">Prog 01</option><option value="prog02">Prog 02</option>
-                  <option value="prog03">Prog 03</option><option value="prog04">Prog 04</option>
-                  <option value="prog05">Prog 05</option><option value="prog06">Prog 06</option>
-                  <option value="prog07">Prog 07</option><option value="prog08">Prog 08</option>
-                  <option value="prog09">Prog 09</option><option value="prog10">Prog 10</option>
-                  <option value="prog11">Prog 11</option><option value="prog12">Prog 12</option>
-                  <option value="prog13">Prog 13</option><option value="prog14">Prog 14</option>
-                </optgroup>
-                <optgroup label="Labs">
-                  <option value="lab01">Lab 01</option><option value="lab02">Lab 02</option>
-                  <option value="lab03">Lab 03</option><option value="lab04">Lab 04</option>
-                  <option value="lab05">Lab 05</option><option value="lab06">Lab 06</option>
-                  <option value="lab07">Lab 07</option><option value="lab08">Lab 08</option>
-                  <option value="lab09">Lab 09</option><option value="lab10">Lab 10</option>
-                  <option value="lab11">Lab 11</option><option value="lab12">Lab 12</option>
-                  <option value="lab13">Lab 13</option><option value="lab14">Lab 14</option>
-                </optgroup>
+              <select id="activity-session-filter" aria-label="Filter activities by week" style="padding:0.38rem 0.6rem;font-size:0.85rem;width:auto;">
+                <option value="">All weeks</option>
+                <option value="week01">Week 01</option><option value="week02">Week 02</option>
+                <option value="week03">Week 03</option><option value="week04">Week 04</option>
+                <option value="week05">Week 05</option><option value="week06">Week 06</option>
+                <option value="week07">Week 07</option><option value="week08">Week 08</option>
+                <option value="week09">Week 09</option><option value="week10">Week 10</option>
+                <option value="week11">Week 11</option><option value="week12">Week 12</option>
+                <option value="week13">Week 13</option><option value="week14">Week 14</option>
               </select>
               <button id="refresh-activities" class="secondary sm" aria-label="Refresh activity list">
                 <i data-lucide="refresh-cw" style="width:13px;height:13px;"></i>
@@ -271,41 +260,23 @@
                   <select id="class-selector"><option value="">Global</option></select>
                 </div>
                 <div class="field" style="margin:0;flex:1;min-width:140px;">
-                  <label>Session</label>
+                  <label>Week</label>
                   <select id="session-tag">
                     <option value="">— none —</option>
-                    <optgroup label="Programs">
-                      <option value="prog01">Prog 01 — I/O + arithmetic</option>
-                      <option value="prog02">Prog 02 — if/else + while</option>
-                      <option value="prog03">Prog 03 — for/while/do-while</option>
-                      <option value="prog04">Prog 04 — functions + factorial</option>
-                      <option value="prog05">Prog 05 — Madhava-Leibniz series</option>
-                      <option value="prog06">Prog 06 — validation + geometry</option>
-                      <option value="prog07">Prog 07</option>
-                      <option value="prog08">Prog 08</option>
-                      <option value="prog09">Prog 09</option>
-                      <option value="prog10">Prog 10</option>
-                      <option value="prog11">Prog 11</option>
-                      <option value="prog12">Prog 12</option>
-                      <option value="prog13">Prog 13</option>
-                      <option value="prog14">Prog 14</option>
-                    </optgroup>
-                    <optgroup label="Labs">
-                      <option value="lab01">Lab 01</option>
-                      <option value="lab02">Lab 02</option>
-                      <option value="lab03">Lab 03</option>
-                      <option value="lab04">Lab 04</option>
-                      <option value="lab05">Lab 05</option>
-                      <option value="lab06">Lab 06</option>
-                      <option value="lab07">Lab 07</option>
-                      <option value="lab08">Lab 08</option>
-                      <option value="lab09">Lab 09</option>
-                      <option value="lab10">Lab 10</option>
-                      <option value="lab11">Lab 11</option>
-                      <option value="lab12">Lab 12</option>
-                      <option value="lab13">Lab 13</option>
-                      <option value="lab14">Lab 14</option>
-                    </optgroup>
+                    <option value="week01">Week 01 — I/O + arithmetic</option>
+                    <option value="week02">Week 02 — if/else + while</option>
+                    <option value="week03">Week 03 — for/while/do-while</option>
+                    <option value="week04">Week 04 — functions + factorial</option>
+                    <option value="week05">Week 05 — Madhava-Leibniz series</option>
+                    <option value="week06">Week 06 — validation + geometry</option>
+                    <option value="week07">Week 07 — arrays</option>
+                    <option value="week08">Week 08 — 2D arrays</option>
+                    <option value="week09">Week 09 — references / least squares</option>
+                    <option value="week10">Week 10 — classes (Polynomial)</option>
+                    <option value="week11">Week 11 — operator overloading (String)</option>
+                    <option value="week12">Week 12 — new / delete / heap</option>
+                    <option value="week13">Week 13 — inheritance + virtual</option>
+                    <option value="week14">Week 14 — STL</option>
                   </select>
                 </div>
                 <button type="submit" style="flex-shrink:0;align-self:flex-end;">
@@ -559,9 +530,9 @@
 
   <div class="build-chip" data-version></div>
 
-  <script type="module" src="/js/instructor.js?v=70"></script>
+  <script type="module" src="/js/instructor.js?v=71"></script>
   <script type="module">
-    import { bootPage } from "/js/ui.js?v=70";
+    import { bootPage } from "/js/ui.js?v=71";
     bootPage();
   </script>
 </body>
