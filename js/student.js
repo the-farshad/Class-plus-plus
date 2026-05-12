@@ -27,6 +27,24 @@ function mdInline(text) {
   return escapeHTML(text);
 }
 
+// Flatten a Markdown prompt to a short, plain-text preview suitable
+// for tight picker cards. Strips fenced code, inline code, links,
+// emphasis markers, headings, list markers, and trims to `max` chars.
+function previewText(src, max = 130) {
+  let s = String(src || "");
+  s = s.replace(/```[\s\S]*?```/g, " ");          // fenced code blocks
+  s = s.replace(/`[^`]*`/g, " ");                  // inline code
+  s = s.replace(/!\[[^\]]*\]\([^)]*\)/g, " ");     // images
+  s = s.replace(/\[([^\]]+)\]\([^)]+\)/g, "$1");   // links → link text
+  s = s.replace(/^\s*#{1,6}\s+/gm, "");            // heading markers
+  s = s.replace(/^\s*[-*+]\s+/gm, "");             // ul markers
+  s = s.replace(/^\s*\d+\.\s+/gm, "");             // ol markers
+  s = s.replace(/[*_~]+/g, "");                    // bold/italic/strike markers
+  s = s.replace(/\s+/g, " ").trim();
+  if (s.length > max) s = s.slice(0, max - 1).trimEnd() + "…";
+  return s;
+}
+
 // ---- SSE live updates ----
 let sseSource = null;
 let sseRetryTimer = null;
@@ -449,17 +467,13 @@ function showPicker(activities) {
       poll: "bar-chart-2", poll_pie: "pie-chart", poll_multi: "check-square",
       rating: "star", word_cloud: "cloud", submission: "file-text", ordering: "arrow-up-down",
     };
-    // Strip the heaviest Markdown so the picker card stays readable —
-    // we'll show a short inline preview, full Markdown renders when
-    // the student opens the activity.
-    const compact = (a.prompt || "")
-      .replace(/```[\s\S]*?```/g, " […code…] ")     // drop fenced code blocks
-      .replace(/^\s*#{1,6}\s+/gm, "")                 // strip heading markers
-      .replace(/\s+/g, " ")
-      .trim();
+    // Picker cards have very limited width, so the preview is plain text
+    // only — no Markdown rendering, no inline code, no <strong>. The full
+    // formatted prompt renders once the student clicks into the activity.
+    const preview = previewText(a.prompt, 130);
     card.innerHTML = `
       <div class="picker-card-icon"><i data-lucide="${PICKER_ICON[a.type]||"file-text"}" style="width:22px;height:22px;color:var(--brand);"></i></div>
-      <div class="picker-card-title">${mdInline(compact)}</div>
+      <div class="picker-card-title">${escapeHTML(preview)}</div>
       <div class="picker-card-type">${TYPE_LABELS[a.type] || a.type}</div>`;
     card.addEventListener("click", () => showActivity(a));
     grid.appendChild(card);

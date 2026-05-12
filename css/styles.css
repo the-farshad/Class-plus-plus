@@ -1540,25 +1540,19 @@ tbody tr:hover { background: var(--interactive); }
   letter-spacing: -0.005em;
   overflow-wrap: anywhere;
   word-break: break-word;
-  /* Clamp the preview to 3 lines so a long markdown prompt
-     can't blow the card height past anything reasonable. */
+  /* Flex-item safety net: without min-width:0 a child can refuse to
+     shrink below its intrinsic width and overflow the card horizontally. */
+  min-width: 0;
+  width: 100%;
+  align-self: stretch;
+  /* Vertical clamp to 3 lines. JS already char-truncates the source,
+     so this is a belt-and-suspenders. */
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  max-height: 4.2em;
-}
-.picker-card-title :where(p, h1, h2, h3, h4, h5, h6) {
-  display: inline;
-  margin: 0;
-  font: inherit;
-  color: inherit;
-}
-.picker-card-title :where(code) {
-  font-size: 0.88em;
-  padding: 0.05em 0.3em;
-  background: var(--surface-soft);
-  border-radius: 4px;
+  max-height: calc(1.35em * 3);
+  text-overflow: ellipsis;
 }
 .picker-card-type  {
   font-size: 0.7rem;
