@@ -2,6 +2,7 @@ import { Router } from "express";
 import crypto from "node:crypto";
 import { db } from "../db.js";
 import { requireInstructor, setPassword, generateTempPassword, hasPassword } from "../auth.js";
+import { gradeAnswer } from "../grading.js";
 
 export const classesRouter = Router();
 
@@ -89,32 +90,7 @@ classesRouter.get("/:id/students", (req, res) => {
 });
 
 // ---------- Detail / export helpers ----------
-
-// Decide whether a single student answer matches the canonical correct
-// answer for an activity. Returns true / false / null (null = ungraded).
-function gradeAnswer(activity, studentAnswerObj) {
-  const correct = activity.correct_answer ? JSON.parse(activity.correct_answer) : null;
-  const opts = activity.poll_options ? JSON.parse(activity.poll_options) : null;
-  if (activity.type === "poll" || activity.type === "poll_pie") {
-    if (!correct || correct.index == null) return null;
-    if (!studentAnswerObj || studentAnswerObj.poll_indices == null) return null;
-    return studentAnswerObj.poll_indices.length === 1 &&
-           studentAnswerObj.poll_indices[0] === correct.index;
-  }
-  if (activity.type === "poll_multi") {
-    if (!correct || !Array.isArray(correct.indices)) return null;
-    if (!studentAnswerObj || !Array.isArray(studentAnswerObj.poll_indices)) return null;
-    const a = new Set(correct.indices), b = new Set(studentAnswerObj.poll_indices);
-    return a.size === b.size && [...a].every(x => b.has(x));
-  }
-  if (activity.type === "ordering") {
-    if (!opts || !studentAnswerObj || !studentAnswerObj.submission) return null;
-    const canonical = opts.map((_, i) => String(i)).join(",");
-    return studentAnswerObj.submission.trim() === canonical;
-  }
-  // word_cloud / submission — never auto-graded.
-  return null;
-}
+// (gradeAnswer is shared with activities.js / submissions.js — see grading.js)
 
 // Pull every student answer for one (class, email). Returns:
 //   Map<activity_id, { poll_indices?: [...], submission?: "…", submitted_at: N }>

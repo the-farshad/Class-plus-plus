@@ -1650,6 +1650,98 @@ tbody tr:hover { background: var(--interactive); }
 .poll-tile:disabled { opacity: 0.55; cursor: default; }
 .poll-tile:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 
+/* ----- Graded-feedback states (after the student answers) ----- */
+.poll-tile.correct {
+  background: var(--success-soft);
+  border-color: var(--success);
+  color: var(--text-heading);
+  box-shadow: 0 0 0 1px var(--success);
+}
+.poll-tile.correct .poll-tile-letter,
+.poll-tile.correct .poll-tile-checkbox {
+  background: var(--success);
+  border-color: var(--success);
+  color: #fff;
+}
+.poll-tile.incorrect {
+  background: var(--error-soft);
+  border-color: var(--error);
+  color: var(--text-heading);
+  box-shadow: 0 0 0 1px var(--error);
+}
+.poll-tile.incorrect .poll-tile-letter,
+.poll-tile.incorrect .poll-tile-checkbox {
+  background: var(--error);
+  border-color: var(--error);
+  color: #fff;
+}
+/* Tile the student MISSED — they should have picked it. Outlined green
+   without a fill so it's distinguishable from their own correct picks. */
+.poll-tile.correct-missed {
+  border-color: var(--success);
+  background: var(--surface);
+  outline: 2px dashed var(--success);
+  outline-offset: -3px;
+  color: var(--text);
+}
+.poll-tile.correct-missed::after {
+  content: "should have been picked";
+  margin-left: auto;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--success);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  flex-shrink: 0;
+}
+
+/* Big verdict banner that sits above the answer area. */
+.grading-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.9rem 1.1rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  margin-bottom: 1rem;
+  animation: fadeUp 0.25s var(--ease) both;
+}
+.grading-banner .grading-icon {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  display: inline-grid;
+  place-items: center;
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #fff;
+}
+.grading-banner strong { display: block; font-size: 1rem; color: var(--text-heading); }
+.grading-banner span    { font-size: 0.85rem; color: var(--muted); }
+.grading-banner-correct  { background: var(--success-soft); border-color: var(--success); }
+.grading-banner-correct  .grading-icon { background: var(--success); }
+.grading-banner-incorrect{ background: var(--error-soft); border-color: var(--error); }
+.grading-banner-incorrect.grading-banner .grading-icon { background: var(--error); }
+
+/* Ordering rows annotated after grade. */
+.order-item.correct-pos {
+  border-color: var(--success);
+  background: var(--success-soft);
+}
+.order-item.correct-pos .order-num {
+  background: var(--success);
+  color: #fff;
+}
+.order-item.wrong-pos {
+  border-color: var(--error);
+  background: var(--error-soft);
+}
+.order-item.wrong-pos .order-num {
+  background: var(--error);
+  color: #fff;
+}
+
 .poll-tile-letter {
   display: inline-flex;
   align-items: center;

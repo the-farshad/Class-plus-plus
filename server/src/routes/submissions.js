@@ -5,6 +5,7 @@ import { db } from "../db.js";
 import { config } from "../config.js";
 import { requireAuth, requireInstructor, studentIdFor } from "../auth.js";
 import { persistUpload } from "../storage.js";
+import { gradeAnswer, exposeCorrectAnswer } from "../grading.js";
 
 export const submissionsRouter = Router();
 
@@ -32,8 +33,10 @@ submissionsRouter.post(
         return res.status(400).json({ ok: false, error: "Missing activity_id or response" });
       }
 
+      // Pull the full activity row — we need type, poll_options, and
+      // correct_answer to grade ordering submissions on the way out.
       const activity = db.prepare(
-        "SELECT id, status FROM activities WHERE id = ?"
+        "SELECT * FROM activities WHERE id = ?"
       ).get(activityId);
       if (!activity) return res.status(404).json({ ok: false, error: "Activity not found" });
       if (activity.status !== "open") {
@@ -68,7 +71,16 @@ submissionsRouter.post(
         attachmentLocal, attachmentMime, driveFileId, driveUrl, Date.now()
       );
 
-      res.json({ ok: true, submission_id: info.lastInsertRowid });
+      // For activities that support auto-grading (ordering), return the
+      // correctness verdict and the canonical correct answer so the
+      // student client can immediately show graded feedback.
+      const isCorrect = gradeAnswer(activity, { submission: response });
+      res.json({
+        ok: true,
+        submission_id: info.lastInsertRowid,
+        is_correct: isCorrect,
+        correct_answer: exposeCorrectAnswer(activity),
+      });
     } catch (err) {
       if (err.status === 415) {
         return res.status(415).json({ ok: false, error: err.message });

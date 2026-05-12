@@ -119,13 +119,36 @@ function showActivity(a) {
     show("poll-card");
     renderPoll(a);
   } else if (a.type === "ordering") {
-    if (alreadySubmitted) {
-      show("confirm-card");
-      show("form-card");
-      return;
-    }
+    // For ordering we want to *keep showing the graded list* on revisit
+    // instead of jumping to the bare confirmation panel — that's where the
+    // student sees which slots they got right.
     show("order-form");
     renderOrdering(a);
+    if (alreadySubmitted) {
+      const grade = readGrade(a.activity_id);
+      if (grade) {
+        const list = $("order-items");
+        // Reorder DOM to match the student's submitted order so the
+        // grading colors line up with what they actually answered.
+        const subKey = `classpp.order.${a.activity_id}`;
+        const savedOrder = localStorage.getItem(subKey);
+        if (savedOrder) {
+          const want = savedOrder.split(",");
+          want.forEach(origIdx => {
+            const el = list.querySelector(`[data-original-index="${origIdx}"]`);
+            if (el) list.appendChild(el);
+          });
+        }
+        applyOrderingGrade(list, grade.is_correct);
+        const btn = $("order-submit-btn");
+        if (btn) {
+          btn.disabled = true;
+          btn.textContent = grade.is_correct ? "Correct ✓" : grade.is_correct === false ? "Submitted — see below" : "Submitted ✓";
+        }
+      } else {
+        show("confirm-card");
+      }
+    }
   } else {
     if (alreadySubmitted) {
       show("confirm-card");
@@ -150,19 +173,31 @@ function showActivity(a) {
 // remembers their choice across page reloads.
 const VOTE_KEY = (id) => `classpp.voted.${id}`;
 const SUBMIT_KEY = (id) => `classpp.submitted.${id}`;
+// Persisted grading verdict: { is_correct, correct_answer } stringified.
+// Lets the student see the correct/incorrect banner on revisit/refresh.
+const GRADE_KEY = (id) => `classpp.grade.${id}`;
+function saveGrade(id, verdict) {
+  try { localStorage.setItem(GRADE_KEY(id), JSON.stringify(verdict || {})); } catch {}
+}
+function readGrade(id) {
+  try { return JSON.parse(localStorage.getItem(GRADE_KEY(id)) || "null"); }
+  catch { return null; }
+}
 
 function renderPoll(a) {
   const container = $("poll-options-list");
   container.innerHTML = "";
+  // Drop any previous grading banner from a different activity.
+  document.getElementById("grading-banner")?.remove();
+
   const options = JSON.parse(a.poll_options || "[]");
   const letters = "ABCDEFGHIJKLMNOP";
   const isMulti = a.type === "poll_multi";
 
-  // Prior answer is stored as a comma-separated list of indices for both
-  // single and multi (back-compat: old single string "3" still parses).
   const priorRaw = localStorage.getItem(VOTE_KEY(a.activity_id));
   const prior = priorRaw === null ? new Set()
               : new Set(priorRaw.split(",").filter(s => s !== "").map(s => parseInt(s, 10)));
+  const priorGrade = readGrade(a.activity_id);
 
   options.forEach((opt, idx) => {
     const tile = document.createElement("button");
@@ -176,20 +211,13 @@ function renderPoll(a) {
     if (prior.has(idx)) tile.classList.add("selected");
 
     tile.addEventListener("click", async () => {
-      if (isMulti) {
-        // Toggle this tile; submission happens via the Submit button.
-        tile.classList.toggle("selected");
-      } else {
-        // Single-select: immediate POST.
-        await submitPollAnswer(a, [idx], container, /*single*/ true);
-      }
+      if (isMulti) tile.classList.toggle("selected");
+      else await submitPollAnswer(a, [idx], container, /*single*/ true);
     });
 
     container.appendChild(tile);
   });
 
-  // For multi-select: append a Submit button that the user clicks once
-  // they're happy with their selection.
   if (isMulti) {
     const submit = document.createElement("button");
     submit.type = "button";
@@ -209,7 +237,11 @@ function renderPoll(a) {
     container.appendChild(submit);
   }
 
-  if (prior.size) {
+  // If we already know a grade (because the student answered earlier),
+  // rehydrate the verdict banner + per-tile correctness coloring.
+  if (prior.size && priorGrade) {
+    applyPollGrade(container, a, prior, priorGrade, isMulti);
+  } else if (prior.size) {
     setStatusEl("poll-status", isMulti
       ? "You already answered — change your selection and click Update."
       : "You already answered — live results below.", "success");
@@ -224,18 +256,64 @@ async function submitPollAnswer(a, indices, container, single) {
   setStatusEl("poll-status", "Recording your answer…");
   if (single) container.querySelectorAll(".poll-tile").forEach(b => b.disabled = true);
   try {
-    await api.vote(a.activity_id, indices.length === 1 && single ? indices[0] : null, indices);
+    const res = await api.vote(a.activity_id, indices.length === 1 && single ? indices[0] : null, indices);
     container.querySelectorAll(".poll-tile").forEach(b => {
       const idx = parseInt(b.dataset.index, 10);
       b.classList.toggle("selected", indices.includes(idx));
     });
     localStorage.setItem(VOTE_KEY(a.activity_id), indices.join(","));
-    setStatusEl("poll-status", "Answer recorded — live results below.", "success");
+
+    // Capture and apply grading verdict.
+    const grade = { is_correct: res.is_correct, correct_answer: res.correct_answer };
+    saveGrade(a.activity_id, grade);
+    applyPollGrade(container, a, new Set(indices), grade, /*isMulti*/ a.type === "poll_multi");
     showPollResults(a);
   } catch (err) {
     if (single) container.querySelectorAll(".poll-tile").forEach(b => b.disabled = false);
     setStatusEl("poll-status", err.message, "error");
   }
+}
+
+// Annotate poll tiles + render the verdict banner based on a known grade.
+// Works for both single and multi. Lock tiles after grading.
+function applyPollGrade(container, a, chosenSet, grade, isMulti) {
+  const correctSet = new Set();
+  if (grade.correct_answer) {
+    if (typeof grade.correct_answer.index === "number") correctSet.add(grade.correct_answer.index);
+    if (Array.isArray(grade.correct_answer.indices)) grade.correct_answer.indices.forEach(i => correctSet.add(i));
+  }
+
+  // Apply per-tile classes.
+  container.querySelectorAll(".poll-tile").forEach(tile => {
+    const idx = parseInt(tile.dataset.index, 10);
+    tile.classList.remove("correct", "incorrect", "correct-missed");
+    const isChosen = chosenSet.has(idx);
+    const isCorrect = correctSet.has(idx);
+    if (correctSet.size === 0) { /* ungraded — leave selection only */ }
+    else if (isChosen && isCorrect) tile.classList.add("correct");
+    else if (isChosen && !isCorrect) tile.classList.add("incorrect");
+    else if (!isChosen && isCorrect) tile.classList.add("correct-missed");
+    tile.disabled = !isMulti;     // single-select locks; multi can be revised
+  });
+
+  // Update / replace the Submit button label for multi.
+  const submitBtn = container.querySelector("#poll-multi-submit");
+  if (submitBtn) submitBtn.textContent = "Update answer";
+
+  // Banner.
+  document.getElementById("grading-banner")?.remove();
+  if (grade.is_correct === null || grade.is_correct === undefined) {
+    setStatusEl("poll-status", "Answer recorded — this one isn't auto-graded.", "success");
+    return;
+  }
+  const banner = document.createElement("div");
+  banner.id = "grading-banner";
+  banner.className = "grading-banner " + (grade.is_correct ? "grading-banner-correct" : "grading-banner-incorrect");
+  banner.innerHTML = grade.is_correct
+    ? `<span class="grading-icon">✓</span><div><strong>Correct!</strong><span>Well done. ${isMulti ? "Update if you want to change your answer." : ""}</span></div>`
+    : `<span class="grading-icon">✗</span><div><strong>Not quite.</strong><span>The correct option${correctSet.size > 1 ? "s are" : " is"} highlighted in green.</span></div>`;
+  container.parentNode.insertBefore(banner, container);
+  setStatusEl("poll-status", "");   // clear any old status
 }
 
 // ----- Student-side poll results (shown after voting) -----
@@ -547,15 +625,47 @@ $("order-form").addEventListener("submit", async (e) => {
   setStatusEl("order-status", "Submitting your order…");
   try {
     const id = $("activity-id").value;
-    await api.submit({ activity_id: id, response: order });
+    const res = await api.submit({ activity_id: id, response: order });
     localStorage.setItem(SUBMIT_KEY(id), "1");
-    hide("order-form");
-    show("confirm-card");
+    localStorage.setItem(`classpp.order.${id}`, order);   // for revisit hydration
+    saveGrade(id, { is_correct: res.is_correct, correct_answer: res.correct_answer });
+    // Freeze the list and annotate each row with correctness; don't jump
+    // away — the student should SEE which positions they nailed.
+    applyOrderingGrade(list, res.is_correct);
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = res.is_correct ? "Correct ✓" : res.is_correct === false ? "Submitted — see below" : "Submitted ✓";
+    }
   } catch (err) {
     setStatusEl("order-status", err.message, "error");
     if (btn) btn.disabled = false;
   }
 });
+
+// Annotate every dragged item with whether it ended up in the canonical
+// (correct) slot, plus inject a verdict banner above the list.
+function applyOrderingGrade(list, isCorrect) {
+  let inPlace = 0;
+  const items = [...list.querySelectorAll(".order-item")];
+  items.forEach((el, pos) => {
+    const origIdx = parseInt(el.dataset.originalIndex, 10);
+    el.classList.remove("correct-pos", "wrong-pos");
+    if (origIdx === pos) { el.classList.add("correct-pos"); inPlace++; }
+    else el.classList.add("wrong-pos");
+  });
+  // Freeze drag.
+  if (orderSortable) { orderSortable.option("disabled", true); }
+
+  // Banner.
+  document.getElementById("grading-banner")?.remove();
+  const banner = document.createElement("div");
+  banner.id = "grading-banner";
+  banner.className = "grading-banner " + (isCorrect ? "grading-banner-correct" : "grading-banner-incorrect");
+  banner.innerHTML = isCorrect
+    ? `<span class="grading-icon">✓</span><div><strong>Correct order!</strong><span>All ${items.length} items in the right place.</span></div>`
+    : `<span class="grading-icon">✗</span><div><strong>Not quite.</strong><span>${inPlace} of ${items.length} items are in the right slot (highlighted green). The rest are red.</span></div>`;
+  list.parentNode.insertBefore(banner, list);
+}
 
 $("submit-form").addEventListener("submit", async (e) => {
   e.preventDefault();

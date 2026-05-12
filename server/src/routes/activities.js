@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { db } from "../db.js";
 import { requireAuth, requireInstructor } from "../auth.js";
+import { gradeAnswer, exposeCorrectAnswer } from "../grading.js";
 
 export const activitiesRouter = Router();
 
@@ -211,7 +212,17 @@ activitiesRouter.post("/:id/vote", requireAuth, (req, res) => {
       for (const i of idxs) ins.run(activityId, req.user.email, i, now);
     });
     tx(indices);
-    res.json({ ok: true });
+
+    // Tell the student whether they're correct (and what the right answer
+    // is) right after submitting so the client can flip the UI into
+    // graded-feedback mode.
+    const activity = db.prepare("SELECT * FROM activities WHERE id = ?").get(activityId);
+    const isCorrect = activity ? gradeAnswer(activity, { poll_indices: indices }) : null;
+    res.json({
+      ok: true,
+      is_correct: isCorrect,
+      correct_answer: activity ? exposeCorrectAnswer(activity) : null,
+    });
   } catch (err) {
     res.status(500).json({ ok: false, error: err.message });
   }
