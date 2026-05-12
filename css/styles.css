@@ -1737,6 +1737,49 @@ tbody tr:hover { background: var(--interactive); }
 .grading-banner-incorrect{ background: var(--error-soft); border-color: var(--error); }
 .grading-banner-incorrect.grading-banner .grading-icon { background: var(--error); }
 
+/* Attempt counter pinned to the activity heading. Reads at a glance
+   how many tries are left — colorless on first attempts, amber on the
+   last one, red once exhausted. */
+.attempts-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.85rem;
+  padding: 0.3rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-soft, var(--surface));
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  width: max-content;
+}
+.attempts-badge.warn {
+  border-color: var(--warn, #d97706);
+  background: color-mix(in srgb, var(--warn, #d97706) 8%, transparent);
+  color: var(--warn, #b45309);
+}
+.attempts-badge.exhausted {
+  border-color: var(--error);
+  background: var(--error-soft);
+  color: var(--error);
+}
+
+/* Whole form-card gets a subtle muted look when the student is out of
+   attempts — pairs with the per-element disabled state set in JS. */
+.locked-exhausted {
+  position: relative;
+}
+.locked-exhausted::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: color-mix(in srgb, var(--text) 3%, transparent);
+  border-radius: var(--radius);
+}
+
 /* Ordering rows annotated after grade. */
 .order-item.correct-pos {
   border-color: var(--success);

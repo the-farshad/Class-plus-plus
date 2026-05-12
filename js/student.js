@@ -82,6 +82,61 @@ function disconnectSSE() {
 // Kept for error-state display only (no longer used for refresh)
 function stopCountdown() { /* noop — SSE handles refresh now */ }
 
+// ---- Attempts UI helpers ----
+
+// Render or refresh the "Attempt N of M" badge in the activity heading.
+// Pass attempts_used from the latest server response (or a.attempts_used
+// on initial load). When unlimited, the badge shows the count without a
+// cap. Returns true if the activity is now exhausted (used >= cap).
+function renderAttemptsBadge(a, used) {
+  const heading = document.querySelector(".activity-heading");
+  if (!heading) return false;
+  let badge = heading.querySelector(".attempts-badge");
+  if (!badge) {
+    badge = document.createElement("div");
+    badge.className = "attempts-badge";
+    heading.appendChild(badge);
+  }
+  const cap = (a.max_attempts == null || a.max_attempts <= 0) ? null : a.max_attempts;
+  const u = Number.isFinite(used) ? used : 0;
+  if (cap == null) {
+    badge.textContent = u > 0 ? `Attempt ${u + 1} · unlimited` : "Unlimited attempts";
+    badge.classList.remove("exhausted", "warn");
+    return false;
+  }
+  const remaining = Math.max(0, cap - u);
+  if (remaining === 0) {
+    badge.textContent = `No attempts remaining (used all ${cap})`;
+    badge.classList.add("exhausted"); badge.classList.remove("warn");
+    return true;
+  }
+  badge.textContent = `Attempt ${u + 1} of ${cap}`;
+  badge.classList.toggle("warn", remaining === 1);
+  badge.classList.remove("exhausted");
+  return false;
+}
+
+// Disable every form control inside the activity form-card and label
+// submit buttons "Attempts exhausted". Idempotent. Called when the server
+// confirms a 409 ATTEMPTS_EXHAUSTED or after a successful submit drives
+// used >= cap.
+function lockActivityForm(reason = "Attempts exhausted") {
+  const fc = document.getElementById("form-card");
+  if (!fc) return;
+  fc.querySelectorAll("input, textarea, select, button[type=submit], .poll-tile, #poll-multi-submit, #order-submit-btn, #submit-btn").forEach(el => {
+    if (el.type === "submit" || el.tagName === "BUTTON") {
+      el.disabled = true;
+      // Only relabel the activity submit buttons — leave unrelated buttons alone.
+      if (["poll-multi-submit", "order-submit-btn", "submit-btn"].includes(el.id)) {
+        el.textContent = reason;
+      }
+    } else {
+      el.disabled = true;
+    }
+  });
+  fc.classList.add("locked-exhausted");
+}
+
 // ---- Activity display ----
 
 function showActivity(a) {
@@ -183,6 +238,14 @@ function showActivity(a) {
   }
 
   show("form-card");
+
+  // Render the attempts badge and lock the form if the student has
+  // already used all their attempts (e.g. they answered on another device
+  // and just reloaded here). attempts_used / max_attempts are populated
+  // by the server on the activity GET.
+  const used = Number.isFinite(a.attempts_used) ? a.attempts_used : 0;
+  const exhausted = renderAttemptsBadge(a, used);
+  if (exhausted) lockActivityForm();
 }
 
 // localStorage keys for client-side one-vote-per-user persistence.
@@ -286,7 +349,25 @@ async function submitPollAnswer(a, indices, container, single) {
     saveGrade(a.activity_id, grade);
     applyPollGrade(container, a, new Set(indices), grade, /*isMulti*/ a.type === "poll_multi");
     showPollResults(a);
+
+    // Update attempts badge and lock the form if this was the last attempt.
+    if (Number.isFinite(res.attempts_used)) {
+      a.attempts_used = res.attempts_used;
+      a.max_attempts = res.max_attempts;
+      if (renderAttemptsBadge(a, res.attempts_used)) lockActivityForm("No attempts left");
+    }
   } catch (err) {
+    // Server returned 409 with attempts info — server is the source of
+    // truth, so freeze the form even if our client thought there was a
+    // try left (e.g. a stale tab).
+    if (err.status === 409 && Number.isFinite(err.data?.attempts_used)) {
+      a.attempts_used = err.data.attempts_used;
+      a.max_attempts = err.data.max_attempts;
+      renderAttemptsBadge(a, err.data.attempts_used);
+      lockActivityForm("No attempts left");
+      setStatusEl("poll-status", "You've used all your attempts for this activity.", "error");
+      return;
+    }
     if (single) container.querySelectorAll(".poll-tile").forEach(b => b.disabled = false);
     setStatusEl("poll-status", err.message, "error");
   }
@@ -661,7 +742,22 @@ $("order-form").addEventListener("submit", async (e) => {
       btn.disabled = true;
       btn.textContent = res.is_correct ? "Correct ✓" : res.is_correct === false ? "Submitted — see below" : "Submitted ✓";
     }
+    // Refresh attempt counter / lock when cap reached.
+    if (Number.isFinite(res.attempts_used)) {
+      const fakeA = { activity_id: id, attempts_used: res.attempts_used, max_attempts: res.max_attempts };
+      if (renderAttemptsBadge(fakeA, res.attempts_used)) lockActivityForm("No attempts left");
+    }
   } catch (err) {
+    if (err.status === 409 && Number.isFinite(err.data?.attempts_used)) {
+      const id = $("activity-id").value;
+      renderAttemptsBadge(
+        { activity_id: id, attempts_used: err.data.attempts_used, max_attempts: err.data.max_attempts },
+        err.data.attempts_used
+      );
+      lockActivityForm("No attempts left");
+      setStatusEl("order-status", "You've used all your attempts for this activity.", "error");
+      return;
+    }
     setStatusEl("order-status", err.message, "error");
     if (btn) btn.disabled = false;
   }
@@ -700,7 +796,7 @@ $("submit-form").addEventListener("submit", async (e) => {
   try {
     const id = $("activity-id").value;
     const file = $("file").files[0] || null;
-    await api.submit({
+    const res = await api.submit({
       activity_id: id,
       response: $("response").value.trim(),
       file,
@@ -709,7 +805,21 @@ $("submit-form").addEventListener("submit", async (e) => {
     hide("submit-form");
     show("confirm-card");
     $("response").value = "";
+    if (Number.isFinite(res?.attempts_used)) {
+      const fakeA = { activity_id: id, attempts_used: res.attempts_used, max_attempts: res.max_attempts };
+      if (renderAttemptsBadge(fakeA, res.attempts_used)) lockActivityForm("No attempts left");
+    }
   } catch (err) {
+    if (err.status === 409 && Number.isFinite(err.data?.attempts_used)) {
+      const id = $("activity-id").value;
+      renderAttemptsBadge(
+        { activity_id: id, attempts_used: err.data.attempts_used, max_attempts: err.data.max_attempts },
+        err.data.attempts_used
+      );
+      lockActivityForm("No attempts left");
+      setStatusEl("status", "You've used all your attempts for this activity.", "error");
+      return;
+    }
     setStatusEl("status", err.message, "error");
     if (btn) btn.disabled = false;
   }

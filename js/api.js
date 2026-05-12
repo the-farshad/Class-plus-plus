@@ -39,7 +39,10 @@ async function handle(res) {
   if (!res.ok || data.ok === false) {
     const msg = (data && data.error) || `HTTP ${res.status}`;
     if (res.status === 401) session.clear();
-    throw new Error(msg);
+    const e = new Error(msg);
+    e.status = res.status;       // callers branch on 409 for attempt-exhausted
+    e.data = data;                // attempts_used / max_attempts ride along here
+    throw e;
   }
   return data;
 }
@@ -143,7 +146,7 @@ export const api = {
   listOpenActivities: (classId) => get(`/activities${classId ? `?class_id=${classId}` : ""}`),
   getActivity: (id) => get(`/activities/${encodeURIComponent(id)}`),
   listAllActivities: (classId) => get(`/activities/admin/all${classId ? `?class_id=${classId}` : ""}`),
-  createActivity: (prompt, classId, type, options, sessionTag = null, releaseAt = null, dueAt = null, correctAnswer = null) =>
+  createActivity: (prompt, classId, type, options, sessionTag = null, releaseAt = null, dueAt = null, correctAnswer = null, maxAttempts = 1) =>
     postJSON("/activities/admin", {
       prompt, class_id: classId, type,
       poll_options: options,
@@ -151,6 +154,7 @@ export const api = {
       release_at: releaseAt,
       due_at: dueAt,
       correct_answer: correctAnswer,
+      max_attempts: maxAttempts,
     }),
   setActivityStatus: (id, status) =>
     patchJSON(`/activities/admin/${encodeURIComponent(id)}`, { status }),

@@ -714,6 +714,13 @@ function openEditActivity(a) {
     el.dataset.epochMs = String(a.due_at);
   }
 
+  // max_attempts: null/<=0 in DB → unlimited. UI: 0 = unlimited, blank
+  // also means unlimited. Show the integer otherwise.
+  const maxEl = $("edit-max-attempts");
+  if (maxEl) {
+    maxEl.value = (a.max_attempts == null || a.max_attempts <= 0) ? 0 : a.max_attempts;
+  }
+
   show("modal-edit-activity");
   show("modal-overlay");
   if (window.lucide) window.lucide.createIcons();
@@ -1223,6 +1230,14 @@ $("new-form").addEventListener("submit", async (e) => {
   };
   const releaseAt = readMs("release-at");
   const dueAt     = readMs("due-at");
+  // Max attempts: blank or 0 => unlimited (null on the wire); positive => cap.
+  const maxRaw = $("max-attempts")?.value;
+  let maxAttempts = 1;
+  if (maxRaw === "" || maxRaw == null) maxAttempts = null;
+  else {
+    const n = parseInt(maxRaw, 10);
+    maxAttempts = Number.isFinite(n) && n >= 1 ? n : null;
+  }
 
   let type = uiType;
   let options = [];
@@ -1254,7 +1269,7 @@ $("new-form").addEventListener("submit", async (e) => {
   if (btn) btn.disabled = true;
   setStatus("new-status", "Creating…");
   try {
-    const res = await api.createActivity(prompt, classId, type, options, sessionTag, releaseAt, dueAt, correctAnswer);
+    const res = await api.createActivity(prompt, classId, type, options, sessionTag, releaseAt, dueAt, correctAnswer, maxAttempts);
     setStatus("new-status", `Launched! (#${res.activity_id})`, "success");
     $("prompt").value = "";
     // Reset Flatpickr fields too — clear the visible value and our stored ms.
@@ -1427,12 +1442,16 @@ function buildActivityRow(a) {
     const sessionBadge = a.session_tag
       ? `<span class="type-badge" style="background:var(--surface-2);color:var(--text);"><i data-lucide="calendar-days" style="width:11px;height:11px;"></i> ${a.session_tag.replace(/^week/, "Week ").replace(/^prog/, "Prog ").replace(/^lab/, "Lab ")}</span>`
       : "";
+    const attemptsBadge = (a.max_attempts == null || a.max_attempts <= 0)
+      ? `<span class="type-badge" title="Unlimited attempts" style="background:var(--surface-2);color:var(--muted);"><i data-lucide="infinity" style="width:11px;height:11px;"></i> ∞</span>`
+      : `<span class="type-badge" title="${a.max_attempts} attempt${a.max_attempts === 1 ? "" : "s"} allowed" style="background:var(--surface-2);color:var(--text);"><i data-lucide="repeat" style="width:11px;height:11px;"></i> ${a.max_attempts}×</span>`;
     left.innerHTML = `
       <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.25rem;flex-wrap:wrap;">
         <span class="type-badge type-badge--${a.type}">
           <i data-lucide="${icon}" style="width:11px;height:11px;"></i> ${label}
         </span>
         ${sessionBadge}
+        ${attemptsBadge}
         <span class="status-pill ${isOpen ? "open" : "closed"}">
           ${isOpen
             ? `<i data-lucide="circle" style="width:7px;height:7px;fill:currentColor;"></i> Live`
@@ -1605,6 +1624,10 @@ function openBulkScheduleDialog(slug) {
       <label style="display:flex;align-items:center;gap:0.45rem;font-size:0.9rem;margin:0.15rem 0;"><input type="radio" name="bulk-status" value="open" /> Open all <span class="muted" style="font-size:0.8rem;">— needed for students to see them</span></label>
       <label style="display:flex;align-items:center;gap:0.45rem;font-size:0.9rem;margin:0.15rem 0;"><input type="radio" name="bulk-status" value="closed" /> Close all</label>
     </fieldset>
+    <div class="field" style="margin:0 0 0.5rem;">
+      <label for="bulk-max-attempts">Max attempts <span class="muted" style="font-weight:400;">(blank = leave alone, 0 = unlimited)</span></label>
+      <input type="number" id="bulk-max-attempts" min="0" max="999" step="1" placeholder="leave alone" />
+    </div>
     <div id="bulk-visibility-hint" class="muted" style="font-size:0.82rem;margin:0 0 0.4rem;min-height:1.2em;"></div>
     <div id="bulk-err" class="status" role="status"></div>
     <div style="display:flex;justify-content:space-between;gap:0.5rem;margin-top:0.85rem;flex-wrap:wrap;">
@@ -1720,6 +1743,13 @@ function openBulkScheduleDialog(slug) {
     if (rel != null) payload.release_at = rel;
     if (due != null) payload.due_at = due;
     if (status === "open" || status === "closed") payload.status = status;
+
+    // Max attempts: blank = don't touch, 0 = unlimited (null), N>=1 = cap.
+    const maxRaw = document.getElementById("bulk-max-attempts")?.value;
+    if (maxRaw !== "" && maxRaw != null) {
+      const n = parseInt(maxRaw, 10);
+      if (Number.isFinite(n)) payload.max_attempts = n <= 0 ? null : n;
+    }
     if (!Object.keys(payload).length) {
       setStatus("bulk-err", "Pick a date or change the status — or use Clear to wipe existing dates.", "error");
       return;
@@ -2211,6 +2241,14 @@ $("edit-activity-form").addEventListener("submit", async (e) => {
   }
   payload.release_at = readDate("edit-release-at");
   payload.due_at = readDate("edit-due-at");
+
+  // Max attempts. UI: blank or 0 → null (unlimited); positive int → cap.
+  const maxRaw = $("edit-max-attempts")?.value;
+  if (maxRaw === "" || maxRaw == null) payload.max_attempts = null;
+  else {
+    const n = parseInt(maxRaw, 10);
+    payload.max_attempts = Number.isFinite(n) && n >= 1 ? n : null;
+  }
 
   // Options + correct-answer for poll-family + ordering.
   const optionTypes = new Set(["poll", "poll_pie", "poll_multi", "ordering"]);

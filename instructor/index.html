@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@600;700;800&family=Lora:wght@400;500;600&family=Ubuntu:wght@400;500;700&family=Roboto+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/styles.css?v=81" />
+  <link rel="stylesheet" href="/css/styles.css?v=82" />
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -251,6 +251,10 @@
                 <div class="field" style="margin:0;flex:1;min-width:180px;">
                   <label for="due-at">Due at <span class="muted" style="font-weight:400;">(optional)</span></label>
                   <input type="text" id="due-at" class="datetime-input" placeholder="Pick date &amp; time…" autocomplete="off" />
+                </div>
+                <div class="field" style="margin:0;flex:1;min-width:120px;">
+                  <label for="max-attempts">Max attempts <span class="muted" style="font-weight:400;">(0 = ∞)</span></label>
+                  <input type="number" id="max-attempts" min="0" max="999" step="1" value="1" />
                 </div>
               </div>
 
@@ -507,6 +511,10 @@
             <label>Due at <span class="muted" style="font-weight:400;">(optional)</span></label>
             <input type="text" id="edit-due-at" class="datetime-input" placeholder="Pick date &amp; time…" autocomplete="off" />
           </div>
+          <div class="field" style="margin:0;flex:1;min-width:140px;">
+            <label>Max attempts <span class="muted" style="font-weight:400;">(0 = unlimited)</span></label>
+            <input type="number" id="edit-max-attempts" min="0" max="999" step="1" placeholder="1" />
+          </div>
         </div>
 
         <button type="submit" style="width:100%;margin-top:0.75rem;">Save changes</button>
@@ -547,9 +555,9 @@
 
   <div class="build-chip" data-version></div>
 
-  <script type="module" src="/js/instructor.js?v=81"></script>
+  <script type="module" src="/js/instructor.js?v=82"></script>
   <script type="module">
-    import { bootPage } from "/js/ui.js?v=81";
+    import { bootPage } from "/js/ui.js?v=82";
     bootPage();
   </script>
 </body>

@@ -5,6 +5,56 @@ import { gradeAnswer, exposeCorrectAnswer } from "../grading.js";
 
 export const activitiesRouter = Router();
 
+// Normalize an incoming max_attempts value.
+//   undefined  -> fallback (used by PATCH for "field not present")
+//   null/0/""  -> null  (unlimited)
+//   N >= 1     -> floor(N), clamped to 999
+//   anything else -> fallback
+export function normalizeMaxAttempts(v, fallback = 1) {
+  if (v === undefined) return fallback;
+  if (v === null || v === "" || v === 0 || v === "0") return null;
+  const n = Number(v);
+  if (!Number.isFinite(n) || n < 1) return fallback;
+  return Math.min(Math.floor(n), 999);
+}
+
+// Read the current attempt counter for (activity, email). Always returns
+// a finite number (0 when no row exists yet).
+export function attemptsUsed(activityId, email) {
+  const row = db.prepare(
+    "SELECT used FROM activity_attempts WHERE activity_id = ? AND email = ?"
+  ).get(activityId, email);
+  return row ? row.used : 0;
+}
+
+// Throw a structured error if the student has no attempts left. Caller is
+// responsible for converting it to a 409 response. Keeping this as a
+// throw lets both /vote and /submissions short-circuit early.
+export function ensureAttemptsRemaining(activity, email) {
+  if (activity.max_attempts == null || activity.max_attempts <= 0) return;
+  const used = attemptsUsed(activity.id, email);
+  if (used >= activity.max_attempts) {
+    const err = new Error("No attempts remaining");
+    err.code = "ATTEMPTS_EXHAUSTED";
+    err.attempts_used = used;
+    err.max_attempts = activity.max_attempts;
+    throw err;
+  }
+}
+
+// Atomically bump the attempt counter. Returns the new used value.
+export function bumpAttempt(activityId, email) {
+  const now = Date.now();
+  db.prepare(`
+    INSERT INTO activity_attempts (activity_id, email, used, last_at)
+    VALUES (?, ?, 1, ?)
+    ON CONFLICT (activity_id, email) DO UPDATE SET
+      used    = activity_attempts.used + 1,
+      last_at = excluded.last_at
+  `).run(activityId, email, now);
+  return attemptsUsed(activityId, email);
+}
+
 // ---------- SSE broadcast ----------
 const sseClients = new Set();
 
@@ -40,7 +90,7 @@ activitiesRouter.get("/", requireAuth, (req, res) => {
   const now = Date.now();
   let sql = `
     SELECT id AS activity_id, prompt, asset_url, type, poll_options, difficulty,
-           session_tag, release_at, due_at
+           session_tag, release_at, due_at, max_attempts
     FROM activities
     WHERE status = 'open'
       AND (scheduled_at IS NULL OR scheduled_at <= ?)
@@ -54,12 +104,18 @@ activitiesRouter.get("/", requireAuth, (req, res) => {
   }
   sql += " ORDER BY id DESC";
   const rows = db.prepare(sql).all(...params);
+  // Annotate each row with the caller's attempt count so the student
+  // client can show "Attempt 2 of 3" or lock the form on load.
+  const email = req.user.email;
+  for (const r of rows) {
+    r.attempts_used = attemptsUsed(r.activity_id, email);
+  }
   res.json({ ok: true, activities: rows });
 });
 
 activitiesRouter.get("/:id", requireAuth, (req, res) => {
   const row = db.prepare(
-    "SELECT id AS activity_id, prompt, asset_url, status, type, poll_options, session_tag, release_at, due_at FROM activities WHERE id = ?"
+    "SELECT id AS activity_id, prompt, asset_url, status, type, poll_options, session_tag, release_at, due_at, max_attempts FROM activities WHERE id = ?"
   ).get(req.params.id);
   if (!row) return res.status(404).json({ ok: false, error: "Not found" });
   if (row.status !== "open") return res.status(409).json({ ok: false, error: "Activity is closed" });
@@ -70,6 +126,7 @@ activitiesRouter.get("/:id", requireAuth, (req, res) => {
   if (row.due_at && row.due_at <= now) {
     return res.status(409).json({ ok: false, error: "Activity is past its due date" });
   }
+  row.attempts_used = attemptsUsed(row.activity_id, req.user.email);
   res.json({ ok: true, activity: row });
 });
 
@@ -77,7 +134,7 @@ activitiesRouter.get("/:id", requireAuth, (req, res) => {
 activitiesRouter.get("/admin/all", requireInstructor, (req, res) => {
   const { class_id } = req.query;
   let sql = `SELECT id AS activity_id, prompt, status, asset_url, type, class_id,
-                    session_tag, release_at, due_at, created_at
+                    session_tag, release_at, due_at, max_attempts, created_at
              FROM activities`;
   const params = [];
   if (class_id) {
@@ -135,14 +192,18 @@ activitiesRouter.post("/admin", requireInstructor, (req, res) => {
     if (arr && arr.length) correctAnswer = JSON.stringify({ indices: arr });
   }
 
+  const maxAttempts = normalizeMaxAttempts(req.body && req.body.max_attempts, 1);
+
   if (!prompt) return res.status(400).json({ ok: false, error: "Missing prompt" });
   const info = db.prepare(
     `INSERT INTO activities
        (prompt, status, asset_url, class_id, type, poll_options, difficulty,
-        scheduled_at, session_tag, release_at, due_at, correct_answer, created_at)
-     VALUES (?, 'open', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        scheduled_at, session_tag, release_at, due_at, correct_answer,
+        max_attempts, created_at)
+     VALUES (?, 'open', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).run(prompt, assetUrl, classId, type, pollOptions, difficulty,
-        scheduledAt, sessionTag, releaseAt, dueAt, correctAnswer, Date.now());
+        scheduledAt, sessionTag, releaseAt, dueAt, correctAnswer,
+        maxAttempts, Date.now());
   res.json({ ok: true, activity_id: info.lastInsertRowid });
   notifySSE();
 });
@@ -152,7 +213,7 @@ activitiesRouter.patch("/admin/:id", requireInstructor, (req, res) => {
   // the current value; anything explicitly null is treated as a clear.
   const {
     status, prompt, type, poll_options, difficulty, scheduled_at, class_id,
-    session_tag, release_at, due_at, correct_answer,
+    session_tag, release_at, due_at, correct_answer, max_attempts,
   } = req.body;
 
   if (status && status !== "open" && status !== "closed") {
@@ -213,16 +274,20 @@ activitiesRouter.patch("/admin/:id", requireInstructor, (req, res) => {
       }
     }
 
+    const newMaxAttempts = normalizeMaxAttempts(max_attempts, current.max_attempts);
+
     const info = db.prepare(`
       UPDATE activities SET
         status = ?, prompt = ?, type = ?, poll_options = ?,
         difficulty = ?, scheduled_at = ?, class_id = ?,
-        session_tag = ?, release_at = ?, due_at = ?, correct_answer = ?
+        session_tag = ?, release_at = ?, due_at = ?, correct_answer = ?,
+        max_attempts = ?
       WHERE id = ?
     `).run(
       newStatus, newPrompt, newType, newPollOptions,
       newDifficulty, newScheduledAt, newClassId,
       newSessionTag, newReleaseAt, newDueAt, newCorrectAnswer,
+      newMaxAttempts,
       req.params.id
     );
 
@@ -249,17 +314,33 @@ activitiesRouter.delete("/admin/:id", requireInstructor, (req, res) => {
 // option_index (poll / poll_pie) or an array option_indices (poll_multi).
 // Replaces the user's previous answer atomically.
 activitiesRouter.post("/:id/vote", requireAuth, (req, res) => {
-  const activityId = req.params.id;
+  const activityId = parseInt(req.params.id, 10);
   const { option_index, option_indices } = req.body || {};
   const indices = Array.isArray(option_indices)
     ? option_indices
     : (option_index !== undefined ? [option_index] : []);
   if (!indices.length) return res.status(400).json({ ok: false, error: "Option index required" });
 
+  const activity = db.prepare("SELECT * FROM activities WHERE id = ?").get(activityId);
+  if (!activity) return res.status(404).json({ ok: false, error: "Activity not found" });
+
+  try {
+    ensureAttemptsRemaining(activity, req.user.email);
+  } catch (err) {
+    if (err.code === "ATTEMPTS_EXHAUSTED") {
+      return res.status(409).json({
+        ok: false, error: err.message,
+        attempts_used: err.attempts_used,
+        max_attempts: err.max_attempts,
+      });
+    }
+    return res.status(500).json({ ok: false, error: err.message });
+  }
+
   try {
     const tx = db.transaction((idxs) => {
-      // Wipe this user's previous answer(s) so re-answering replaces them
-      // (UNIQUE(activity_id,email) only allows one row in single-select).
+      // Wipe previous answers so re-answering replaces them. Each call here
+      // counts as ONE attempt regardless of how many options it carries.
       db.prepare("DELETE FROM poll_votes WHERE activity_id = ? AND email = ?")
         .run(activityId, req.user.email);
       const ins = db.prepare(
@@ -269,16 +350,15 @@ activitiesRouter.post("/:id/vote", requireAuth, (req, res) => {
       for (const i of idxs) ins.run(activityId, req.user.email, i, now);
     });
     tx(indices);
+    const used = bumpAttempt(activityId, req.user.email);
 
-    // Tell the student whether they're correct (and what the right answer
-    // is) right after submitting so the client can flip the UI into
-    // graded-feedback mode.
-    const activity = db.prepare("SELECT * FROM activities WHERE id = ?").get(activityId);
-    const isCorrect = activity ? gradeAnswer(activity, { poll_indices: indices }) : null;
+    const isCorrect = gradeAnswer(activity, { poll_indices: indices });
     res.json({
       ok: true,
       is_correct: isCorrect,
-      correct_answer: activity ? exposeCorrectAnswer(activity) : null,
+      correct_answer: exposeCorrectAnswer(activity),
+      attempts_used: used,
+      max_attempts: activity.max_attempts,
     });
   } catch (err) {
     res.status(500).json({ ok: false, error: err.message });

@@ -6,6 +6,7 @@ import { config } from "../config.js";
 import { requireAuth, requireInstructor, studentIdFor } from "../auth.js";
 import { persistUpload } from "../storage.js";
 import { gradeAnswer, exposeCorrectAnswer } from "../grading.js";
+import { ensureAttemptsRemaining, bumpAttempt } from "./activities.js";
 
 export const submissionsRouter = Router();
 
@@ -43,6 +44,19 @@ submissionsRouter.post(
         return res.status(409).json({ ok: false, error: "Activity is closed" });
       }
 
+      try {
+        ensureAttemptsRemaining(activity, req.user.email);
+      } catch (err) {
+        if (err.code === "ATTEMPTS_EXHAUSTED") {
+          return res.status(409).json({
+            ok: false, error: err.message,
+            attempts_used: err.attempts_used,
+            max_attempts: err.max_attempts,
+          });
+        }
+        throw err;
+      }
+
       let attachmentLocal = null;
       let attachmentMime = null;
       let driveFileId = null;
@@ -71,6 +85,8 @@ submissionsRouter.post(
         attachmentLocal, attachmentMime, driveFileId, driveUrl, Date.now()
       );
 
+      const used = bumpAttempt(activityId, req.user.email);
+
       // For activities that support auto-grading (ordering), return the
       // correctness verdict and the canonical correct answer so the
       // student client can immediately show graded feedback.
@@ -80,6 +96,8 @@ submissionsRouter.post(
         submission_id: info.lastInsertRowid,
         is_correct: isCorrect,
         correct_answer: exposeCorrectAnswer(activity),
+        attempts_used: used,
+        max_attempts: activity.max_attempts,
       });
     } catch (err) {
       if (err.status === 415) {

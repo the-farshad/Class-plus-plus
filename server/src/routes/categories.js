@@ -110,6 +110,19 @@ categoriesRouter.post("/:slug/bulk", (req, res) => {
   const due = asMs(req.body?.due_at);
   if (due !== undefined) { sets.push("due_at = ?"); params.push(due); }
 
+  // max_attempts: absent = leave alone, null/0 = unlimited, N>=1 = cap
+  if (req.body && req.body.max_attempts !== undefined) {
+    const v = req.body.max_attempts;
+    if (v === null || v === 0 || v === "" || v === "0") {
+      sets.push("max_attempts = NULL");
+    } else {
+      const n = Number(v);
+      if (Number.isFinite(n) && n >= 1) {
+        sets.push("max_attempts = ?"); params.push(Math.min(Math.floor(n), 999));
+      }
+    }
+  }
+
   if (!sets.length) return res.status(400).json({ ok: false, error: "Nothing to update" });
 
   const sql = `
