@@ -67,6 +67,22 @@ export function isAssignedTo(activity, email) {
   return list.includes((email || "").toLowerCase());
 }
 
+// Strip the difficulty-tag prefix from a prompt before it goes to a
+// student. The seeded questions are authored with markers like
+// "**Week 01 · AI-resistant.** Drag these..." — instructors want them
+// (it's a teaching cue) but students shouldn't see whether a question
+// is Easy / Medium / Hard / AI-resistant. We drop the whole leading
+// "**Week NN · <difficulty>.**" prefix, leaving the bare question body.
+export function scrubDifficultyForStudent(prompt) {
+  if (!prompt || typeof prompt !== "string") return prompt;
+  // The middle-dot separator can render as U+00B7 (·) or U+2022 (•).
+  // Handle either, plus optional whitespace around it.
+  return prompt.replace(
+    /^\s*\*\*\s*Week\s+\d+\s*[·•]\s*[^.\n]+?\.\s*\*\*\s*/i,
+    ""
+  );
+}
+
 // Atomically bump the attempt counter. Returns the new used value.
 export function bumpAttempt(activityId, email) {
   const now = Date.now();
@@ -143,9 +159,11 @@ activitiesRouter.get("/", requireAuth, (req, res) => {
   const rows = db.prepare(sql).all(...params);
   // Annotate each row with the caller's attempt count so the student
   // client can show "Attempt 2 of 3" or lock the form on load.
+  // Also scrub the instructor-only difficulty tag out of the prompt.
   const email = req.user.email;
   for (const r of rows) {
     r.attempts_used = attemptsUsed(r.activity_id, email);
+    r.prompt = scrubDifficultyForStudent(r.prompt);
   }
   res.json({ ok: true, activities: rows });
 });
@@ -169,6 +187,7 @@ activitiesRouter.get("/:id", requireAuth, (req, res) => {
     return res.status(409).json({ ok: false, error: "Activity is past its due date" });
   }
   row.attempts_used = attemptsUsed(row.activity_id, req.user.email);
+  row.prompt = scrubDifficultyForStudent(row.prompt);
   res.json({ ok: true, activity: row });
 });
 
