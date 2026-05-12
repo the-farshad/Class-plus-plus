@@ -2077,6 +2077,15 @@ tbody tr:hover { background: var(--interactive); }
   border-top: 1px solid var(--border);
   animation: fadeUp 0.3s var(--ease) both;
 }
+.results-hidden .results-hidden-inner {
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius);
+  background: var(--surface-2, var(--surface));
+  border: 1px dashed var(--border);
+  display: flex; flex-direction: column; gap: 0.2rem;
+  font-size: 0.9rem;
+}
+.results-hidden .results-hidden-inner strong { color: var(--text-heading); }
 .results-head {
   display: flex;
   align-items: center;

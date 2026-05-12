@@ -94,7 +94,7 @@ activitiesRouter.get("/", requireAuth, (req, res) => {
   //   anything else        -> hidden from this caller
   let sql = `
     SELECT id AS activity_id, prompt, asset_url, type, poll_options, difficulty,
-           session_tag, release_at, due_at, max_attempts, assigned_to_email
+           session_tag, release_at, due_at, max_attempts, assigned_to_email, show_results
     FROM activities
     WHERE status = 'open'
       AND (scheduled_at IS NULL OR scheduled_at <= ?)
@@ -120,7 +120,7 @@ activitiesRouter.get("/", requireAuth, (req, res) => {
 
 activitiesRouter.get("/:id", requireAuth, (req, res) => {
   const row = db.prepare(
-    "SELECT id AS activity_id, prompt, asset_url, status, type, poll_options, session_tag, release_at, due_at, max_attempts, assigned_to_email FROM activities WHERE id = ?"
+    "SELECT id AS activity_id, prompt, asset_url, status, type, poll_options, session_tag, release_at, due_at, max_attempts, assigned_to_email, show_results FROM activities WHERE id = ?"
   ).get(req.params.id);
   if (!row) return res.status(404).json({ ok: false, error: "Not found" });
   if (row.status !== "open") return res.status(409).json({ ok: false, error: "Activity is closed" });
@@ -149,7 +149,8 @@ activitiesRouter.get("/admin/all", requireInstructor, (req, res) => {
   // saved options on submit.
   let sql = `SELECT id AS activity_id, prompt, status, asset_url, type, class_id,
                     session_tag, release_at, due_at, max_attempts,
-                    poll_options, correct_answer, assigned_to_email, created_at
+                    poll_options, correct_answer, assigned_to_email,
+                    show_results, created_at
              FROM activities`;
   const params = [];
   if (class_id) {
@@ -212,17 +213,19 @@ activitiesRouter.post("/admin", requireInstructor, (req, res) => {
   const rawAssign = req.body && typeof req.body.assigned_to_email === "string"
     ? req.body.assigned_to_email.trim().toLowerCase() : "";
   const assignedTo = rawAssign && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(rawAssign) ? rawAssign : null;
+  // show_results: defaults to 1 (visible to students). Pass false / 0 to hide.
+  const showResults = req.body && (req.body.show_results === false || req.body.show_results === 0) ? 0 : 1;
 
   if (!prompt) return res.status(400).json({ ok: false, error: "Missing prompt" });
   const info = db.prepare(
     `INSERT INTO activities
        (prompt, status, asset_url, class_id, type, poll_options, difficulty,
         scheduled_at, session_tag, release_at, due_at, correct_answer,
-        max_attempts, assigned_to_email, created_at)
-     VALUES (?, 'open', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        max_attempts, assigned_to_email, show_results, created_at)
+     VALUES (?, 'open', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).run(prompt, assetUrl, classId, type, pollOptions, difficulty,
         scheduledAt, sessionTag, releaseAt, dueAt, correctAnswer,
-        maxAttempts, assignedTo, Date.now());
+        maxAttempts, assignedTo, showResults, Date.now());
   res.json({ ok: true, activity_id: info.lastInsertRowid });
   notifySSE();
 });
@@ -233,7 +236,7 @@ activitiesRouter.patch("/admin/:id", requireInstructor, (req, res) => {
   const {
     status, prompt, type, poll_options, difficulty, scheduled_at, class_id,
     session_tag, release_at, due_at, correct_answer, max_attempts,
-    assigned_to_email,
+    assigned_to_email, show_results,
   } = req.body;
 
   if (status && status !== "open" && status !== "closed") {
@@ -305,18 +308,24 @@ activitiesRouter.patch("/admin/:id", requireInstructor, (req, res) => {
       if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)) newAssignedTo = e;
     }
 
+    // show_results: undefined = leave alone, else coerce to 0/1.
+    let newShowResults = current.show_results;
+    if (show_results !== undefined) {
+      newShowResults = (show_results === false || show_results === 0 || show_results === "0") ? 0 : 1;
+    }
+
     const info = db.prepare(`
       UPDATE activities SET
         status = ?, prompt = ?, type = ?, poll_options = ?,
         difficulty = ?, scheduled_at = ?, class_id = ?,
         session_tag = ?, release_at = ?, due_at = ?, correct_answer = ?,
-        max_attempts = ?, assigned_to_email = ?
+        max_attempts = ?, assigned_to_email = ?, show_results = ?
       WHERE id = ?
     `).run(
       newStatus, newPrompt, newType, newPollOptions,
       newDifficulty, newScheduledAt, newClassId,
       newSessionTag, newReleaseAt, newDueAt, newCorrectAnswer,
-      newMaxAttempts, newAssignedTo,
+      newMaxAttempts, newAssignedTo, newShowResults,
       req.params.id
     );
 
@@ -408,6 +417,13 @@ activitiesRouter.get("/:id/results", requireAuth, (req, res) => {
   const tallyTypes = new Set(["poll", "poll_pie", "poll_multi"]);
   if (!tallyTypes.has(activity.type)) {
     return res.status(409).json({ ok: false, error: `No tally available for type '${activity.type}'` });
+  }
+  // show_results gate: instructors and superadmins always see the tally
+  // (they need it for the live-results view and the present-mode page).
+  // Students only see it when the instructor has enabled show_results.
+  const isInstructor = req.user.role === "instructor" || req.user.role === "superadmin";
+  if (!isInstructor && activity.show_results !== 1) {
+    return res.status(403).json({ ok: false, error: "Results are hidden by the instructor" });
   }
 
   const votes = db.prepare(

@@ -798,6 +798,10 @@ function openEditActivity(a) {
   const assignEl = $("edit-assign-to-email");
   if (assignEl) assignEl.value = a.assigned_to_email || "";
 
+  // Show-results toggle (default 1 if column missing / migration not applied).
+  const showResEl = $("edit-show-results");
+  if (showResEl) showResEl.checked = a.show_results === undefined ? true : a.show_results === 1;
+
   show("modal-edit-activity");
   show("modal-overlay");
   if (window.lucide) window.lucide.createIcons();
@@ -1314,6 +1318,8 @@ $("new-form").addEventListener("submit", async (e) => {
 
   // Per-student assignment. Blank = whole class.
   const assignedTo = ($("assign-to-email")?.value || "").trim().toLowerCase() || null;
+  // Live results visible to students (default true).
+  const showResults = $("show-results") ? !!$("show-results").checked : true;
 
   let type = uiType;
   let options = [];
@@ -1345,7 +1351,7 @@ $("new-form").addEventListener("submit", async (e) => {
   if (btn) btn.disabled = true;
   setStatus("new-status", "Creating…");
   try {
-    const res = await api.createActivity(prompt, classId, type, options, sessionTag, releaseAt, dueAt, correctAnswer, maxAttempts, assignedTo);
+    const res = await api.createActivity(prompt, classId, type, options, sessionTag, releaseAt, dueAt, correctAnswer, maxAttempts, assignedTo, showResults);
     setStatus("new-status", `Launched! (#${res.activity_id})`, "success");
     $("prompt").value = "";
     if ($("assign-to-email")) $("assign-to-email").value = "";
@@ -1526,6 +1532,9 @@ function buildActivityRow(a) {
     const assignBadge = a.assigned_to_email
       ? `<span class="type-badge" title="Only ${escapeHTML(a.assigned_to_email)} can see this" style="background:var(--brand-soft);color:var(--brand);"><i data-lucide="user" style="width:11px;height:11px;"></i> ${escapeHTML(a.assigned_to_email)}</span>`
       : "";
+    const resultsBadge = (a.show_results === 0)
+      ? `<span class="type-badge" title="Live results are hidden from students" style="background:var(--warning-soft,var(--surface-2));color:var(--warning,#b45309);"><i data-lucide="eye-off" style="width:11px;height:11px;"></i> Results hidden</span>`
+      : "";
     left.innerHTML = `
       <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.25rem;flex-wrap:wrap;">
         <span class="type-badge type-badge--${a.type}">
@@ -1534,6 +1543,7 @@ function buildActivityRow(a) {
         ${sessionBadge}
         ${attemptsBadge}
         ${assignBadge}
+        ${resultsBadge}
         <span class="status-pill ${isOpen ? "open" : "closed"}">
           ${isOpen
             ? `<i data-lucide="circle" style="width:7px;height:7px;fill:currentColor;"></i> Live`
@@ -1568,6 +1578,17 @@ function buildActivityRow(a) {
       ? `<i data-lucide="list" style="width:12px;height:12px;"></i> Responses`
       : `<i data-lucide="bar-chart-2" style="width:12px;height:12px;"></i> Results`;
     view.addEventListener("click", () => showLiveResults(a));
+
+    // Open a full-screen "presentation mode" page for projection. Reuses
+    // the session token from localStorage so no re-auth is needed.
+    const presentBtn = document.createElement("button");
+    presentBtn.className = "secondary sm";
+    presentBtn.title = "Open full-screen presentation view (new tab)";
+    presentBtn.setAttribute("aria-label", `Present results for: ${a.prompt}`);
+    presentBtn.innerHTML = `<i data-lucide="presentation" style="width:13px;height:13px;"></i>`;
+    presentBtn.addEventListener("click", () => {
+      window.open(`/present.html?activity=${encodeURIComponent(a.activity_id)}`, "_blank", "noopener");
+    });
 
     const editBtn = document.createElement("button");
     editBtn.className = "secondary sm";
@@ -1604,7 +1625,7 @@ function buildActivityRow(a) {
       }
     });
 
-    actions.append(toggle, view, editBtn, qrBtn, delBtn2);
+    actions.append(toggle, view, presentBtn, editBtn, qrBtn, delBtn2);
     li.append(left, actions);
     return li;
 }
@@ -2364,6 +2385,9 @@ $("edit-activity-form").addEventListener("submit", async (e) => {
   // Assignment: empty = clear (whole class), valid email = set.
   const assignRaw = ($("edit-assign-to-email")?.value || "").trim().toLowerCase();
   payload.assigned_to_email = assignRaw || null;
+
+  // Live-results visibility toggle.
+  if ($("edit-show-results")) payload.show_results = $("edit-show-results").checked ? 1 : 0;
 
   // Options + correct-answer for poll-family + ordering.
   const optionTypes = new Set(["poll", "poll_pie", "poll_multi", "ordering"]);

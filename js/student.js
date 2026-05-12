@@ -490,6 +490,20 @@ function stopResultsRefresh() {
 }
 
 async function showPollResults(a) {
+  // Instructor disabled live results for this activity. Show a clear
+  // placeholder rather than trying to fetch and failing with a 403.
+  if (a.show_results === 0) {
+    document.getElementById("student-results")?.remove();
+    const note = document.createElement("div");
+    note.id = "student-results";
+    note.className = "student-results results-hidden";
+    note.innerHTML = `<div class="results-hidden-inner">
+        <strong>Results hidden.</strong>
+        <span class="muted">Your instructor will share these in class.</span>
+      </div>`;
+    $("poll-card").appendChild(note);
+    return;
+  }
   let panel = document.getElementById("student-results");
   if (!panel) {
     panel = document.createElement("div");
