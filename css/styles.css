@@ -1759,6 +1759,26 @@ tbody tr:hover { background: var(--interactive); }
 }
 .poll-tile.selected .poll-tile-letter { background: var(--brand); opacity: 0.75; }
 
+/* Long-Markdown prompts on the instructor live-results card must wrap
+   inside the flex parent — the title was being measured by Chart.js
+   and overflowing horizontally on small screens. */
+#live-results-card { overflow: hidden; }
+#live-results-card #live-results-title.prompt-md {
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.4;
+  max-height: 6.5em;        /* about 4 lines */
+  overflow-y: auto;
+  overflow-x: hidden;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+#live-results-card #live-results-title.prompt-md pre {
+  max-width: 100%;
+  overflow-x: auto;
+  font-size: 0.78rem;
+}
+
 /* ---------- Activity prompt rendered as Markdown ---------- */
 .prompt-md p:first-child { margin-top: 0; }
 .prompt-md p:last-child  { margin-bottom: 0; }

@@ -148,8 +148,13 @@ activitiesRouter.post("/admin", requireInstructor, (req, res) => {
 });
 
 activitiesRouter.patch("/admin/:id", requireInstructor, (req, res) => {
-  const { status, prompt, type, poll_options, difficulty, scheduled_at, class_id } = req.body;
-  
+  // Every editable field is optional in the body. Anything absent stays at
+  // the current value; anything explicitly null is treated as a clear.
+  const {
+    status, prompt, type, poll_options, difficulty, scheduled_at, class_id,
+    session_tag, release_at, due_at, correct_answer,
+  } = req.body;
+
   if (status && status !== "open" && status !== "closed") {
     return res.status(400).json({ ok: false, error: "Invalid status" });
   }
@@ -161,15 +166,66 @@ activitiesRouter.patch("/admin/:id", requireInstructor, (req, res) => {
     const newStatus = status !== undefined ? status : current.status;
     const newPrompt = prompt !== undefined ? String(prompt).trim() : current.prompt;
     const newType = type !== undefined ? type : current.type;
-    const newPollOptions = newType === "poll" && poll_options !== undefined ? JSON.stringify(poll_options) : current.poll_options;
+
+    // poll_options applies to every option-bearing type; previously this
+    // was gated on type==='poll' which silently dropped edits for
+    // poll_pie / poll_multi / ordering.
+    const optionTypes = new Set(["poll", "poll_pie", "poll_multi", "ordering"]);
+    const newPollOptions = optionTypes.has(newType) && poll_options !== undefined
+      ? JSON.stringify(poll_options)
+      : current.poll_options;
+
     const newDifficulty = difficulty !== undefined ? difficulty : current.difficulty;
     const newScheduledAt = scheduled_at !== undefined ? scheduled_at : current.scheduled_at;
     const newClassId = class_id !== undefined ? class_id : current.class_id;
 
-    const info = db.prepare(
-      "UPDATE activities SET status = ?, prompt = ?, type = ?, poll_options = ?, difficulty = ?, scheduled_at = ?, class_id = ? WHERE id = ?"
-    ).run(newStatus, newPrompt, newType, newPollOptions, newDifficulty, newScheduledAt, newClassId, req.params.id);
-    
+    // session_tag: undefined = leave alone, "" / null = clear, otherwise
+    // must look like a valid slug.
+    let newSessionTag = current.session_tag;
+    if (session_tag === null || session_tag === "") newSessionTag = null;
+    else if (typeof session_tag === "string") {
+      const t = session_tag.trim().toLowerCase();
+      if (/^[a-z0-9_-]{1,40}$/.test(t)) newSessionTag = t;
+    }
+
+    // Date fields: accept number (ms), ISO string, or explicit null.
+    function asMs(v, fallback) {
+      if (v === undefined) return fallback;
+      if (v === null || v === "") return null;
+      if (typeof v === "number") return v;
+      const t = new Date(v).getTime();
+      return Number.isNaN(t) ? fallback : t;
+    }
+    const newReleaseAt = asMs(release_at, current.release_at);
+    const newDueAt = asMs(due_at, current.due_at);
+
+    // correct_answer JSON. Only meaningful for poll / poll_pie / poll_multi.
+    let newCorrectAnswer = current.correct_answer;
+    if (correct_answer === null) newCorrectAnswer = null;
+    else if (correct_answer && typeof correct_answer === "object") {
+      if (newType === "poll" || newType === "poll_pie") {
+        const idx = typeof correct_answer.index === "number" ? correct_answer.index : null;
+        newCorrectAnswer = idx !== null ? JSON.stringify({ index: idx }) : null;
+      } else if (newType === "poll_multi") {
+        const arr = Array.isArray(correct_answer.indices)
+          ? correct_answer.indices.filter(n => Number.isInteger(n)) : null;
+        newCorrectAnswer = arr && arr.length ? JSON.stringify({ indices: arr }) : null;
+      }
+    }
+
+    const info = db.prepare(`
+      UPDATE activities SET
+        status = ?, prompt = ?, type = ?, poll_options = ?,
+        difficulty = ?, scheduled_at = ?, class_id = ?,
+        session_tag = ?, release_at = ?, due_at = ?, correct_answer = ?
+      WHERE id = ?
+    `).run(
+      newStatus, newPrompt, newType, newPollOptions,
+      newDifficulty, newScheduledAt, newClassId,
+      newSessionTag, newReleaseAt, newDueAt, newCorrectAnswer,
+      req.params.id
+    );
+
     if (info.changes === 0) return res.status(404).json({ ok: false, error: "Not found" });
     res.json({ ok: true });
     notifySSE();

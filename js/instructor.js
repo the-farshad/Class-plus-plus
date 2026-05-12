@@ -638,6 +638,87 @@ $("add-student-form").addEventListener("submit", async (e) => {
   }
 });
 
+// ---- Edit-activity modal (full edit: prompt, options, correct answer,
+//      category, status, schedule). Opened from the Activities list. ----
+function openEditActivity(a) {
+  $("edit-activity-id").value = a.activity_id;
+  $("edit-activity-type-val").value = a.type;
+  $("edit-activity-prompt").value = a.prompt;
+  $("edit-activity-status-select").value = a.status === "open" ? "open" : "closed";
+
+  // Rebuild the category dropdown from current cache + select the
+  // activity's current tag.
+  const sel = $("edit-session-tag");
+  sel.innerHTML = `<option value="">— none —</option>`
+    + categoriesCache.map(c => `<option value="${escapeHTML(c.slug)}">${escapeHTML(c.name)}</option>`).join("");
+  if (a.session_tag) sel.value = a.session_tag;
+
+  // Options (with correct-answer checkboxes for poll types).
+  const optionTypes = new Set(["poll", "poll_pie", "poll_multi", "ordering"]);
+  const editOptContainer = $("edit-poll-options-container");
+  const editOptLabel = $("edit-poll-options-label");
+  const editOptList = $("edit-poll-options-list");
+  editOptList.innerHTML = "";
+  if (optionTypes.has(a.type)) {
+    editOptContainer.hidden = false;
+    editOptLabel.innerHTML = a.type === "ordering"
+      ? `Items in <strong>correct order</strong> <span class="muted" style="font-weight:400;">(students will see them shuffled)</span>`
+      : `Options <span class="muted" style="font-weight:400;">(check the ✓ next to correct answer${a.type === "poll_multi" ? "s" : ""})</span>`;
+    let opts = [];
+    try { opts = a.poll_options ? JSON.parse(a.poll_options) : []; } catch { opts = []; }
+    if (!opts.length) opts = ["", ""];
+    opts.forEach(v => addOptionRow("edit-poll-options-list", v));
+    // Pre-check correctness toggles based on stored correct_answer.
+    let correct = null;
+    try { correct = a.correct_answer ? JSON.parse(a.correct_answer) : null; } catch {}
+    const rows = editOptList.querySelectorAll(".option-row");
+    if (correct) {
+      const idxs = typeof correct.index === "number" ? [correct.index] :
+                   Array.isArray(correct.indices) ? correct.indices : [];
+      idxs.forEach(i => {
+        const cb = rows[i]?.querySelector(".option-correct");
+        if (cb) cb.checked = true;
+      });
+    }
+    // Hide the ✓ toggle for ordering (correctness is implicit).
+    if (a.type === "ordering") {
+      editOptList.querySelectorAll(".option-correct-toggle").forEach(el => el.style.display = "none");
+    }
+  } else {
+    editOptContainer.hidden = true;
+  }
+
+  // Schedule inputs — destroy any old flatpickr first so re-opening
+  // doesn't stack instances or keep a stale picked date.
+  ["edit-release-at", "edit-due-at"].forEach(id => {
+    const el = $(id);
+    if (el._flatpickr) el._flatpickr.destroy();
+    el.value = "";
+    delete el.dataset.epochMs;
+    if (window.flatpickr) {
+      window.flatpickr(el, {
+        enableTime: true, time_24hr: true, minuteIncrement: 5,
+        dateFormat: "Y-m-d H:i",
+        onChange: (sel) => { el.dataset.epochMs = sel?.[0] ? sel[0].getTime() : ""; },
+      });
+    }
+  });
+  if (a.release_at) {
+    const el = $("edit-release-at");
+    if (el._flatpickr) el._flatpickr.setDate(new Date(a.release_at), true);
+    el.dataset.epochMs = String(a.release_at);
+  }
+  if (a.due_at) {
+    const el = $("edit-due-at");
+    if (el._flatpickr) el._flatpickr.setDate(new Date(a.due_at), true);
+    el.dataset.epochMs = String(a.due_at);
+  }
+
+  show("modal-edit-activity");
+  show("modal-overlay");
+  if (window.lucide) window.lucide.createIcons();
+}
+
 // ---- Join QR / Stats / Student detail modals ----
 function ensureCenterModal(id, widthPx = 480) {
   let m = document.getElementById(id);
@@ -1392,30 +1473,7 @@ function buildActivityRow(a) {
     editBtn.innerHTML = `<i data-lucide="edit-2" style="width:13px;height:13px;"></i>`;
     editBtn.title = "Edit prompt";
     editBtn.setAttribute("aria-label", `Edit activity: ${a.prompt}`);
-    editBtn.addEventListener("click", () => {
-      $("edit-activity-id").value = a.activity_id;
-      $("edit-activity-type-val").value = a.type;
-      $("edit-activity-prompt").value = a.prompt;
-
-      // Populate poll options if applicable
-      const isPoll = a.type === "poll" || a.type === "poll_pie";
-      const editOptContainer = $("edit-poll-options-container");
-      const editOptList = $("edit-poll-options-list");
-      editOptList.innerHTML = "";
-      if (isPoll) {
-        editOptContainer.hidden = false;
-        let opts = [];
-        try { opts = a.poll_options ? JSON.parse(a.poll_options) : []; } catch { opts = []; }
-        if (!opts.length) opts = ["", ""];
-        opts.forEach(v => addOptionRow("edit-poll-options-list", v));
-      } else {
-        editOptContainer.hidden = true;
-      }
-
-      show("modal-edit-activity");
-      show("modal-overlay");
-      if (window.lucide) window.lucide.createIcons();
-    });
+    editBtn.addEventListener("click", () => openEditActivity(a));
 
     const qrBtn = document.createElement("button");
     qrBtn.className = "secondary sm";
@@ -1529,12 +1587,12 @@ function openBulkScheduleDialog(slug) {
     m.className = "modal-center";
     m.setAttribute("role", "dialog");
     m.setAttribute("aria-modal", "true");
-    m.style.maxWidth = "440px";
+    m.style.maxWidth = "460px";
     document.body.appendChild(m);
   }
   m.innerHTML = `
     <h3 style="margin:0 0 0.5rem;font-size:1.05rem;">Schedule “${escapeHTML(slug)}”</h3>
-    <p class="muted" style="margin:0 0 1rem;font-size:0.88rem;">Applies to every activity in this category. Leave either field blank to leave it unchanged; use the small reset button to clear an existing date.</p>
+    <p class="muted" style="margin:0 0 1rem;font-size:0.88rem;">Applies to every activity in this category. Leave a field blank to leave that date alone; use <em>Clear both dates</em> to wipe existing values.</p>
     <div class="field"><label for="bulk-release">Release at</label>
       <input type="text" id="bulk-release" class="datetime-input" placeholder="Pick date &amp; time…" autocomplete="off" />
     </div>
@@ -1542,7 +1600,7 @@ function openBulkScheduleDialog(slug) {
       <input type="text" id="bulk-due" class="datetime-input" placeholder="Pick date &amp; time…" autocomplete="off" />
     </div>
     <div id="bulk-err" class="status" role="status"></div>
-    <div style="display:flex;justify-content:space-between;gap:0.5rem;margin-top:0.85rem;">
+    <div style="display:flex;justify-content:space-between;gap:0.5rem;margin-top:0.85rem;flex-wrap:wrap;">
       <button type="button" class="secondary sm danger" id="bulk-clear">Clear both dates</button>
       <div style="display:flex;gap:0.5rem;">
         <button type="button" class="secondary sm" id="bulk-cancel">Cancel</button>
@@ -1551,19 +1609,53 @@ function openBulkScheduleDialog(slug) {
     </div>`;
   show("modal-overlay");
   m.hidden = false;
-  // Init flatpickr on the two inputs once they're in the DOM
-  if (window.flatpickr) {
+
+  // Wait for Flatpickr if it isn't ready yet, then init on both inputs.
+  const initFp = (attempts = 0) => {
+    if (!window.flatpickr) {
+      if (attempts < 30) return setTimeout(() => initFp(attempts + 1), 100);
+      // Give up — the plain <input> still works because we read input.value
+      // on apply, so the user isn't locked out.
+      return;
+    }
     ["bulk-release", "bulk-due"].forEach(id => {
       const el = document.getElementById(id);
+      if (!el || el._flatpickr) return;
       window.flatpickr(el, {
         enableTime: true, time_24hr: true, minuteIncrement: 5,
         dateFormat: "Y-m-d H:i",
         onChange: (sel) => { el.dataset.epochMs = sel?.[0] ? sel[0].getTime() : ""; },
       });
     });
-  }
-  const close = () => { hide("modal-overlay"); m.hidden = true; };
+  };
+  initFp();
+
+  const close = () => {
+    // Tear flatpickr down on close so re-opening doesn't keep the old picked dates.
+    ["bulk-release", "bulk-due"].forEach(id => {
+      const el = document.getElementById(id);
+      if (el && el._flatpickr) el._flatpickr.destroy();
+    });
+    hide("modal-overlay");
+    m.hidden = true;
+  };
+
   document.getElementById("bulk-cancel").addEventListener("click", close);
+
+  // Read either flatpickr's stashed epoch OR fall back to parsing the
+  // input value directly. This unblocks people who type a date manually
+  // or paste one in.
+  function readEpoch(id) {
+    const el = document.getElementById(id);
+    if (!el) return null;
+    if (el.dataset.epochMs) return parseInt(el.dataset.epochMs, 10);
+    if (el.value) {
+      const t = new Date(el.value).getTime();
+      if (!Number.isNaN(t)) return t;
+    }
+    return null;
+  }
+
   document.getElementById("bulk-clear").addEventListener("click", async () => {
     const ok = await confirmDialog({
       title: "Clear both dates?",
@@ -1578,12 +1670,13 @@ function openBulkScheduleDialog(slug) {
       loadActivities();
     } catch (err) { setStatus("bulk-err", err.message, "error"); }
   });
+
   document.getElementById("bulk-apply").addEventListener("click", async () => {
-    const rel = document.getElementById("bulk-release").dataset.epochMs;
-    const due = document.getElementById("bulk-due").dataset.epochMs;
+    const rel = readEpoch("bulk-release");
+    const due = readEpoch("bulk-due");
     const payload = {};
-    if (rel) payload.release_at = parseInt(rel, 10);
-    if (due) payload.due_at = parseInt(due, 10);
+    if (rel != null) payload.release_at = rel;
+    if (due != null) payload.due_at = due;
     if (!Object.keys(payload).length) {
       setStatus("bulk-err", "Pick at least one date — or use Clear to remove existing ones.", "error");
       return;
@@ -1625,7 +1718,16 @@ async function showLiveResults(a) {
   hide("activities");
   show("live-results-card");
 
-  $("live-results-title").textContent = a.prompt;
+  // Render the prompt as Markdown so long-form Markdown prompts wrap
+  // cleanly and render code/bold/list/etc. — fallback to escaped text
+  // until marked + DOMPurify finish loading.
+  const titleEl = $("live-results-title");
+  titleEl.classList.add("prompt-md");
+  if (window.marked && window.DOMPurify) {
+    titleEl.innerHTML = window.DOMPurify.sanitize(window.marked.parse(a.prompt || ""));
+  } else {
+    titleEl.textContent = a.prompt;
+  }
   $("live-results-count").textContent = "";
 
   const liveBadge = $("live-badge");
@@ -2042,16 +2144,52 @@ $("edit-activity-form").addEventListener("submit", async (e) => {
   const id = $("edit-activity-id").value;
   const type = $("edit-activity-type-val").value;
   const prompt = $("edit-activity-prompt").value.trim();
+  const status = $("edit-activity-status-select").value;
+  const sessionTag = $("edit-session-tag").value || null;
 
-  const payload = { prompt };
+  const payload = { prompt, status, session_tag: sessionTag };
 
-  if (type === "poll" || type === "poll_pie") {
+  // Read schedule fields — prefer Flatpickr's epochMs, fall back to
+  // parsing input.value so manual edits work too. Explicit null lets us
+  // CLEAR an existing date (server interprets null as "wipe").
+  function readDate(id) {
+    const el = $(id);
+    if (!el) return undefined;
+    if (el.dataset.epochMs) return parseInt(el.dataset.epochMs, 10);
+    if (el.value) {
+      const t = new Date(el.value).getTime();
+      if (!Number.isNaN(t)) return t;
+    }
+    return null; // input was cleared
+  }
+  payload.release_at = readDate("edit-release-at");
+  payload.due_at = readDate("edit-due-at");
+
+  // Options + correct-answer for poll-family + ordering.
+  const optionTypes = new Set(["poll", "poll_pie", "poll_multi", "ordering"]);
+  if (optionTypes.has(type)) {
     const options = getOptionValues("edit-poll-options-list");
     if (options.length < 2) {
-      setStatus("edit-activity-status", "At least 2 options required", "error");
+      setStatus("edit-activity-status",
+        type === "ordering" ? "Add at least 2 items to order" : "At least 2 options required",
+        "error");
       return;
     }
     payload.poll_options = options;
+
+    if (type === "poll" || type === "poll_pie") {
+      const idxs = getCorrectIndices("edit-poll-options-list");
+      if (idxs.length === 1) payload.correct_answer = { index: idxs[0] };
+      else if (idxs.length > 1) {
+        setStatus("edit-activity-status", "Single-choice polls allow at most one ✓.", "error");
+        return;
+      } else {
+        payload.correct_answer = null; // ungrade
+      }
+    } else if (type === "poll_multi") {
+      const idxs = getCorrectIndices("edit-poll-options-list");
+      payload.correct_answer = idxs.length ? { indices: idxs } : null;
+    }
   }
 
   setStatus("edit-activity-status", "Saving…");
