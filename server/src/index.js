@@ -3,7 +3,7 @@ import cors from "cors";
 import helmet from "helmet";
 import path from "node:path";
 import { config } from "./config.js";
-import { migrate, bootstrapInstructors } from "./db.js";
+import { migrate, bootstrapInstructors, db } from "./db.js";
 import { authRouter } from "./routes/auth.js";
 import { activitiesRouter } from "./routes/activities.js";
 import { submissionsRouter } from "./routes/submissions.js";
