@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@600;700;800&family=Lora:wght@400;500;600&family=Ubuntu:wght@400;500;700&family=Roboto+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/styles.css?v=89" />
+  <link rel="stylesheet" href="/css/styles.css?v=90" />
   <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
@@ -48,7 +48,7 @@
   </header>
 
   <script type="module">
-    import { api } from "/js/api.js?v=89";
+    import { api } from "/js/api.js?v=90";
     api.initTheme();
     document.getElementById("nav-notes")?.classList.add("nav-active");
   </script>
@@ -93,7 +93,7 @@
   </main>
 
   <script type="module">
-    import { renderIndex } from "/js/blog.js?v=89";
+    import { renderIndex } from "/js/blog.js?v=90";
     renderIndex(document.getElementById("post-list"), {
       searchEl:     document.getElementById("post-search"),
       sortEl:       document.getElementById("post-sort"),
@@ -125,8 +125,8 @@
   </div>
 
   <script type="module">
-    import { bootPage, mountSettingsDrawer } from "/js/ui.js?v=89";
-    import { api, session } from "/js/api.js?v=89";
+    import { bootPage, mountSettingsDrawer } from "/js/ui.js?v=90";
+    import { api, session } from "/js/api.js?v=90";
     bootPage();
     mountSettingsDrawer({ api, session });
   </script>

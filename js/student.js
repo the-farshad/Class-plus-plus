@@ -1,12 +1,12 @@
-import { api, session, API_BASE_URL } from "/js/api.js?v=89";
+import { api, session, API_BASE_URL } from "/js/api.js?v=90";
 import {
   $, show, hide, escapeHTML, setStatus as setStatusEl,
   mountSettingsDrawer, updateUserPill, setupMicrosoftSignIn,
   toast,
-} from "/js/ui.js?v=89";
+} from "/js/ui.js?v=90";
 import {
   startDueCountdowns, onOverdue, dueChipHTML, dueLabel,
-} from "/js/due-countdown.js?v=89";
+} from "/js/due-countdown.js?v=90";
 
 const TYPE_LABELS = {
   poll: "Single choice", poll_pie: "Single choice", poll_multi: "Multiple choice",
@@ -182,6 +182,21 @@ function showActivity(a) {
   const oldResults = document.getElementById("student-results");
   if (oldResults) oldResults.remove();
   $("activity-id").value = a.activity_id;
+
+  // If the instructor reset this activity's responses (or the student
+  // signed in fresh on a new device), the server's attempts_used drops
+  // back to 0. But this browser still has our localStorage flags from
+  // a prior attempt — VOTE_KEY, SUBMIT_KEY, GRADE_KEY, plus the order
+  // snapshot. They lock the UI ("already answered, tiles disabled" or
+  // a jump to the confirm-card) even though the server would happily
+  // accept a fresh submit. Clear them when the server says we're at 0.
+  if (a.attempts_used === 0) {
+    const id = a.activity_id;
+    localStorage.removeItem(VOTE_KEY(id));
+    localStorage.removeItem(SUBMIT_KEY(id));
+    localStorage.removeItem(GRADE_KEY(id));
+    localStorage.removeItem(`classpp.order.${id}`);
+  }
 
   // Header in form-card — render the prompt as sanitized Markdown so
   // instructors can author with code fences, **bold**, lists, etc.

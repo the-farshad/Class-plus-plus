@@ -1,4 +1,4 @@
-import { escapeHTML } from "/js/ui.js?v=89";
+import { escapeHTML } from "/js/ui.js?v=90";
 
 const POSTS_DIR = "/blog/posts";
 

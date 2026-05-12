@@ -11,7 +11,7 @@
 //   - Built around Chart.js for poll-family activities, and a card grid
 //     for word_cloud / ordering / submission.
 
-import { api, session, API_BASE_URL } from "/js/api.js?v=89";
+import { api, session, API_BASE_URL } from "/js/api.js?v=90";
 
 const params = new URLSearchParams(location.search);
 const ACTIVITY_ID = params.get("activity");
