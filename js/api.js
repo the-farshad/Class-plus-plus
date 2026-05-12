@@ -194,6 +194,10 @@ export const api = {
     del(`/admin/categories/${encodeURIComponent(slug)}`),
   bulkUpdateCategory: (slug, payload) =>
     postJSON(`/admin/categories/${encodeURIComponent(slug)}/bulk`, payload),
+  resetCategoryResponses: (slug) =>
+    postJSON(`/admin/categories/${encodeURIComponent(slug)}/reset-responses`, {}),
+  resetActivityResponses: (id) =>
+    del(`/activities/admin/${encodeURIComponent(id)}/responses`),
 
   // Classes
   getStats: () => get("/admin/stats"),

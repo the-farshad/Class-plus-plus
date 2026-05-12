@@ -794,9 +794,14 @@ function openEditActivity(a) {
     }
   }
 
-  // Per-student assignment.
+  // Per-student assignment — comma-separated list, one or many emails.
   const assignEl = $("edit-assign-to-email");
-  if (assignEl) assignEl.value = a.assigned_to_email || "";
+  if (assignEl) {
+    // Reformat the stored CSV onto separate lines for readability.
+    const emails = (a.assigned_to_email || "").split(",").filter(Boolean);
+    assignEl.value = emails.join(", ");
+    refreshAssignHint(assignEl, $("edit-assign-to-email-hint"));
+  }
 
   // Show-results toggle (default 1 if column missing / migration not applied).
   const showResEl = $("edit-show-results");
@@ -1294,6 +1299,41 @@ function openCreateCategoryDialog(defaults = {}) {
   apply();
 })();
 
+// Inline validity counter for the "Assign to specific students"
+// textarea. Updates a sibling .muted hint with "3 valid · 1 invalid".
+function refreshAssignHint(textarea, hintEl) {
+  if (!textarea || !hintEl) return;
+  const raw = textarea.value;
+  if (!raw.trim()) { hintEl.textContent = "Visible to the whole class."; hintEl.style.color = ""; return; }
+  const parts = raw.split(/[,\s;]+/).map(s => s.trim()).filter(Boolean);
+  const valid = new Set();
+  const invalid = [];
+  for (const p of parts) {
+    if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(p)) valid.add(p.toLowerCase());
+    else invalid.push(p);
+  }
+  const bits = [`${valid.size} valid email${valid.size === 1 ? "" : "s"}`];
+  if (invalid.length) bits.push(`${invalid.length} invalid (will be ignored): ${invalid.slice(0, 3).join(", ")}${invalid.length > 3 ? "…" : ""}`);
+  hintEl.textContent = bits.join(" · ");
+  hintEl.style.color = invalid.length ? "var(--warning, #b45309)" : "";
+}
+// Bind the hint to both the new-activity and edit-activity textareas.
+["assign-to-email", "edit-assign-to-email"].forEach(id => {
+  const ta = $(id);
+  const hint = $(`${id}-hint`);
+  if (!ta || !hint) return;
+  ta.addEventListener("input", () => refreshAssignHint(ta, hint));
+  ta.addEventListener("blur", () => {
+    // Normalize whitespace on blur so the displayed value matches the
+    // canonical form the server will store.
+    const parts = ta.value.split(/[,\s;]+/).map(s => s.trim().toLowerCase()).filter(Boolean);
+    const unique = [...new Set(parts.filter(p => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(p)))];
+    if (unique.length) ta.value = unique.join(", ");
+    refreshAssignHint(ta, hint);
+  });
+  refreshAssignHint(ta, hint);
+});
+
 $("new-form").addEventListener("submit", async (e) => {
   e.preventDefault();
   const prompt = $("prompt").value.trim();
@@ -1316,8 +1356,9 @@ $("new-form").addEventListener("submit", async (e) => {
     $("max-attempts-picker")?.querySelector(".attempts-picker")
   );
 
-  // Per-student assignment. Blank = whole class.
-  const assignedTo = ($("assign-to-email")?.value || "").trim().toLowerCase() || null;
+  // Per-student assignment. Server normalizes the list, but we send it
+  // as-is and let the server filter invalid emails. Blank = whole class.
+  const assignedTo = ($("assign-to-email")?.value || "").trim() || null;
   // Live results visible to students (default true).
   const showResults = $("show-results") ? !!$("show-results").checked : true;
 
@@ -1529,9 +1570,14 @@ function buildActivityRow(a) {
     const attemptsBadge = (a.max_attempts == null || a.max_attempts <= 0)
       ? `<span class="type-badge" title="Unlimited attempts" style="background:var(--surface-2);color:var(--muted);"><i data-lucide="infinity" style="width:11px;height:11px;"></i> ∞</span>`
       : `<span class="type-badge" title="${a.max_attempts} attempt${a.max_attempts === 1 ? "" : "s"} allowed" style="background:var(--surface-2);color:var(--text);"><i data-lucide="repeat" style="width:11px;height:11px;"></i> ${a.max_attempts}×</span>`;
-    const assignBadge = a.assigned_to_email
-      ? `<span class="type-badge" title="Only ${escapeHTML(a.assigned_to_email)} can see this" style="background:var(--brand-soft);color:var(--brand);"><i data-lucide="user" style="width:11px;height:11px;"></i> ${escapeHTML(a.assigned_to_email)}</span>`
-      : "";
+    // Multi-email assignment: a comma-separated list lives in the
+    // column. Show the single email if there's only one, or "N students"
+    // (with the full list in the tooltip) when there are multiple.
+    const assignedEmails = a.assigned_to_email ? a.assigned_to_email.split(",").filter(Boolean) : [];
+    const assignBadge = assignedEmails.length === 0 ? ""
+      : assignedEmails.length === 1
+        ? `<span class="type-badge" title="Only ${escapeHTML(assignedEmails[0])} can see this" style="background:var(--brand-soft);color:var(--brand);"><i data-lucide="user" style="width:11px;height:11px;"></i> ${escapeHTML(assignedEmails[0])}</span>`
+        : `<span class="type-badge" title="Only these students can see this:\n${assignedEmails.map(e => "• " + e).join("\n")}" style="background:var(--brand-soft);color:var(--brand);"><i data-lucide="users" style="width:11px;height:11px;"></i> ${assignedEmails.length} students</span>`;
     const resultsBadge = (a.show_results === 0)
       ? `<span class="type-badge" title="Live results are hidden from students" style="background:var(--warning-soft,var(--surface-2));color:var(--warning,#b45309);"><i data-lucide="eye-off" style="width:11px;height:11px;"></i> Results hidden</span>`
       : "";
@@ -1739,7 +1785,14 @@ function openBulkScheduleDialog(slug) {
         <button type="button" class="secondary sm" id="bulk-cancel">Cancel</button>
         <button type="button" id="bulk-apply">Apply</button>
       </div>
-    </div>`;
+    </div>
+    <details class="danger-zone" style="margin-top:0.85rem;border:1px solid var(--error);border-radius:var(--radius);padding:0.55rem 0.8rem;">
+      <summary style="cursor:pointer;color:var(--error);font-weight:600;font-size:0.85rem;">Danger zone</summary>
+      <p class="muted" style="margin:0.5rem 0;font-size:0.82rem;">Wipe every recorded response (votes, submissions) and reset attempt counters for <strong>every activity</strong> in this category. The activities themselves are preserved.</p>
+      <button type="button" class="secondary sm danger" id="bulk-reset-responses" style="width:100%;">
+        <i data-lucide="rotate-ccw" style="width:12px;height:12px;"></i> Reset all responses in this category
+      </button>
+    </details>`;
   show("modal-overlay");
   m.hidden = false;
 
@@ -1793,6 +1846,22 @@ function openBulkScheduleDialog(slug) {
   };
 
   document.getElementById("bulk-cancel").addEventListener("click", close);
+
+  document.getElementById("bulk-reset-responses")?.addEventListener("click", async () => {
+    const confirmed = await confirmDialog({
+      title: `Reset every response in "${slug}"?`,
+      message: `This wipes all recorded answers (votes + submissions) and resets attempt counters for every activity in <code>${escapeHTML(slug)}</code>. Students will be able to answer again. <strong>Can't be undone.</strong>`,
+      confirmLabel: "Reset all", danger: true,
+    });
+    if (!confirmed) return;
+    try {
+      const r = await api.resetCategoryResponses(slug);
+      const total = (r.votes || 0) + (r.submissions || 0);
+      toast(`Wiped ${total} response${total === 1 ? "" : "s"} across ${r.activities} activit${r.activities === 1 ? "y" : "ies"}.`, "success");
+      close();
+      loadActivities();
+    } catch (err) { setStatus("bulk-err", err.message, "error"); }
+  });
 
   // Read either flatpickr's stashed epoch OR fall back to parsing the
   // input value directly. This unblocks people who type a date manually
@@ -2352,6 +2421,28 @@ $("close-edit-activity").addEventListener("click", () => { hide("modal-edit-acti
 
 $("edit-add-option-btn").addEventListener("click", () => addOptionRow("edit-poll-options-list"));
 
+// "Reset all responses" in the edit-modal's danger zone. Confirms first,
+// then wipes votes + submissions + attempts via the dedicated endpoint.
+$("edit-reset-responses")?.addEventListener("click", async () => {
+  const id = $("edit-activity-id").value;
+  if (!id) return;
+  const ok = await confirmDialog({
+    title: "Reset responses?",
+    message: "This wipes every recorded answer and resets the attempt counter for this activity. Students will be able to answer again. <strong>Can't be undone.</strong>",
+    confirmLabel: "Reset responses",
+    danger: true,
+  });
+  if (!ok) return;
+  try {
+    const r = await api.resetActivityResponses(id);
+    const total = (r.votes || 0) + (r.submissions || 0);
+    toast(`Cleared ${total} response${total === 1 ? "" : "s"} and ${r.attempts || 0} attempt counter${r.attempts === 1 ? "" : "s"}.`, "success");
+    loadActivities();
+  } catch (err) {
+    toast("Reset failed: " + err.message, "error");
+  }
+});
+
 $("edit-activity-form").addEventListener("submit", async (e) => {
   e.preventDefault();
   const id = $("edit-activity-id").value;
@@ -2382,8 +2473,9 @@ $("edit-activity-form").addEventListener("submit", async (e) => {
     $("edit-max-attempts-picker")?.querySelector(".attempts-picker")
   );
 
-  // Assignment: empty = clear (whole class), valid email = set.
-  const assignRaw = ($("edit-assign-to-email")?.value || "").trim().toLowerCase();
+  // Assignment: empty = clear (whole class), comma/newline-separated
+  // list = pass through; server normalizes + validates each email.
+  const assignRaw = ($("edit-assign-to-email")?.value || "").trim();
   payload.assigned_to_email = assignRaw || null;
 
   // Live-results visibility toggle.

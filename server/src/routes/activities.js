@@ -42,6 +42,31 @@ export function ensureAttemptsRemaining(activity, email) {
   }
 }
 
+// Normalize a comma- or whitespace-separated list of student emails into
+// a canonical comma-joined string (lowercased, deduped, validated).
+// Returns null when no valid emails were supplied — that's the wire
+// shape for "available to the whole class".
+export function normalizeAssignedEmails(raw) {
+  if (raw == null) return null;
+  if (typeof raw !== "string") return null;
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  const emails = trimmed
+    .split(/[,\s;]+/)
+    .map(e => e.trim().toLowerCase())
+    .filter(e => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e));
+  if (!emails.length) return null;
+  return [...new Set(emails)].join(",");
+}
+
+// True when `email` is allowed to interact with `activity` based on the
+// assigned_to_email field. NULL / "" means everyone is allowed.
+export function isAssignedTo(activity, email) {
+  if (!activity.assigned_to_email) return true;
+  const list = activity.assigned_to_email.split(",").map(s => s.trim().toLowerCase());
+  return list.includes((email || "").toLowerCase());
+}
+
 // Atomically bump the attempt counter. Returns the new used value.
 export function bumpAttempt(activityId, email) {
   const now = Date.now();
@@ -92,6 +117,10 @@ activitiesRouter.get("/", requireAuth, (req, res) => {
   //   NULL                 -> visible to anyone (default)
   //   matches caller email -> visible to them only
   //   anything else        -> hidden from this caller
+  // assigned_to_email holds a comma-separated list of emails when set
+  // (or a single email — backward compatible). Match by anchoring the
+  // caller email between commas in both sides of the comparison so
+  // partial-prefix matches can't false-positive (e.g. bob@ vs bob.alt@).
   let sql = `
     SELECT id AS activity_id, prompt, asset_url, type, poll_options, difficulty,
            session_tag, release_at, due_at, max_attempts, assigned_to_email, show_results
@@ -100,9 +129,12 @@ activitiesRouter.get("/", requireAuth, (req, res) => {
       AND (scheduled_at IS NULL OR scheduled_at <= ?)
       AND (release_at IS NULL OR release_at <= ?)
       AND (due_at IS NULL OR due_at > ?)
-      AND (assigned_to_email IS NULL OR assigned_to_email = ?)
+      AND (
+        assigned_to_email IS NULL
+        OR (',' || assigned_to_email || ',') LIKE ?
+      )
   `;
-  const params = [now, now, now, req.user.email];
+  const params = [now, now, now, `%,${req.user.email.toLowerCase()},%`];
   if (class_id) {
     sql += " AND class_id = ?";
     params.push(class_id);
@@ -124,9 +156,9 @@ activitiesRouter.get("/:id", requireAuth, (req, res) => {
   ).get(req.params.id);
   if (!row) return res.status(404).json({ ok: false, error: "Not found" });
   if (row.status !== "open") return res.status(409).json({ ok: false, error: "Activity is closed" });
-  // Per-student assignment: if set to someone else, hide it as if it
-  // didn't exist (404 rather than 403 — don't leak existence).
-  if (row.assigned_to_email && row.assigned_to_email !== req.user.email) {
+  // Per-student assignment: if the caller isn't on the list, hide it as
+  // if it didn't exist (404 rather than 403 — don't leak existence).
+  if (!isAssignedTo(row, req.user.email)) {
     return res.status(404).json({ ok: false, error: "Not found" });
   }
   const now = Date.now();
@@ -209,10 +241,9 @@ activitiesRouter.post("/admin", requireInstructor, (req, res) => {
   }
 
   const maxAttempts = normalizeMaxAttempts(req.body && req.body.max_attempts, 1);
-  // Per-student assignment. Empty / null = available to whole class.
-  const rawAssign = req.body && typeof req.body.assigned_to_email === "string"
-    ? req.body.assigned_to_email.trim().toLowerCase() : "";
-  const assignedTo = rawAssign && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(rawAssign) ? rawAssign : null;
+  // Per-student assignment. Accepts one or more emails (comma / newline
+  // separated). Empty / null = available to the whole class.
+  const assignedTo = normalizeAssignedEmails(req.body && req.body.assigned_to_email);
   // show_results: defaults to 1 (visible to students). Pass false / 0 to hide.
   const showResults = req.body && (req.body.show_results === false || req.body.show_results === 0) ? 0 : 1;
 
@@ -300,12 +331,14 @@ activitiesRouter.patch("/admin/:id", requireInstructor, (req, res) => {
     const newMaxAttempts = normalizeMaxAttempts(max_attempts, current.max_attempts);
 
     // assigned_to_email: undefined = leave alone, "" / null = clear,
-    // valid email = assign exclusively to that user.
+    // anything else = pass through the multi-email normalizer.
     let newAssignedTo = current.assigned_to_email;
-    if (assigned_to_email === null || assigned_to_email === "") newAssignedTo = null;
+    if (assigned_to_email === null) newAssignedTo = null;
     else if (typeof assigned_to_email === "string") {
-      const e = assigned_to_email.trim().toLowerCase();
-      if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)) newAssignedTo = e;
+      // An empty string clears the assignment; otherwise normalize.
+      newAssignedTo = assigned_to_email.trim() === ""
+        ? null
+        : normalizeAssignedEmails(assigned_to_email);
     }
 
     // show_results: undefined = leave alone, else coerce to 0/1.
@@ -348,6 +381,29 @@ activitiesRouter.delete("/admin/:id", requireInstructor, (req, res) => {
   }
 });
 
+// Wipe every recorded response for this activity. Touches three tables:
+//   - poll_votes        (poll / poll_pie / poll_multi)
+//   - submissions       (word_cloud / ordering / submission)
+//   - activity_attempts (the attempt counter; without resetting this
+//     students stay locked out even though their answers are gone)
+// The activity itself is preserved.
+activitiesRouter.delete("/admin/:id/responses", requireInstructor, (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (!Number.isFinite(id)) return res.status(400).json({ ok: false, error: "Bad id" });
+  const exists = db.prepare("SELECT 1 FROM activities WHERE id = ?").get(id);
+  if (!exists) return res.status(404).json({ ok: false, error: "Not found" });
+
+  const tx = db.transaction(() => {
+    const v = db.prepare("DELETE FROM poll_votes        WHERE activity_id = ?").run(id);
+    const s = db.prepare("DELETE FROM submissions       WHERE activity_id = ?").run(id);
+    const a = db.prepare("DELETE FROM activity_attempts WHERE activity_id = ?").run(id);
+    return { votes: v.changes, submissions: s.changes, attempts: a.changes };
+  });
+  const result = tx();
+  res.json({ ok: true, ...result });
+  notifySSE();
+});
+
 // Record an answer for a poll-style activity. Accepts either a single
 // option_index (poll / poll_pie) or an array option_indices (poll_multi).
 // Replaces the user's previous answer atomically.
@@ -361,7 +417,7 @@ activitiesRouter.post("/:id/vote", requireAuth, (req, res) => {
 
   const activity = db.prepare("SELECT * FROM activities WHERE id = ?").get(activityId);
   if (!activity) return res.status(404).json({ ok: false, error: "Activity not found" });
-  if (activity.assigned_to_email && activity.assigned_to_email !== req.user.email) {
+  if (!isAssignedTo(activity, req.user.email)) {
     return res.status(404).json({ ok: false, error: "Activity not found" });
   }
 

@@ -134,3 +134,31 @@ categoriesRouter.post("/:slug/bulk", (req, res) => {
   const r = db.prepare(sql).run(...params);
   res.json({ ok: true, updated: r.changes });
 });
+
+// Wipe every recorded response for every activity in this category. Same
+// three-table touch as the per-activity reset, but scoped to all
+// activities in `slug` that belong to one of this instructor's classes.
+categoriesRouter.post("/:slug/reset-responses", (req, res) => {
+  const slug = req.params.slug;
+  const cat = db.prepare("SELECT 1 FROM categories WHERE instructor_email = ? AND slug = ?")
+    .get(req.user.email, slug);
+  if (!cat) return res.status(404).json({ ok: false, error: "Category not found" });
+
+  const ids = db.prepare(`
+    SELECT id FROM activities
+    WHERE session_tag = ?
+      AND class_id IN (SELECT id FROM classes WHERE instructor_email = ?)
+  `).all(slug, req.user.email).map(r => r.id);
+
+  if (!ids.length) return res.json({ ok: true, activities: 0, votes: 0, submissions: 0, attempts: 0 });
+
+  const placeholders = ids.map(() => "?").join(",");
+  const tx = db.transaction(() => {
+    const v = db.prepare(`DELETE FROM poll_votes        WHERE activity_id IN (${placeholders})`).run(...ids);
+    const s = db.prepare(`DELETE FROM submissions       WHERE activity_id IN (${placeholders})`).run(...ids);
+    const a = db.prepare(`DELETE FROM activity_attempts WHERE activity_id IN (${placeholders})`).run(...ids);
+    return { votes: v.changes, submissions: s.changes, attempts: a.changes };
+  });
+  const r = tx();
+  res.json({ ok: true, activities: ids.length, ...r });
+});
