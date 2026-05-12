@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@600;700;800&family=Lora:wght@400;500;600&family=Ubuntu:wght@400;500;700&family=Roboto+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/styles.css?v=71" />
+  <link rel="stylesheet" href="/css/styles.css?v=72" />
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js" defer></script>
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -60,7 +60,7 @@
   </header>
 
   <script type="module">
-    import { api } from "/js/api.js?v=71";
+    import { api } from "/js/api.js?v=72";
     api.initTheme();
     document.getElementById("nav-submit")?.classList.add("nav-active");
   </script>
@@ -138,17 +138,6 @@
         <div id="poll-options-list" class="poll-tiles-grid"></div>
         <div id="poll-status" class="status"></div>
       </div>
-
-      <!-- Rating scale -->
-      <form id="rating-form" hidden>
-        <input type="hidden" id="rating-hidden" />
-        <div class="rating-scale">
-          <div id="rating-buttons" class="rating-row"></div>
-          <div id="rating-labels" class="rating-label-row"></div>
-        </div>
-        <button type="submit" id="rating-submit-btn" style="width:100%;margin-top:1.5rem;">Submit Rating</button>
-        <div id="rating-status" class="status" role="status"></div>
-      </form>
 
       <!-- Ordering (drag to sort) -->
       <form id="order-form" hidden>
@@ -234,9 +223,9 @@
     </div>
   </div>
 
-  <script type="module" src="/js/student.js?v=71"></script>
+  <script type="module" src="/js/student.js?v=72"></script>
   <script type="module">
-    import { bootPage } from "/js/ui.js?v=71";
+    import { bootPage } from "/js/ui.js?v=72";
     bootPage();
   </script>
 </body>

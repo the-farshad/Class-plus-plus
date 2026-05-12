@@ -92,7 +92,9 @@ activitiesRouter.post("/admin", requireInstructor, (req, res) => {
   const prompt = String(req.body && req.body.prompt || "").trim();
   const assetUrl = req.body && req.body.asset_url ? String(req.body.asset_url) : null;
   const classId = req.body && req.body.class_id ? parseInt(req.body.class_id, 10) : null;
-  const VALID_TYPES = new Set(["submission", "poll", "poll_pie", "poll_multi", "rating", "word_cloud", "ordering"]);
+  // 'rating' removed from the UI but kept in the CHECK constraint so existing
+  // rows (if any) still validate. New creations from the UI never request it.
+  const VALID_TYPES = new Set(["submission", "poll", "poll_pie", "poll_multi", "word_cloud", "ordering"]);
   const type = VALID_TYPES.has(req.body?.type) ? req.body.type : "submission";
   // poll_options stores: choices for poll/poll_pie/poll_multi, OR the
   // canonical (correct) order for ordering activities. Stored as JSON.

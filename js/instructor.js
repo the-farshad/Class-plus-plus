@@ -16,7 +16,6 @@ let currentClassId = null;
 let liveRefreshTimer = null;
 let participationChart = null;
 let liveChart = null;
-let ratingHistChart = null;
 
 // ---------- Sign-in ----------
 
@@ -1095,7 +1094,6 @@ async function showLiveResults(a) {
   // Clear previous content
   $("live-chart-container").innerHTML = "";
   hide("word-cloud-container");
-  hide("rating-stats");
   hide("submissions-table-wrapper");
 
   await refreshLiveResults();
@@ -1110,13 +1108,13 @@ async function refreshLiveResults() {
   if (!a) return;
 
   try {
-    if (a.type === "poll" || a.type === "poll_pie") {
+    if (a.type === "poll" || a.type === "poll_pie" || a.type === "poll_multi") {
       await renderPollChart(a);
-    } else if (a.type === "rating") {
-      await renderRatingResults(a);
     } else if (a.type === "word_cloud") {
       await renderWordCloud(a);
     } else {
+      // ordering + submission both fall through to the submissions table
+      // (each row shows the student's posted answer).
       await renderSubmissionTable(a);
     }
   } catch (err) {
@@ -1246,78 +1244,6 @@ async function renderPollChart(a) {
   });
 }
 
-async function renderRatingResults(a) {
-  const res = await api.listSubmissions(a.activity_id);
-  currentSubmissions = res.submissions;
-  const nums = currentSubmissions.map(s => parseFloat(s.response)).filter(n => !isNaN(n));
-  const avg = nums.length ? (nums.reduce((s, n) => s + n, 0) / nums.length).toFixed(1) : "—";
-
-  show("rating-stats");
-  $("rating-avg").textContent = avg;
-  $("rating-count").textContent = nums.length;
-  $("live-results-count").textContent = `${nums.length} response${nums.length !== 1 ? "s" : ""}`;
-
-  const buckets = Array(10).fill(0);
-  nums.forEach(n => { const i = Math.min(9, Math.max(0, Math.round(n) - 1)); buckets[i]++; });
-
-  const canvas = $("rating-histogram");
-  const ctx = canvas.getContext("2d");
-  const palette = themePalette();
-
-  if (ratingHistChart) {
-    ratingHistChart.data.datasets[0].data = buckets;
-    ratingHistChart.update("none");
-    return;
-  }
-
-  ratingHistChart = new Chart(ctx, {
-    type: "bar",
-    data: {
-      labels: ["1","2","3","4","5","6","7","8","9","10"],
-      datasets: [{
-        label: "Responses",
-        data: buckets,
-        backgroundColor: makeBarGradient(ctx, palette.brand),
-        borderRadius: 6,
-        borderWidth: 0,
-        borderSkipped: false,
-      }],
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      animation: { duration: 600, easing: "easeOutQuart" },
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          backgroundColor: palette.text,
-          titleColor: "#fff",
-          bodyColor: "#fff",
-          displayColors: false,
-          padding: 10,
-          cornerRadius: 6,
-          callbacks: {
-            title: (items) => `Rating ${items[0]?.label}`,
-            label: (c) => `${c.parsed.y} response${c.parsed.y !== 1 ? "s" : ""}`,
-          },
-        },
-      },
-      scales: {
-        x: {
-          ticks: { color: palette.muted, font: { size: 11 } },
-          grid: { display: false, drawBorder: false },
-          title: { display: true, text: "Rating (1–10)", color: palette.muted, font: { size: 11, weight: "600" } },
-        },
-        y: {
-          beginAtZero: true,
-          ticks: { stepSize: 1, color: palette.muted, font: { size: 11 } },
-          grid: { color: palette.border, drawBorder: false },
-        },
-      },
-    },
-  });
-}
-
 async function renderWordCloud(a) {
   const res = await api.listSubmissions(a.activity_id);
   currentSubmissions = res.submissions;
@@ -1392,7 +1318,6 @@ function attachmentCell(s) {
 $("close-live-results").addEventListener("click", () => {
   stopLiveRefresh();
   if (liveChart) { liveChart.destroy(); liveChart = null; }
-  if (ratingHistChart) { ratingHistChart.destroy(); ratingHistChart = null; }
   hide("live-results-card");
   show("activities");
 });

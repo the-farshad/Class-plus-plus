@@ -6,7 +6,7 @@ import {
 
 const TYPE_LABELS = {
   poll: "Single choice", poll_pie: "Single choice", poll_multi: "Multiple choice",
-  rating: "Rating", word_cloud: "Word Cloud", submission: "Submission", ordering: "Order",
+  word_cloud: "Word Cloud", submission: "Submission", ordering: "Order",
 };
 
 // Render a Markdown string (untrusted source — sanitize) as HTML.
@@ -106,7 +106,7 @@ function showActivity(a) {
   fc.insertBefore(heading, fc.firstChild);
 
   hide("loading"); hide("picker"); hide("empty"); hide("confirm-card");
-  hide("poll-card"); hide("rating-card"); hide("rating-form"); hide("submit-form"); hide("order-form");
+  hide("poll-card"); hide("submit-form"); hide("order-form");
 
   // If the user has already submitted/voted on this activity, jump straight
   // to the confirmation panel instead of re-showing the form.
@@ -125,14 +125,6 @@ function showActivity(a) {
     }
     show("order-form");
     renderOrdering(a);
-  } else if (a.type === "rating") {
-    if (alreadySubmitted) {
-      show("confirm-card");
-      show("form-card");
-      return;
-    }
-    show("rating-form");
-    renderRating(a);
   } else {
     if (alreadySubmitted) {
       show("confirm-card");
@@ -366,30 +358,6 @@ function renderOrdering(a) {
   wireSort();
 }
 
-function renderRating(a) {
-  const container = $("rating-buttons");
-  if (!container) return;
-  container.innerHTML = "";
-
-  for (let i = 1; i <= 10; i++) {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "rating-btn";
-    btn.textContent = i;
-    btn.dataset.value = i;
-    btn.addEventListener("click", () => {
-      container.querySelectorAll(".rating-btn").forEach(b => {
-        b.classList.toggle("selected", Number(b.dataset.value) <= i);
-      });
-      $("rating-hidden").value = i;
-    });
-    container.appendChild(btn);
-  }
-
-  const labels = $("rating-labels");
-  if (labels) labels.innerHTML = "<span>Beginner</span><span>Expert</span>";
-}
-
 function showPicker(activities) {
   hide("loading"); hide("form-card"); hide("empty");
   const grid = $("picker-list");
@@ -565,26 +533,6 @@ function renderGoogleButton(clientId) {
   };
   tryRender();
 }
-
-$("rating-form").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const val = $("rating-hidden").value;
-  if (!val) { setStatusEl("rating-status", "Please select a rating.", "error"); return; }
-  const btn = $("rating-submit-btn");
-  if (btn) btn.disabled = true;
-  setStatusEl("rating-status", "Submitting…");
-  try {
-    const id = $("activity-id").value;
-    await api.submit({ activity_id: id, response: val });
-    localStorage.setItem(SUBMIT_KEY(id), "1");
-    hide("rating-form");
-    show("confirm-card");
-    $("rating-hidden").value = "";
-  } catch (err) {
-    setStatusEl("rating-status", err.message, "error");
-    if (btn) btn.disabled = false;
-  }
-});
 
 $("order-form").addEventListener("submit", async (e) => {
   e.preventDefault();
