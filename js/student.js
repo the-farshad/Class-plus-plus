@@ -4,6 +4,9 @@ import {
   mountSettingsDrawer, updateUserPill, setupMicrosoftSignIn,
   toast,
 } from "/js/ui.js";
+import {
+  startDueCountdowns, onOverdue, dueChipHTML, dueLabel,
+} from "/js/due-countdown.js";
 
 const TYPE_LABELS = {
   poll: "Single choice", poll_pie: "Single choice", poll_multi: "Multiple choice",
@@ -84,18 +87,32 @@ function stopCountdown() { /* noop — SSE handles refresh now */ }
 
 // ---- Attempts UI helpers ----
 
+// Find (or create) the meta-strip below the activity prompt that hosts
+// the attempts badge + due chip. Returns the strip element.
+function ensureHeadingMeta() {
+  const heading = document.querySelector(".activity-heading");
+  if (!heading) return null;
+  let meta = heading.querySelector(".heading-meta");
+  if (!meta) {
+    meta = document.createElement("div");
+    meta.className = "heading-meta";
+    heading.appendChild(meta);
+  }
+  return meta;
+}
+
 // Render or refresh the "Attempt N of M" badge in the activity heading.
 // Pass attempts_used from the latest server response (or a.attempts_used
 // on initial load). When unlimited, the badge shows the count without a
 // cap. Returns true if the activity is now exhausted (used >= cap).
 function renderAttemptsBadge(a, used) {
-  const heading = document.querySelector(".activity-heading");
-  if (!heading) return false;
-  let badge = heading.querySelector(".attempts-badge");
+  const meta = ensureHeadingMeta();
+  if (!meta) return false;
+  let badge = meta.querySelector(".attempts-badge");
   if (!badge) {
     badge = document.createElement("div");
     badge.className = "attempts-badge";
-    heading.appendChild(badge);
+    meta.appendChild(badge);
   }
   const cap = (a.max_attempts == null || a.max_attempts <= 0) ? null : a.max_attempts;
   const u = Number.isFinite(used) ? used : 0;
@@ -114,6 +131,25 @@ function renderAttemptsBadge(a, used) {
   badge.classList.toggle("warn", remaining === 1);
   badge.classList.remove("exhausted");
   return false;
+}
+
+// Render or refresh the due-date countdown chip in the heading meta-strip.
+function renderDueBadge(a) {
+  const meta = ensureHeadingMeta();
+  if (!meta) return;
+  let badge = meta.querySelector(".due-badge");
+  if (!a.due_at) {
+    if (badge) badge.remove();
+    return;
+  }
+  if (!badge) {
+    badge = document.createElement("span");
+    badge.className = "due-badge due-countdown";
+    meta.appendChild(badge);
+  }
+  badge.dataset.due = String(a.due_at);
+  badge.title = new Date(a.due_at).toLocaleString();
+  badge.textContent = dueLabel(a.due_at);
 }
 
 // Disable every form control inside the activity form-card and label
@@ -239,13 +275,14 @@ function showActivity(a) {
 
   show("form-card");
 
-  // Render the attempts badge and lock the form if the student has
-  // already used all their attempts (e.g. they answered on another device
-  // and just reloaded here). attempts_used / max_attempts are populated
-  // by the server on the activity GET.
+  // Render the meta strip: attempts + due. Lock the form if the student
+  // has already used all their attempts (e.g. they answered on another
+  // device and just reloaded here) OR if the due date is already past.
   const used = Number.isFinite(a.attempts_used) ? a.attempts_used : 0;
   const exhausted = renderAttemptsBadge(a, used);
+  renderDueBadge(a);
   if (exhausted) lockActivityForm();
+  else if (a.due_at && a.due_at <= Date.now()) lockActivityForm("Past due");
 }
 
 // localStorage keys for client-side one-vote-per-user persistence.
@@ -552,10 +589,14 @@ function showPicker(activities) {
     // only — no Markdown rendering, no inline code, no <strong>. The full
     // formatted prompt renders once the student clicks into the activity.
     const preview = previewText(a.prompt, 130);
+    const dueChip = a.due_at ? dueChipHTML(a.due_at, { className: "picker-card-due" }) : "";
     card.innerHTML = `
       <div class="picker-card-icon"><i data-lucide="${PICKER_ICON[a.type]||"file-text"}" style="width:22px;height:22px;color:var(--brand);"></i></div>
       <div class="picker-card-title">${escapeHTML(preview)}</div>
-      <div class="picker-card-type">${TYPE_LABELS[a.type] || a.type}</div>`;
+      <div class="picker-card-meta">
+        <span class="picker-card-type">${TYPE_LABELS[a.type] || a.type}</span>
+        ${dueChip}
+      </div>`;
     card.addEventListener("click", () => showActivity(a));
     grid.appendChild(card);
   });
@@ -858,6 +899,15 @@ mountSettingsDrawer({
   session,
   onSignOut: () => { disconnectSSE(); api.signOut(); location.reload(); },
 });
+
+// When a heading due-chip ticks past zero, freeze the form right then
+// — students shouldn't be able to keep submitting and then bounce off
+// a 409 from the server.
+onOverdue(el => {
+  const heading = document.querySelector(".activity-heading");
+  if (heading && heading.contains(el)) lockActivityForm("Past due");
+});
+startDueCountdowns();
 
 if (session.token) showSignedInState();
 else showSignInState();

@@ -1561,6 +1561,26 @@ tbody tr:hover { background: var(--interactive); }
   letter-spacing: 0.08em;
   font-weight: 700;
 }
+/* Bottom meta strip on a picker card: type label + live due-countdown. */
+.picker-card-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.55rem;
+  margin-top: auto;
+  flex-wrap: wrap;
+}
+.picker-card-due {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  padding: 0.18rem 0.5rem;
+  border-radius: 999px;
+  background: var(--surface-2, var(--surface));
+  color: var(--muted);
+  border: 1px solid var(--border);
+  white-space: nowrap;
+}
 
 /* ---------- Auto-refresh countdown ---------- */
 .refresh-countdown {
@@ -1736,6 +1756,112 @@ tbody tr:hover { background: var(--interactive); }
 .grading-banner-correct  .grading-icon { background: var(--success); }
 .grading-banner-incorrect{ background: var(--error-soft); border-color: var(--error); }
 .grading-banner-incorrect.grading-banner .grading-icon { background: var(--error); }
+
+/* Meta strip below the activity prompt — holds the attempts badge AND
+   the live due-date countdown side-by-side. */
+.heading-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.85rem;
+  flex-wrap: wrap;
+}
+.heading-meta .attempts-badge { margin-top: 0; }
+.due-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-soft, var(--surface));
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;  /* keeps digits from jiggling on tick */
+}
+/* Urgency variants for any .due-countdown element — applied by the
+   shared 1-Hz tick in js/due-countdown.js. */
+.due-countdown.warn {
+  border-color: var(--warning, #d97706);
+  background: color-mix(in srgb, var(--warning, #d97706) 8%, transparent);
+  color: var(--warning, #b45309);
+}
+.due-countdown.urgent {
+  border-color: var(--error);
+  background: color-mix(in srgb, var(--error) 8%, transparent);
+  color: var(--error);
+}
+.due-countdown.overdue {
+  border-color: var(--error);
+  background: var(--error-soft);
+  color: var(--error);
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+  opacity: 0.85;
+}
+
+/* Instructor row schedule pills — same family as due-badge but smaller
+   and inline-flow so they sit on the meta line. */
+.schedule-pill {
+  display: inline-block;
+  margin-left: 0.4rem;
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+.schedule-pill-release { color: var(--warning, #d97706); }
+.schedule-pill-due.warn    { color: var(--warning, #b45309); }
+.schedule-pill-due.urgent  { color: var(--error); font-weight: 600; }
+.schedule-pill-due.overdue { color: var(--error); text-decoration: line-through; }
+
+/* ===== Max-attempts chip picker ===== */
+.attempts-picker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  flex-wrap: wrap;
+}
+.attempts-chip {
+  appearance: none;
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.9rem;
+  min-width: 2.4rem;
+  height: 2.1rem;
+  padding: 0 0.6rem;
+  border-radius: calc(var(--radius) - 2px);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.15s var(--ease), border-color 0.15s, color 0.15s;
+}
+.attempts-chip:hover { background: var(--surface-2, var(--surface)); }
+.attempts-chip.active {
+  background: var(--brand);
+  color: #fff;
+  border-color: var(--brand);
+}
+.attempts-custom {
+  width: 5.5rem;
+  height: 2.1rem;
+  padding: 0 0.55rem;
+  border-radius: calc(var(--radius) - 2px);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font: inherit;
+  font-size: 0.9rem;
+  color: var(--text);
+}
+.attempts-custom::-webkit-outer-spin-button,
+.attempts-custom::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 
 /* Attempt counter pinned to the activity heading. Reads at a glance
    how many tries are left — colorless on first attempts, amber on the

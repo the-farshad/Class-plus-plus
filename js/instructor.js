@@ -4,6 +4,68 @@ import {
   mountSettingsDrawer, updateUserPill, setupMicrosoftSignIn,
   toast, confirmDialog,
 } from "/js/ui.js";
+import { startDueCountdowns, dueChipHTML, dueLabel } from "/js/due-countdown.js";
+
+// ---- Max-attempts picker ------------------------------------------------
+// Renders a row of preset chips ([1] [2] [3] [5] [∞]) plus a Custom input.
+// Storage is on the root element's `dataset.value`:
+//   "" / "0"   → unlimited (server treats as NULL)
+//   "1".."999" → cap
+// readAttemptsPicker(rootEl) → null (unlimited) | integer cap
+const ATTEMPT_PRESETS = [1, 2, 3, 5];
+function attemptsPickerHTML(currentValue) {
+  const cur = (currentValue == null || currentValue <= 0) ? 0 : Number(currentValue);
+  const isPreset = cur === 0 || ATTEMPT_PRESETS.includes(cur);
+  const chips = [
+    ...ATTEMPT_PRESETS.map(v => `<button type="button" class="attempts-chip${cur === v ? " active" : ""}" data-val="${v}">${v}</button>`),
+    `<button type="button" class="attempts-chip${cur === 0 ? " active" : ""}" data-val="0" title="Unlimited attempts">∞</button>`,
+  ].join("");
+  return `
+    <div class="attempts-picker" data-value="${cur}">
+      ${chips}
+      <input type="number" class="attempts-custom" min="1" max="999" step="1"
+             placeholder="Custom" value="${!isPreset ? cur : ""}" aria-label="Custom attempt count" />
+    </div>`;
+}
+function bindAttemptsPicker(root) {
+  if (!root || root._attemptsBound) return;
+  root._attemptsBound = true;
+  const custom = root.querySelector(".attempts-custom");
+  root.querySelectorAll(".attempts-chip").forEach(btn => {
+    btn.addEventListener("click", () => {
+      root.querySelectorAll(".attempts-chip").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      root.dataset.value = btn.dataset.val;
+      if (custom) custom.value = "";
+    });
+  });
+  if (custom) {
+    custom.addEventListener("input", () => {
+      const v = parseInt(custom.value, 10);
+      if (Number.isFinite(v) && v >= 1) {
+        root.dataset.value = String(Math.min(v, 999));
+        root.querySelectorAll(".attempts-chip").forEach(b => b.classList.remove("active"));
+        // Light up matching preset if there is one.
+        const match = root.querySelector(`.attempts-chip[data-val="${root.dataset.value}"]`);
+        if (match) match.classList.add("active");
+      }
+    });
+  }
+}
+function setAttemptsPicker(root, value) {
+  if (!root) return;
+  const v = (value == null || value <= 0) ? 0 : Number(value);
+  root.dataset.value = String(v);
+  const custom = root.querySelector(".attempts-custom");
+  root.querySelectorAll(".attempts-chip").forEach(b => b.classList.toggle("active", parseInt(b.dataset.val, 10) === v));
+  const isPreset = v === 0 || ATTEMPT_PRESETS.includes(v);
+  if (custom) custom.value = isPreset ? "" : v;
+}
+function readAttemptsPicker(root) {
+  if (!root) return null;
+  const v = parseInt(root.dataset.value || "0", 10);
+  return (!Number.isFinite(v) || v <= 0) ? null : v;
+}
 
 api.initTheme();
 
@@ -114,6 +176,13 @@ function enterDashboard() {
   show("signout");
 
   initTabs();
+  // Mount the inline max-attempts picker once the dashboard becomes
+  // visible (the host element is hidden behind the signin gate before this).
+  const newPicker = $("max-attempts-picker");
+  if (newPicker && !newPicker.firstElementChild) {
+    newPicker.innerHTML = attemptsPickerHTML(1);
+    bindAttemptsPicker(newPicker.firstElementChild);
+  }
   loadStats();
   loadClasses();
   loadCategories();
@@ -714,11 +783,15 @@ function openEditActivity(a) {
     el.dataset.epochMs = String(a.due_at);
   }
 
-  // max_attempts: null/<=0 in DB → unlimited. UI: 0 = unlimited, blank
-  // also means unlimited. Show the integer otherwise.
-  const maxEl = $("edit-max-attempts");
-  if (maxEl) {
-    maxEl.value = (a.max_attempts == null || a.max_attempts <= 0) ? 0 : a.max_attempts;
+  // Mount or refresh the max-attempts chip picker inside the edit modal.
+  const editPickerHost = $("edit-max-attempts-picker");
+  if (editPickerHost) {
+    if (!editPickerHost.firstElementChild) {
+      editPickerHost.innerHTML = attemptsPickerHTML(a.max_attempts);
+      bindAttemptsPicker(editPickerHost.firstElementChild);
+    } else {
+      setAttemptsPicker(editPickerHost.firstElementChild, a.max_attempts);
+    }
   }
 
   show("modal-edit-activity");
@@ -1230,14 +1303,10 @@ $("new-form").addEventListener("submit", async (e) => {
   };
   const releaseAt = readMs("release-at");
   const dueAt     = readMs("due-at");
-  // Max attempts: blank or 0 => unlimited (null on the wire); positive => cap.
-  const maxRaw = $("max-attempts")?.value;
-  let maxAttempts = 1;
-  if (maxRaw === "" || maxRaw == null) maxAttempts = null;
-  else {
-    const n = parseInt(maxRaw, 10);
-    maxAttempts = Number.isFinite(n) && n >= 1 ? n : null;
-  }
+  // Max attempts comes from the chip picker: null = unlimited, N = cap.
+  const maxAttempts = readAttemptsPicker(
+    $("max-attempts-picker")?.querySelector(".attempts-picker")
+  );
 
   let type = uiType;
   let options = [];
@@ -1408,17 +1477,18 @@ function shortDelta(ms) {
 // Render a small "Releases in 3h" / "Due in 2d" / "Past due" chip next to
 // the timestamp, so the instructor sees gating at a glance.
 function formatScheduleInfo(a) {
-  const now = Date.now();
   const parts = [];
+  // Release-at stays static — it transitions once and never moves once
+  // crossed. Use the existing shortDelta for terse instructor display.
+  const now = Date.now();
   if (a.release_at && a.release_at > now) {
-    parts.push(`<span style="color:var(--warning);margin-left:0.4rem;font-size:0.78rem;">Releases in ${shortDelta(a.release_at - now)}</span>`);
+    parts.push(`<span class="schedule-pill schedule-pill-release" title="${new Date(a.release_at).toLocaleString()}">Releases in ${shortDelta(a.release_at - now)}</span>`);
   }
+  // Due-at gets a live countdown — instructors see it tick down without
+  // having to refresh the list. urgency/warn classes are applied by the
+  // shared tick in due-countdown.js.
   if (a.due_at) {
-    if (a.due_at <= now) {
-      parts.push(`<span style="color:var(--error);margin-left:0.4rem;font-size:0.78rem;">Past due</span>`);
-    } else {
-      parts.push(`<span style="color:var(--muted);margin-left:0.4rem;font-size:0.78rem;">Due in ${shortDelta(a.due_at - now)}</span>`);
-    }
+    parts.push(dueChipHTML(a.due_at, { className: "schedule-pill schedule-pill-due" }));
   }
   return parts.join("");
 }
@@ -1548,7 +1618,7 @@ function renderActivities(list_data) {
       <span class="week-section-actions">
         <button type="button" class="secondary sm" data-bulk-action="open"   data-cat="${escapeHTML(g.tag)}" title="Open every activity in this category">Open all</button>
         <button type="button" class="secondary sm" data-bulk-action="closed" data-cat="${escapeHTML(g.tag)}" title="Close every activity in this category">Close all</button>
-        <button type="button" class="secondary sm" data-bulk-action="schedule" data-cat="${escapeHTML(g.tag)}" title="Set release + due dates for everything in this category">Schedule…</button>
+        <button type="button" class="secondary sm" data-bulk-action="schedule" data-cat="${escapeHTML(g.tag)}" title="Bulk-edit status, dates, and max attempts for everything in this category">Bulk edit…</button>
       </span>` : "";
     summary.innerHTML = `
       <span class="week-section-title">${escapeHTML(g.label)}</span>
@@ -1610,8 +1680,8 @@ function openBulkScheduleDialog(slug) {
     document.body.appendChild(m);
   }
   m.innerHTML = `
-    <h3 style="margin:0 0 0.5rem;font-size:1.05rem;">Schedule “${escapeHTML(slug)}”</h3>
-    <p class="muted" style="margin:0 0 1rem;font-size:0.88rem;">Applies to every activity in this category. Leave a field blank to leave that date alone; use <em>Clear both dates</em> to wipe existing values.</p>
+    <h3 style="margin:0 0 0.5rem;font-size:1.05rem;">Bulk edit “${escapeHTML(slug)}”</h3>
+    <p class="muted" style="margin:0 0 1rem;font-size:0.88rem;">Applies to every activity in this category. Each section is optional — leave a control alone and that field stays untouched.</p>
     <div class="field"><label for="bulk-release">Release at</label>
       <input type="text" id="bulk-release" class="datetime-input" placeholder="Pick date &amp; time…" autocomplete="off" />
     </div>
@@ -1624,10 +1694,11 @@ function openBulkScheduleDialog(slug) {
       <label style="display:flex;align-items:center;gap:0.45rem;font-size:0.9rem;margin:0.15rem 0;"><input type="radio" name="bulk-status" value="open" /> Open all <span class="muted" style="font-size:0.8rem;">— needed for students to see them</span></label>
       <label style="display:flex;align-items:center;gap:0.45rem;font-size:0.9rem;margin:0.15rem 0;"><input type="radio" name="bulk-status" value="closed" /> Close all</label>
     </fieldset>
-    <div class="field" style="margin:0 0 0.5rem;">
-      <label for="bulk-max-attempts">Max attempts <span class="muted" style="font-weight:400;">(blank = leave alone, 0 = unlimited)</span></label>
-      <input type="number" id="bulk-max-attempts" min="0" max="999" step="1" placeholder="leave alone" />
-    </div>
+    <fieldset style="border:1px solid var(--border);border-radius:var(--radius);padding:0.6rem 0.85rem;margin:0 0 0.5rem;">
+      <legend style="font-size:0.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;padding:0 0.35rem;">Max attempts</legend>
+      <label style="display:flex;align-items:center;gap:0.45rem;font-size:0.9rem;margin:0.15rem 0 0.4rem;"><input type="checkbox" id="bulk-attempts-enable" /> Apply to every activity in this category</label>
+      <div id="bulk-attempts-picker-host"></div>
+    </fieldset>
     <div id="bulk-visibility-hint" class="muted" style="font-size:0.82rem;margin:0 0 0.4rem;min-height:1.2em;"></div>
     <div id="bulk-err" class="status" role="status"></div>
     <div style="display:flex;justify-content:space-between;gap:0.5rem;margin-top:0.85rem;flex-wrap:wrap;">
@@ -1639,6 +1710,25 @@ function openBulkScheduleDialog(slug) {
     </div>`;
   show("modal-overlay");
   m.hidden = false;
+
+  // Mount the chip picker for bulk attempts. Disabled by default — user
+  // must tick the "Apply to every activity" checkbox to actually send
+  // max_attempts on the wire (so they can edit dates/status without
+  // accidentally wiping the cap on every activity).
+  const bulkAttemptsHost = document.getElementById("bulk-attempts-picker-host");
+  if (bulkAttemptsHost) {
+    bulkAttemptsHost.innerHTML = attemptsPickerHTML(1);
+    const picker = bulkAttemptsHost.firstElementChild;
+    bindAttemptsPicker(picker);
+    picker.style.opacity = "0.5";
+    picker.style.pointerEvents = "none";
+    const cb = document.getElementById("bulk-attempts-enable");
+    if (cb) cb.addEventListener("change", () => {
+      const on = cb.checked;
+      picker.style.opacity = on ? "1" : "0.5";
+      picker.style.pointerEvents = on ? "auto" : "none";
+    });
+  }
 
   // Wait for Flatpickr if it isn't ready yet, then init on both inputs.
   const initFp = (attempts = 0) => {
@@ -1744,11 +1834,11 @@ function openBulkScheduleDialog(slug) {
     if (due != null) payload.due_at = due;
     if (status === "open" || status === "closed") payload.status = status;
 
-    // Max attempts: blank = don't touch, 0 = unlimited (null), N>=1 = cap.
-    const maxRaw = document.getElementById("bulk-max-attempts")?.value;
-    if (maxRaw !== "" && maxRaw != null) {
-      const n = parseInt(maxRaw, 10);
-      if (Number.isFinite(n)) payload.max_attempts = n <= 0 ? null : n;
+    // Max attempts: only sent when the user explicitly opted in.
+    const cb = document.getElementById("bulk-attempts-enable");
+    if (cb && cb.checked) {
+      const picker = document.getElementById("bulk-attempts-picker-host")?.querySelector(".attempts-picker");
+      payload.max_attempts = readAttemptsPicker(picker);
     }
     if (!Object.keys(payload).length) {
       setStatus("bulk-err", "Pick a date or change the status — or use Clear to wipe existing dates.", "error");
@@ -2242,13 +2332,9 @@ $("edit-activity-form").addEventListener("submit", async (e) => {
   payload.release_at = readDate("edit-release-at");
   payload.due_at = readDate("edit-due-at");
 
-  // Max attempts. UI: blank or 0 → null (unlimited); positive int → cap.
-  const maxRaw = $("edit-max-attempts")?.value;
-  if (maxRaw === "" || maxRaw == null) payload.max_attempts = null;
-  else {
-    const n = parseInt(maxRaw, 10);
-    payload.max_attempts = Number.isFinite(n) && n >= 1 ? n : null;
-  }
+  payload.max_attempts = readAttemptsPicker(
+    $("edit-max-attempts-picker")?.querySelector(".attempts-picker")
+  );
 
   // Options + correct-answer for poll-family + ordering.
   const optionTypes = new Set(["poll", "poll_pie", "poll_multi", "ordering"]);
@@ -2302,6 +2388,9 @@ document.addEventListener("keydown", (e) => {
 });
 
 // ---------- Boot ----------
+
+// Live "Due in 3h 12m" / "Past due" chips on activity rows.
+startDueCountdowns();
 
 if (session.token) {
   // Verify token is still valid. api.js already clears session on 401.
