@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@600;700;800&family=Lora:wght@400;500;600&family=Ubuntu:wght@400;500;700&family=Roboto+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/styles.css?v=83" />
+  <link rel="stylesheet" href="/css/styles.css?v=84" />
   <script src="https://unpkg.com/lucide@latest"></script>
   <!-- Prism: VS Code Dark+ community theme + line-numbers plugin (CSS first, JS deferred) -->
   <link href="https://cdn.jsdelivr.net/npm/prism-themes@1.9.0/themes/prism-vsc-dark-plus.min.css" rel="stylesheet" />
@@ -63,7 +63,7 @@
   </header>
 
   <script type="module">
-    import { api } from "/js/api.js?v=83";
+    import { api } from "/js/api.js?v=84";
     api.initTheme();
     document.getElementById("nav-notes")?.classList.add("nav-active");
   </script>
@@ -89,7 +89,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/marked@12/marked.min.js"></script>
   <script type="module">
-    import { renderPost } from "/js/blog.js?v=83";
+    import { renderPost } from "/js/blog.js?v=84";
     renderPost(document.getElementById("post"));
   </script>
 
@@ -114,8 +114,8 @@
   </div>
 
   <script type="module">
-    import { bootPage, mountSettingsDrawer } from "/js/ui.js?v=83";
-    import { api, session } from "/js/api.js?v=83";
+    import { bootPage, mountSettingsDrawer } from "/js/ui.js?v=84";
+    import { api, session } from "/js/api.js?v=84";
     bootPage();
     mountSettingsDrawer({ api, session });
   </script>

@@ -1696,7 +1696,6 @@ function openBulkScheduleDialog(slug) {
     </fieldset>
     <fieldset style="border:1px solid var(--border);border-radius:var(--radius);padding:0.6rem 0.85rem;margin:0 0 0.5rem;">
       <legend style="font-size:0.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;padding:0 0.35rem;">Max attempts</legend>
-      <label style="display:flex;align-items:center;gap:0.45rem;font-size:0.9rem;margin:0.15rem 0 0.4rem;"><input type="checkbox" id="bulk-attempts-enable" /> Apply to every activity in this category</label>
       <div id="bulk-attempts-picker-host"></div>
     </fieldset>
     <div id="bulk-visibility-hint" class="muted" style="font-size:0.82rem;margin:0 0 0.4rem;min-height:1.2em;"></div>
@@ -1711,23 +1710,23 @@ function openBulkScheduleDialog(slug) {
   show("modal-overlay");
   m.hidden = false;
 
-  // Mount the chip picker for bulk attempts. Disabled by default — user
-  // must tick the "Apply to every activity" checkbox to actually send
-  // max_attempts on the wire (so they can edit dates/status without
-  // accidentally wiping the cap on every activity).
+  // Bulk picker has a "Leave alone" sentinel as its first chip so the
+  // default state is "don't touch the cap". Pick any other chip (or type
+  // a custom number) and the value goes on the wire.
   const bulkAttemptsHost = document.getElementById("bulk-attempts-picker-host");
   if (bulkAttemptsHost) {
-    bulkAttemptsHost.innerHTML = attemptsPickerHTML(1);
+    bulkAttemptsHost.innerHTML = `
+      <div class="attempts-picker" data-value="leave">
+        <button type="button" class="attempts-chip active" data-val="leave">Leave alone</button>
+        <button type="button" class="attempts-chip" data-val="1">1</button>
+        <button type="button" class="attempts-chip" data-val="2">2</button>
+        <button type="button" class="attempts-chip" data-val="3">3</button>
+        <button type="button" class="attempts-chip" data-val="5">5</button>
+        <button type="button" class="attempts-chip" data-val="0" title="Unlimited">∞</button>
+        <input type="number" class="attempts-custom" min="1" max="999" step="1" placeholder="Custom" aria-label="Custom attempt count" />
+      </div>`;
     const picker = bulkAttemptsHost.firstElementChild;
     bindAttemptsPicker(picker);
-    picker.style.opacity = "0.5";
-    picker.style.pointerEvents = "none";
-    const cb = document.getElementById("bulk-attempts-enable");
-    if (cb) cb.addEventListener("change", () => {
-      const on = cb.checked;
-      picker.style.opacity = on ? "1" : "0.5";
-      picker.style.pointerEvents = on ? "auto" : "none";
-    });
   }
 
   // Wait for Flatpickr if it isn't ready yet, then init on both inputs.
@@ -1834,14 +1833,17 @@ function openBulkScheduleDialog(slug) {
     if (due != null) payload.due_at = due;
     if (status === "open" || status === "closed") payload.status = status;
 
-    // Max attempts: only sent when the user explicitly opted in.
-    const cb = document.getElementById("bulk-attempts-enable");
-    if (cb && cb.checked) {
-      const picker = document.getElementById("bulk-attempts-picker-host")?.querySelector(".attempts-picker");
-      payload.max_attempts = readAttemptsPicker(picker);
+    // Max attempts: the bulk picker's first chip is "Leave alone" with
+    // value="leave", which means don't include max_attempts on the wire.
+    // Any numeric value (including 0 for unlimited) is an explicit choice.
+    const bulkPicker = document.getElementById("bulk-attempts-picker-host")?.querySelector(".attempts-picker");
+    const bulkV = bulkPicker?.dataset.value;
+    if (bulkV != null && bulkV !== "leave") {
+      const n = parseInt(bulkV, 10);
+      if (Number.isFinite(n)) payload.max_attempts = n <= 0 ? null : n;
     }
     if (!Object.keys(payload).length) {
-      setStatus("bulk-err", "Pick a date or change the status — or use Clear to wipe existing dates.", "error");
+      setStatus("bulk-err", "Nothing to apply — pick a date, change the status, or set Max attempts to something other than \"Leave alone\".", "error");
       return;
     }
     try {
@@ -1849,6 +1851,9 @@ function openBulkScheduleDialog(slug) {
       const bits = [];
       if (status === "open" || status === "closed") bits.push(`set to ${status}`);
       if (rel != null || due != null) bits.push("rescheduled");
+      if (payload.max_attempts !== undefined) {
+        bits.push(payload.max_attempts == null ? "set to unlimited attempts" : `capped at ${payload.max_attempts} attempt${payload.max_attempts === 1 ? "" : "s"}`);
+      }
       const label = bits.length ? bits.join(" + ") : "updated";
       toast(`${r.updated} activit${r.updated === 1 ? "y" : "ies"} ${label}.`, "success");
       close();
