@@ -1,12 +1,12 @@
-import { api, session, API_BASE_URL } from "/js/api.js";
+import { api, session, API_BASE_URL } from "/js/api.js?v=89";
 import {
   $, show, hide, escapeHTML, setStatus as setStatusEl,
   mountSettingsDrawer, updateUserPill, setupMicrosoftSignIn,
   toast,
-} from "/js/ui.js";
+} from "/js/ui.js?v=89";
 import {
   startDueCountdowns, onOverdue, dueChipHTML, dueLabel,
-} from "/js/due-countdown.js";
+} from "/js/due-countdown.js?v=89";
 
 const TYPE_LABELS = {
   poll: "Single choice", poll_pie: "Single choice", poll_multi: "Multiple choice",

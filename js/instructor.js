@@ -1,10 +1,10 @@
-import { api, session, API_BASE_URL } from "/js/api.js";
+import { api, session, API_BASE_URL } from "/js/api.js?v=89";
 import {
   $, show, hide, escapeHTML, setStatus,
   mountSettingsDrawer, updateUserPill, setupMicrosoftSignIn,
   toast, confirmDialog,
-} from "/js/ui.js";
-import { startDueCountdowns, dueChipHTML, dueLabel } from "/js/due-countdown.js";
+} from "/js/ui.js?v=89";
+import { startDueCountdowns, dueChipHTML, dueLabel } from "/js/due-countdown.js?v=89";
 
 // ---- Max-attempts picker ------------------------------------------------
 // Renders a row of preset chips ([1] [2] [3] [5] [∞]) plus a Custom input.

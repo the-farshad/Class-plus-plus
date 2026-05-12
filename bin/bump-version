@@ -62,4 +62,22 @@ for f in "${html_files[@]}"; do
   sed -i -E "s|(\"/js/[^\"?]+\\.js)(\\?v=[^\"]*)?\"|\\1?v=${next}\"|g" "$f"
 done
 
-echo "Bumped build ${current} → ${next}  (v${new_version})  — cache-busters updated in ${#html_files[@]} HTML files"
+# --- JS module import cache-busting --------------------------------------
+# Without this, the entry .js file gets a fresh ?v=NEXT in the HTML but its
+# `import "/js/api.js"` still serves a cached api.js, so newly-added api
+# methods appear undefined in the browser even after a deploy. Rewrite
+# both `from "..."` and bare `import "..."` forms.
+
+mapfile -t js_files < <(
+  find ./js -name '*.js' -not -name 'version.js'
+)
+
+for f in "${js_files[@]}"; do
+  # from "/js/foo.js"            -> from "/js/foo.js?v=NEXT"
+  # from "/js/foo.js?v=anything" -> from "/js/foo.js?v=NEXT"
+  sed -i -E "s|(from \"/js/[^\"?]+\\.js)(\\?v=[^\"]*)?\"|\\1?v=${next}\"|g" "$f"
+  # Bare side-effect import: import "/js/foo.js"
+  sed -i -E "s|(import \"/js/[^\"?]+\\.js)(\\?v=[^\"]*)?\"|\\1?v=${next}\"|g" "$f"
+done
+
+echo "Bumped build ${current} → ${next}  (v${new_version})  — cache-busters updated in ${#html_files[@]} HTML + ${#js_files[@]} JS files"
