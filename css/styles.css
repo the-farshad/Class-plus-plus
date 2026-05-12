@@ -1540,6 +1540,25 @@ tbody tr:hover { background: var(--interactive); }
   letter-spacing: -0.005em;
   overflow-wrap: anywhere;
   word-break: break-word;
+  /* Clamp the preview to 3 lines so a long markdown prompt
+     can't blow the card height past anything reasonable. */
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  max-height: 4.2em;
+}
+.picker-card-title :where(p, h1, h2, h3, h4, h5, h6) {
+  display: inline;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+}
+.picker-card-title :where(code) {
+  font-size: 0.88em;
+  padding: 0.05em 0.3em;
+  background: var(--surface-soft);
+  border-radius: 4px;
 }
 .picker-card-type  {
   font-size: 0.7rem;

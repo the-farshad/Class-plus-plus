@@ -445,10 +445,21 @@ function showPicker(activities) {
     const card = document.createElement("button");
     card.className = "picker-card";
     card.type = "button";
-    const PICKER_ICON = { poll:"bar-chart-2", poll_pie:"pie-chart", rating:"star", word_cloud:"cloud", submission:"file-text" };
+    const PICKER_ICON = {
+      poll: "bar-chart-2", poll_pie: "pie-chart", poll_multi: "check-square",
+      rating: "star", word_cloud: "cloud", submission: "file-text", ordering: "arrow-up-down",
+    };
+    // Strip the heaviest Markdown so the picker card stays readable —
+    // we'll show a short inline preview, full Markdown renders when
+    // the student opens the activity.
+    const compact = (a.prompt || "")
+      .replace(/```[\s\S]*?```/g, " […code…] ")     // drop fenced code blocks
+      .replace(/^\s*#{1,6}\s+/gm, "")                 // strip heading markers
+      .replace(/\s+/g, " ")
+      .trim();
     card.innerHTML = `
       <div class="picker-card-icon"><i data-lucide="${PICKER_ICON[a.type]||"file-text"}" style="width:22px;height:22px;color:var(--brand);"></i></div>
-      <div class="picker-card-title">${escapeHTML(a.prompt)}</div>
+      <div class="picker-card-title">${mdInline(compact)}</div>
       <div class="picker-card-type">${TYPE_LABELS[a.type] || a.type}</div>`;
     card.addEventListener("click", () => showActivity(a));
     grid.appendChild(card);

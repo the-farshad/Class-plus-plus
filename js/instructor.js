@@ -1599,6 +1599,13 @@ function openBulkScheduleDialog(slug) {
     <div class="field"><label for="bulk-due">Due at</label>
       <input type="text" id="bulk-due" class="datetime-input" placeholder="Pick date &amp; time…" autocomplete="off" />
     </div>
+    <fieldset style="border:1px solid var(--border);border-radius:var(--radius);padding:0.6rem 0.85rem;margin:0 0 0.5rem;">
+      <legend style="font-size:0.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;padding:0 0.35rem;">Status</legend>
+      <label style="display:flex;align-items:center;gap:0.45rem;font-size:0.9rem;margin:0.15rem 0;"><input type="radio" name="bulk-status" value="keep" checked /> Leave as is</label>
+      <label style="display:flex;align-items:center;gap:0.45rem;font-size:0.9rem;margin:0.15rem 0;"><input type="radio" name="bulk-status" value="open" /> Open all <span class="muted" style="font-size:0.8rem;">— needed for students to see them</span></label>
+      <label style="display:flex;align-items:center;gap:0.45rem;font-size:0.9rem;margin:0.15rem 0;"><input type="radio" name="bulk-status" value="closed" /> Close all</label>
+    </fieldset>
+    <div id="bulk-visibility-hint" class="muted" style="font-size:0.82rem;margin:0 0 0.4rem;min-height:1.2em;"></div>
     <div id="bulk-err" class="status" role="status"></div>
     <div style="display:flex;justify-content:space-between;gap:0.5rem;margin-top:0.85rem;flex-wrap:wrap;">
       <button type="button" class="secondary sm danger" id="bulk-clear">Clear both dates</button>
@@ -1656,6 +1663,40 @@ function openBulkScheduleDialog(slug) {
     return null;
   }
 
+  function readStatusChoice() {
+    const r = m.querySelector('input[name="bulk-status"]:checked');
+    return r ? r.value : "keep";
+  }
+
+  // Tell the user exactly what students will see based on
+  // their status + release combination. The most common
+  // footgun is "open + future release" → still invisible.
+  function refreshHint() {
+    const rel = readEpoch("bulk-release");
+    const status = readStatusChoice();
+    const hint = document.getElementById("bulk-visibility-hint");
+    const now = Date.now();
+    let msg = "";
+    if (status === "open" && rel != null && rel > now) {
+      const when = new Date(rel).toLocaleString();
+      msg = `Students see these starting <strong>${escapeHTML(when)}</strong>.`;
+    } else if (status === "open" && (rel == null || rel <= now)) {
+      msg = "Students see these <strong>immediately</strong> after Apply.";
+    } else if (status === "closed") {
+      msg = "Students <strong>won't see</strong> these regardless of date.";
+    } else if (rel != null && rel > now) {
+      msg = "Dates set, but status untouched — already-open ones will gate to the release date; closed ones stay hidden.";
+    }
+    hint.innerHTML = msg;
+  }
+  // Re-evaluate on every relevant input change.
+  m.querySelectorAll('input[name="bulk-status"]').forEach(r => r.addEventListener("change", refreshHint));
+  ["bulk-release", "bulk-due"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.addEventListener("change", refreshHint); el.addEventListener("input", refreshHint); }
+  });
+  refreshHint();
+
   document.getElementById("bulk-clear").addEventListener("click", async () => {
     const ok = await confirmDialog({
       title: "Clear both dates?",
@@ -1674,16 +1715,22 @@ function openBulkScheduleDialog(slug) {
   document.getElementById("bulk-apply").addEventListener("click", async () => {
     const rel = readEpoch("bulk-release");
     const due = readEpoch("bulk-due");
+    const status = readStatusChoice();
     const payload = {};
     if (rel != null) payload.release_at = rel;
     if (due != null) payload.due_at = due;
+    if (status === "open" || status === "closed") payload.status = status;
     if (!Object.keys(payload).length) {
-      setStatus("bulk-err", "Pick at least one date — or use Clear to remove existing ones.", "error");
+      setStatus("bulk-err", "Pick a date or change the status — or use Clear to wipe existing dates.", "error");
       return;
     }
     try {
       const r = await api.bulkUpdateCategory(slug, payload);
-      toast(`${r.updated} activit${r.updated === 1 ? "y" : "ies"} rescheduled.`, "success");
+      const bits = [];
+      if (status === "open" || status === "closed") bits.push(`set to ${status}`);
+      if (rel != null || due != null) bits.push("rescheduled");
+      const label = bits.length ? bits.join(" + ") : "updated";
+      toast(`${r.updated} activit${r.updated === 1 ? "y" : "ies"} ${label}.`, "success");
       close();
       loadActivities();
     } catch (err) { setStatus("bulk-err", err.message, "error"); }
