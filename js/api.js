@@ -178,6 +178,17 @@ export const api = {
   // Self-enroll into a class via join code (student-facing).
   selfEnrollByCode: (code) => postJSON(`/classes/by-code/${encodeURIComponent(code)}/enroll`, {}),
 
+  // Categories (user-defined groupings for activities).
+  listCategories: () => get("/admin/categories"),
+  createCategory: (slug, name, position) =>
+    postJSON("/admin/categories", { slug, name, position }),
+  updateCategory: (slug, payload) =>
+    patchJSON(`/admin/categories/${encodeURIComponent(slug)}`, payload),
+  deleteCategory: (slug) =>
+    del(`/admin/categories/${encodeURIComponent(slug)}`),
+  bulkUpdateCategory: (slug, payload) =>
+    postJSON(`/admin/categories/${encodeURIComponent(slug)}/bulk`, payload),
+
   // Classes
   getStats: () => get("/admin/stats"),
   listClasses: () => get("/admin/classes"),

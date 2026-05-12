@@ -106,9 +106,10 @@ activitiesRouter.post("/admin", requireInstructor, (req, res) => {
   const scheduledAt = req.body && req.body.scheduled_at ? parseInt(req.body.scheduled_at, 10) : null;
   // Session tag = "prog01".."prog14", "lab01".."lab14", or null.
   const rawTag = req.body && typeof req.body.session_tag === "string" ? req.body.session_tag.trim().toLowerCase() : "";
-  // session_tag accepts week01..week14 (preferred) AND legacy prog/lab tags
-  // so old data still validates. UI now only shows weeks.
-  const sessionTag = /^(week|prog|lab)(0[1-9]|1[0-4])$/.test(rawTag) ? rawTag : null;
+  // session_tag accepts any user-defined category slug. The slug is just
+  // free-form metadata; categories are owned by the instructor (see the
+  // /admin/categories CRUD endpoints).
+  const sessionTag = /^[a-z0-9_-]{1,40}$/.test(rawTag) ? rawTag : null;
   // Accept release_at / due_at as either ms or ISO string from the client.
   function toMs(v) {
     if (v == null || v === "") return null;

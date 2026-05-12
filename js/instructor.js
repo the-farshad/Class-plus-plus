@@ -116,6 +116,7 @@ function enterDashboard() {
   initTabs();
   loadStats();
   loadClasses();
+  loadCategories();
   loadActivities();
   loadAllowlist();
   if (u.role === "superadmin") {
@@ -1039,6 +1040,66 @@ $("add-option-btn").addEventListener("click", () => addOptionRow("poll-options-l
 
 $("refresh-activities").addEventListener("click", loadActivities);
 
+// Inline "+ New category…" from the New Activity dropdown opens a small
+// prompt-style modal asking for a slug + name, creates it, and selects it.
+$("session-tag")?.addEventListener("change", async (e) => {
+  if (e.target.value !== "__new__") return;
+  e.target.value = "";
+  const created = await openCreateCategoryDialog();
+  if (created) {
+    await loadCategories();
+    $("session-tag").value = created.slug;
+  }
+});
+
+function openCreateCategoryDialog(defaults = {}) {
+  return new Promise((resolve) => {
+    let m = document.getElementById("modal-new-category");
+    if (!m) {
+      m = document.createElement("div");
+      m.id = "modal-new-category";
+      m.className = "modal-center";
+      m.setAttribute("role", "dialog");
+      m.setAttribute("aria-modal", "true");
+      m.style.maxWidth = "420px";
+      document.body.appendChild(m);
+    }
+    m.innerHTML = `
+      <h3 style="margin:0 0 0.5rem;font-size:1.05rem;">New category</h3>
+      <p class="muted" style="margin:0 0 1rem;font-size:0.88rem;">A short slug (letters / numbers / dashes) and a display name. The slug is what gets stored on each activity — pick something stable.</p>
+      <div class="field"><label>Slug</label>
+        <input type="text" id="cat-slug" placeholder="midterm-review" value="${escapeHTML(defaults.slug || "")}" pattern="[a-z0-9_-]+" />
+      </div>
+      <div class="field"><label>Display name</label>
+        <input type="text" id="cat-name" placeholder="Midterm review" value="${escapeHTML(defaults.name || "")}" />
+      </div>
+      <div id="cat-err" class="status" role="status"></div>
+      <div style="display:flex;justify-content:flex-end;gap:0.5rem;margin-top:0.85rem;">
+        <button type="button" class="secondary sm" id="cat-cancel">Cancel</button>
+        <button type="button" id="cat-ok">Create</button>
+      </div>`;
+    show("modal-overlay");
+    m.hidden = false;
+    const close = (v) => { hide("modal-overlay"); m.hidden = true; resolve(v); };
+    document.getElementById("cat-cancel").addEventListener("click", () => close(null));
+    document.getElementById("cat-slug").focus();
+    document.getElementById("cat-ok").addEventListener("click", async () => {
+      const slug = document.getElementById("cat-slug").value.trim().toLowerCase();
+      const name = document.getElementById("cat-name").value.trim();
+      if (!/^[a-z0-9_-]{1,40}$/.test(slug)) {
+        setStatus("cat-err", "Slug must be lowercase letters, digits, dashes, or underscores.", "error"); return;
+      }
+      if (!name) { setStatus("cat-err", "Name is required.", "error"); return; }
+      try {
+        const r = await api.createCategory(slug, name);
+        close(r);
+      } catch (err) {
+        setStatus("cat-err", err.message || "Couldn't create", "error");
+      }
+    });
+  });
+}
+
 // Initialize Flatpickr on every .datetime-input once the library loads.
 // Stores the picked timestamp on input.dataset.epochMs so we read it
 // directly without re-parsing the visible string.
@@ -1154,41 +1215,37 @@ const TYPE_LABELS = {
   word_cloud: "Word Cloud",
 };
 
-// Topic labels for each session_tag, used as group headers when grouping
-// activities by week.
-const WEEK_LABELS = {
-  week01: "Week 01 — I/O + arithmetic",
-  week02: "Week 02 — if/else + while",
-  week03: "Week 03 — for/while/do-while",
-  week04: "Week 04 — functions + factorial",
-  week05: "Week 05 — Madhava-Leibniz series",
-  week06: "Week 06 — validation + geometry",
-  week07: "Week 07 — arrays",
-  week08: "Week 08 — 2D arrays",
-  week09: "Week 09 — references / least squares",
-  week10: "Week 10 — classes (Polynomial)",
-  week11: "Week 11 — operator overloading (String)",
-  week12: "Week 12 — new / delete / heap",
-  week13: "Week 13 — inheritance + virtual",
-  week14: "Week 14 — STL",
-};
-// Generic week-N label fallback for prog/lab legacy tags.
-function weekLabelFor(tag) {
-  if (!tag) return "Untagged";
-  if (WEEK_LABELS[tag]) return WEEK_LABELS[tag];
+// Categories are user-owned (one row per instructor x slug). Loaded from
+// /admin/categories on dashboard mount and refreshed when the instructor
+// adds / renames / deletes one.
+let categoriesCache = [];  // [{ slug, name, position, activity_count }]
+
+function categoryFor(slug) {
+  return slug ? categoriesCache.find(c => c.slug === slug) : null;
+}
+function categoryLabel(tag) {
+  if (!tag) return "Uncategorized";
+  const c = categoryFor(tag);
+  if (c) return c.name;
+  // Legacy fallback for tags that haven't been migrated to a category row
+  // (e.g., prog01 or a custom slug not yet seen).
   const m = /^(week|prog|lab)(\d+)$/.exec(tag);
-  if (m) return `Week ${parseInt(m[2], 10).toString().padStart(2, "0")}`;
+  if (m) return `${m[1][0].toUpperCase()}${m[1].slice(1)} ${parseInt(m[2], 10).toString().padStart(2, "0")}`;
   return tag;
 }
-function weekSortKey(tag) {
-  const m = /(\d+)/.exec(tag || "");
-  return m ? parseInt(m[1], 10) : 9999;
+function categorySortKey(tag) {
+  if (!tag) return Number.POSITIVE_INFINITY;
+  const c = categoryFor(tag);
+  if (c) return c.position;
+  // unknown / legacy tags sort after known ones, ordered by their number
+  const m = /(\d+)/.exec(tag);
+  return 100000 + (m ? parseInt(m[1], 10) : 99999);
 }
 
-// Group an array of objects (with session_tag) by week. Returns
-// [{ tag, label, items: [...] }, ...] sorted by week number, with
-// any untagged items appended at the end as { tag: null }.
-function groupByWeek(items) {
+// Group activities by their session_tag (i.e. category slug). Returns
+// [{ tag, label, items }, ...] sorted by category.position.
+// Untagged items go in a trailing { tag: null } bucket.
+function groupByCategory(items) {
   const groups = new Map();
   for (const it of items) {
     const tag = it.session_tag || null;
@@ -1196,12 +1253,42 @@ function groupByWeek(items) {
     groups.get(tag).push(it);
   }
   return [...groups.entries()]
-    .sort((a, b) => {
-      if (a[0] === null) return 1;
-      if (b[0] === null) return -1;
-      return weekSortKey(a[0]) - weekSortKey(b[0]);
-    })
-    .map(([tag, items]) => ({ tag, label: weekLabelFor(tag), items }));
+    .sort((a, b) => categorySortKey(a[0]) - categorySortKey(b[0]))
+    .map(([tag, items]) => ({ tag, label: categoryLabel(tag), items }));
+}
+// Back-compat alias — older code paths still call groupByWeek.
+const groupByWeek = groupByCategory;
+
+async function loadCategories() {
+  try {
+    const r = await api.listCategories();
+    categoriesCache = r.categories || [];
+  } catch (err) {
+    console.error("loadCategories failed", err);
+    categoriesCache = [];
+  }
+  rebuildCategoryDropdowns();
+}
+
+// (Re)populate the New-Activity "Week" dropdown + the filter dropdown
+// from categoriesCache. An "+ New category…" item is appended to the
+// new-activity dropdown so the instructor can create one inline.
+function rebuildCategoryDropdowns() {
+  const newSel = $("session-tag");
+  if (newSel) {
+    const prev = newSel.value;
+    newSel.innerHTML = `<option value="">— none —</option>`
+      + categoriesCache.map(c => `<option value="${escapeHTML(c.slug)}">${escapeHTML(c.name)}</option>`).join("")
+      + `<option value="__new__" style="font-style:italic;">+ New category…</option>`;
+    if (prev && [...newSel.options].some(o => o.value === prev)) newSel.value = prev;
+  }
+  const filtSel = $("activity-session-filter");
+  if (filtSel) {
+    const prev = filtSel.value;
+    filtSel.innerHTML = `<option value="">All categories</option>`
+      + categoriesCache.map(c => `<option value="${escapeHTML(c.slug)}">${escapeHTML(c.name)}</option>`).join("");
+    if (prev && [...filtSel.options].some(o => o.value === prev)) filtSel.value = prev;
+  }
 }
 const TYPE_ICONS = {
   submission: "file-text",
@@ -1372,18 +1459,27 @@ function renderActivities(list_data) {
     root.innerHTML = `<p class="muted" style="padding:1rem;">No activities yet — launch one above.</p>`;
     return;
   }
-  for (const g of groupByWeek(list_data)) {
+  for (const g of groupByCategory(list_data)) {
     const openCount = g.items.filter(a => a.status === "open").length;
     const details = document.createElement("details");
     details.className = "week-section";
     details.open = true;
     const summary = document.createElement("summary");
+    // Batch buttons (Open / Close / Schedule) appear only when the section
+    // is tied to a real category — uncategorized activities don't get them.
+    const batchControls = g.tag ? `
+      <span class="week-section-actions">
+        <button type="button" class="secondary sm" data-bulk-action="open"   data-cat="${escapeHTML(g.tag)}" title="Open every activity in this category">Open all</button>
+        <button type="button" class="secondary sm" data-bulk-action="closed" data-cat="${escapeHTML(g.tag)}" title="Close every activity in this category">Close all</button>
+        <button type="button" class="secondary sm" data-bulk-action="schedule" data-cat="${escapeHTML(g.tag)}" title="Set release + due dates for everything in this category">Schedule…</button>
+      </span>` : "";
     summary.innerHTML = `
       <span class="week-section-title">${escapeHTML(g.label)}</span>
       <span class="week-section-meta">
         ${g.items.length} activit${g.items.length === 1 ? "y" : "ies"}
         ${openCount ? `· <span style="color:var(--success);font-weight:700;">${openCount} open</span>` : ""}
-      </span>`;
+      </span>
+      ${batchControls}`;
     details.appendChild(summary);
     const ul = document.createElement("ul");
     ul.className = "activity-list";
@@ -1391,7 +1487,114 @@ function renderActivities(list_data) {
     details.appendChild(ul);
     root.appendChild(details);
   }
+  // Wire batch-action buttons inside summaries (one delegated listener
+  // would be slightly cleaner; per-button keeps the wiring obvious).
+  root.querySelectorAll("[data-bulk-action]").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      // <summary> would toggle <details> on click — stop that.
+      e.preventDefault();
+      e.stopPropagation();
+      handleCategoryBulk(btn.dataset.cat, btn.dataset.bulkAction);
+    });
+  });
   if (window.lucide) window.lucide.createIcons();
+}
+
+async function handleCategoryBulk(slug, action) {
+  if (action === "open" || action === "closed") {
+    const ok = await confirmDialog({
+      title: action === "open" ? "Open every activity?" : "Close every activity?",
+      message: `This will set the status of <strong>every</strong> activity tagged <code>${escapeHTML(slug)}</code> to <strong>${action}</strong>.`,
+      confirmLabel: action === "open" ? "Open all" : "Close all",
+      danger: action === "closed",
+    });
+    if (!ok) return;
+    try {
+      const r = await api.bulkUpdateCategory(slug, { status: action });
+      toast(`${r.updated} activit${r.updated === 1 ? "y" : "ies"} ${action === "open" ? "opened" : "closed"}.`, "success");
+      loadActivities();
+    } catch (err) { toast(err.message, "error"); }
+    return;
+  }
+  if (action === "schedule") {
+    openBulkScheduleDialog(slug);
+  }
+}
+
+function openBulkScheduleDialog(slug) {
+  let m = document.getElementById("modal-bulk-schedule");
+  if (!m) {
+    m = document.createElement("div");
+    m.id = "modal-bulk-schedule";
+    m.className = "modal-center";
+    m.setAttribute("role", "dialog");
+    m.setAttribute("aria-modal", "true");
+    m.style.maxWidth = "440px";
+    document.body.appendChild(m);
+  }
+  m.innerHTML = `
+    <h3 style="margin:0 0 0.5rem;font-size:1.05rem;">Schedule “${escapeHTML(slug)}”</h3>
+    <p class="muted" style="margin:0 0 1rem;font-size:0.88rem;">Applies to every activity in this category. Leave either field blank to leave it unchanged; use the small reset button to clear an existing date.</p>
+    <div class="field"><label for="bulk-release">Release at</label>
+      <input type="text" id="bulk-release" class="datetime-input" placeholder="Pick date &amp; time…" autocomplete="off" />
+    </div>
+    <div class="field"><label for="bulk-due">Due at</label>
+      <input type="text" id="bulk-due" class="datetime-input" placeholder="Pick date &amp; time…" autocomplete="off" />
+    </div>
+    <div id="bulk-err" class="status" role="status"></div>
+    <div style="display:flex;justify-content:space-between;gap:0.5rem;margin-top:0.85rem;">
+      <button type="button" class="secondary sm danger" id="bulk-clear">Clear both dates</button>
+      <div style="display:flex;gap:0.5rem;">
+        <button type="button" class="secondary sm" id="bulk-cancel">Cancel</button>
+        <button type="button" id="bulk-apply">Apply</button>
+      </div>
+    </div>`;
+  show("modal-overlay");
+  m.hidden = false;
+  // Init flatpickr on the two inputs once they're in the DOM
+  if (window.flatpickr) {
+    ["bulk-release", "bulk-due"].forEach(id => {
+      const el = document.getElementById(id);
+      window.flatpickr(el, {
+        enableTime: true, time_24hr: true, minuteIncrement: 5,
+        dateFormat: "Y-m-d H:i",
+        onChange: (sel) => { el.dataset.epochMs = sel?.[0] ? sel[0].getTime() : ""; },
+      });
+    });
+  }
+  const close = () => { hide("modal-overlay"); m.hidden = true; };
+  document.getElementById("bulk-cancel").addEventListener("click", close);
+  document.getElementById("bulk-clear").addEventListener("click", async () => {
+    const ok = await confirmDialog({
+      title: "Clear both dates?",
+      message: `Remove the release-at and due-at on every activity in <code>${escapeHTML(slug)}</code>?`,
+      confirmLabel: "Clear", danger: true,
+    });
+    if (!ok) return;
+    try {
+      const r = await api.bulkUpdateCategory(slug, { release_at: null, due_at: null });
+      toast(`Cleared dates on ${r.updated} activit${r.updated === 1 ? "y" : "ies"}.`, "success");
+      close();
+      loadActivities();
+    } catch (err) { setStatus("bulk-err", err.message, "error"); }
+  });
+  document.getElementById("bulk-apply").addEventListener("click", async () => {
+    const rel = document.getElementById("bulk-release").dataset.epochMs;
+    const due = document.getElementById("bulk-due").dataset.epochMs;
+    const payload = {};
+    if (rel) payload.release_at = parseInt(rel, 10);
+    if (due) payload.due_at = parseInt(due, 10);
+    if (!Object.keys(payload).length) {
+      setStatus("bulk-err", "Pick at least one date — or use Clear to remove existing ones.", "error");
+      return;
+    }
+    try {
+      const r = await api.bulkUpdateCategory(slug, payload);
+      toast(`${r.updated} activit${r.updated === 1 ? "y" : "ies"} rescheduled.`, "success");
+      close();
+      loadActivities();
+    } catch (err) { setStatus("bulk-err", err.message, "error"); }
+  });
 }
 
 function activityURL(a) {

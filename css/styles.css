@@ -2622,11 +2622,17 @@ hr { border: 0; height: 1px; background: var(--border); margin: 1.5rem 0; }
   letter-spacing: -0.005em;
 }
 .week-section-meta {
-  margin-left: auto;
   font-size: 0.78rem;
   color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
+.week-section-actions {
+  display: inline-flex;
+  gap: 0.3rem;
+  margin-left: auto;
+  flex-wrap: wrap;
+}
+.week-section-actions button { font-size: 0.76rem; padding: 0.25rem 0.6rem; }
 .week-section .activity-list { margin: 0; padding: 0.4rem 0.5rem 0.5rem; }
 .week-section table {
   width: 100%;

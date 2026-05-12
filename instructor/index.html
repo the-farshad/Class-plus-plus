@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@600;700;800&family=Lora:wght@400;500;600&family=Ubuntu:wght@400;500;700&family=Roboto+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/styles.css?v=76" />
+  <link rel="stylesheet" href="/css/styles.css?v=77" />
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -286,9 +286,9 @@
 
           <!-- Live results panel -->
           <div id="live-results-card" class="card" hidden>
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-bottom:1rem;">
-              <div>
-                <h2 id="live-results-title" style="margin:0;font-size:1rem;">Live Results</h2>
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;margin-bottom:1rem;flex-wrap:wrap;">
+              <div style="flex:1;min-width:0;">
+                <h2 id="live-results-title" style="margin:0;font-size:1rem;overflow-wrap:anywhere;word-break:break-word;line-height:1.4;"></h2>
                 <p id="live-results-count" class="muted" style="margin:0.2rem 0 0;font-size:0.83rem;"></p>
               </div>
               <div style="display:flex;gap:0.4rem;align-items:center;">
@@ -514,9 +514,9 @@
 
   <div class="build-chip" data-version></div>
 
-  <script type="module" src="/js/instructor.js?v=76"></script>
+  <script type="module" src="/js/instructor.js?v=77"></script>
   <script type="module">
-    import { bootPage } from "/js/ui.js?v=76";
+    import { bootPage } from "/js/ui.js?v=77";
     bootPage();
   </script>
 </body>

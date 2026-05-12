@@ -12,6 +12,7 @@ import { allowlistRouter } from "./routes/allowlist.js";
 import { instructorsRouter } from "./routes/instructors.js";
 import { classesRouter } from "./routes/classes.js";
 import { studentClassesRouter } from "./routes/student-classes.js";
+import { categoriesRouter } from "./routes/categories.js";
 import { requireInstructor } from "./auth.js";
 
 migrate();
@@ -52,6 +53,7 @@ app.use("/admin/roster", rosterRouter);
 app.use("/admin/allowlist", allowlistRouter);
 app.use("/admin/instructors", instructorsRouter);
 app.use("/admin/classes", classesRouter);
+app.use("/admin/categories", categoriesRouter);
 app.use("/classes", studentClassesRouter);
 
 app.get("/admin/stats", requireInstructor, (req, res) => {
