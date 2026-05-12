@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "../db.js";
 import { requireAuth, requireInstructor } from "../auth.js";
-import { gradeAnswer, exposeCorrectAnswer } from "../grading.js";
+import { gradeAnswer, exposeCorrectAnswer, shouldRevealCorrect } from "../grading.js";
 
 export const activitiesRouter = Router();
 
@@ -88,16 +88,21 @@ activitiesRouter.get("/events", (req, res) => {
 activitiesRouter.get("/", requireAuth, (req, res) => {
   const { class_id } = req.query;
   const now = Date.now();
+  // assigned_to_email gates per-student assignments:
+  //   NULL                 -> visible to anyone (default)
+  //   matches caller email -> visible to them only
+  //   anything else        -> hidden from this caller
   let sql = `
     SELECT id AS activity_id, prompt, asset_url, type, poll_options, difficulty,
-           session_tag, release_at, due_at, max_attempts
+           session_tag, release_at, due_at, max_attempts, assigned_to_email
     FROM activities
     WHERE status = 'open'
       AND (scheduled_at IS NULL OR scheduled_at <= ?)
       AND (release_at IS NULL OR release_at <= ?)
       AND (due_at IS NULL OR due_at > ?)
+      AND (assigned_to_email IS NULL OR assigned_to_email = ?)
   `;
-  const params = [now, now, now];
+  const params = [now, now, now, req.user.email];
   if (class_id) {
     sql += " AND class_id = ?";
     params.push(class_id);
@@ -115,10 +120,15 @@ activitiesRouter.get("/", requireAuth, (req, res) => {
 
 activitiesRouter.get("/:id", requireAuth, (req, res) => {
   const row = db.prepare(
-    "SELECT id AS activity_id, prompt, asset_url, status, type, poll_options, session_tag, release_at, due_at, max_attempts FROM activities WHERE id = ?"
+    "SELECT id AS activity_id, prompt, asset_url, status, type, poll_options, session_tag, release_at, due_at, max_attempts, assigned_to_email FROM activities WHERE id = ?"
   ).get(req.params.id);
   if (!row) return res.status(404).json({ ok: false, error: "Not found" });
   if (row.status !== "open") return res.status(409).json({ ok: false, error: "Activity is closed" });
+  // Per-student assignment: if set to someone else, hide it as if it
+  // didn't exist (404 rather than 403 — don't leak existence).
+  if (row.assigned_to_email && row.assigned_to_email !== req.user.email) {
+    return res.status(404).json({ ok: false, error: "Not found" });
+  }
   const now = Date.now();
   if (row.release_at && row.release_at > now) {
     return res.status(409).json({ ok: false, error: "Activity has not been released yet" });
@@ -133,8 +143,13 @@ activitiesRouter.get("/:id", requireAuth, (req, res) => {
 // Instructor: list everything.
 activitiesRouter.get("/admin/all", requireInstructor, (req, res) => {
   const { class_id } = req.query;
+  // poll_options + correct_answer are required by the edit modal to
+  // rehydrate the option rows and correctness checkboxes. Without them
+  // the modal opens with an empty option list and silently nukes the
+  // saved options on submit.
   let sql = `SELECT id AS activity_id, prompt, status, asset_url, type, class_id,
-                    session_tag, release_at, due_at, max_attempts, created_at
+                    session_tag, release_at, due_at, max_attempts,
+                    poll_options, correct_answer, assigned_to_email, created_at
              FROM activities`;
   const params = [];
   if (class_id) {
@@ -193,17 +208,21 @@ activitiesRouter.post("/admin", requireInstructor, (req, res) => {
   }
 
   const maxAttempts = normalizeMaxAttempts(req.body && req.body.max_attempts, 1);
+  // Per-student assignment. Empty / null = available to whole class.
+  const rawAssign = req.body && typeof req.body.assigned_to_email === "string"
+    ? req.body.assigned_to_email.trim().toLowerCase() : "";
+  const assignedTo = rawAssign && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(rawAssign) ? rawAssign : null;
 
   if (!prompt) return res.status(400).json({ ok: false, error: "Missing prompt" });
   const info = db.prepare(
     `INSERT INTO activities
        (prompt, status, asset_url, class_id, type, poll_options, difficulty,
         scheduled_at, session_tag, release_at, due_at, correct_answer,
-        max_attempts, created_at)
-     VALUES (?, 'open', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        max_attempts, assigned_to_email, created_at)
+     VALUES (?, 'open', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).run(prompt, assetUrl, classId, type, pollOptions, difficulty,
         scheduledAt, sessionTag, releaseAt, dueAt, correctAnswer,
-        maxAttempts, Date.now());
+        maxAttempts, assignedTo, Date.now());
   res.json({ ok: true, activity_id: info.lastInsertRowid });
   notifySSE();
 });
@@ -214,6 +233,7 @@ activitiesRouter.patch("/admin/:id", requireInstructor, (req, res) => {
   const {
     status, prompt, type, poll_options, difficulty, scheduled_at, class_id,
     session_tag, release_at, due_at, correct_answer, max_attempts,
+    assigned_to_email,
   } = req.body;
 
   if (status && status !== "open" && status !== "closed") {
@@ -276,18 +296,27 @@ activitiesRouter.patch("/admin/:id", requireInstructor, (req, res) => {
 
     const newMaxAttempts = normalizeMaxAttempts(max_attempts, current.max_attempts);
 
+    // assigned_to_email: undefined = leave alone, "" / null = clear,
+    // valid email = assign exclusively to that user.
+    let newAssignedTo = current.assigned_to_email;
+    if (assigned_to_email === null || assigned_to_email === "") newAssignedTo = null;
+    else if (typeof assigned_to_email === "string") {
+      const e = assigned_to_email.trim().toLowerCase();
+      if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)) newAssignedTo = e;
+    }
+
     const info = db.prepare(`
       UPDATE activities SET
         status = ?, prompt = ?, type = ?, poll_options = ?,
         difficulty = ?, scheduled_at = ?, class_id = ?,
         session_tag = ?, release_at = ?, due_at = ?, correct_answer = ?,
-        max_attempts = ?
+        max_attempts = ?, assigned_to_email = ?
       WHERE id = ?
     `).run(
       newStatus, newPrompt, newType, newPollOptions,
       newDifficulty, newScheduledAt, newClassId,
       newSessionTag, newReleaseAt, newDueAt, newCorrectAnswer,
-      newMaxAttempts,
+      newMaxAttempts, newAssignedTo,
       req.params.id
     );
 
@@ -323,6 +352,9 @@ activitiesRouter.post("/:id/vote", requireAuth, (req, res) => {
 
   const activity = db.prepare("SELECT * FROM activities WHERE id = ?").get(activityId);
   if (!activity) return res.status(404).json({ ok: false, error: "Activity not found" });
+  if (activity.assigned_to_email && activity.assigned_to_email !== req.user.email) {
+    return res.status(404).json({ ok: false, error: "Activity not found" });
+  }
 
   try {
     ensureAttemptsRemaining(activity, req.user.email);
@@ -353,10 +385,13 @@ activitiesRouter.post("/:id/vote", requireAuth, (req, res) => {
     const used = bumpAttempt(activityId, req.user.email);
 
     const isCorrect = gradeAnswer(activity, { poll_indices: indices });
+    const reveal = shouldRevealCorrect(activity, isCorrect, used);
     res.json({
       ok: true,
       is_correct: isCorrect,
-      correct_answer: exposeCorrectAnswer(activity),
+      // Withhold the right answer while attempts remain — otherwise a
+      // multi-attempt cap leaks the answer on the first wrong guess.
+      correct_answer: reveal ? exposeCorrectAnswer(activity) : null,
       attempts_used: used,
       max_attempts: activity.max_attempts,
     });

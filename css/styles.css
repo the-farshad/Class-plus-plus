@@ -1616,6 +1616,12 @@ tbody tr:hover { background: var(--interactive); }
   gap: 0.6rem;
   margin-top: 0.35rem;
 }
+/* When any option's text is long (multi-line, has a code block, or
+   exceeds the readability threshold), the renderer adds .stacked so
+   every option gets its own full-width row. */
+.poll-tiles-grid.stacked {
+  grid-template-columns: 1fr;
+}
 .poll-tile {
   display: flex;
   align-items: flex-start;            /* multi-line text aligns to top */

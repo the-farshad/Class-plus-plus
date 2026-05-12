@@ -248,11 +248,16 @@ function showActivity(a) {
             if (el) list.appendChild(el);
           });
         }
-        applyOrderingGrade(list, grade.is_correct);
+        // Honor whatever the server told us on the last call — if it
+        // withheld correct_answer, keep colors hidden + drag enabled.
+        const revealed = !!grade.correct_answer;
+        applyOrderingGrade(list, grade.is_correct, revealed);
         const btn = $("order-submit-btn");
         if (btn) {
-          btn.disabled = true;
-          btn.textContent = grade.is_correct ? "Correct ✓" : grade.is_correct === false ? "Submitted — see below" : "Submitted ✓";
+          btn.disabled = grade.is_correct === true || revealed;
+          btn.textContent = grade.is_correct === true ? "Correct ✓"
+            : revealed ? "Submitted — see below"
+            : "Try again";
         }
       } else {
         show("confirm-card");
@@ -309,6 +314,18 @@ function renderPoll(a) {
   document.getElementById("grading-banner")?.remove();
 
   const options = JSON.parse(a.poll_options || "[]");
+
+  // If any option is long (>=80 chars), has a line break, or contains a
+  // code fence/inline code, force a single-column layout so each option
+  // gets its own line and doesn't get squished.
+  const needsStack = options.some(opt => {
+    if (typeof opt !== "string") return false;
+    if (opt.length >= 80) return true;
+    if (/\n/.test(opt)) return true;
+    if (/```|`[^`]+`/.test(opt)) return true;
+    return false;
+  });
+  container.classList.toggle("stacked", needsStack);
   const letters = "ABCDEFGHIJKLMNOP";
   const isMulti = a.type === "poll_multi";
 
@@ -419,24 +436,32 @@ function applyPollGrade(container, a, chosenSet, grade, isMulti) {
     if (Array.isArray(grade.correct_answer.indices)) grade.correct_answer.indices.forEach(i => correctSet.add(i));
   }
 
-  // Apply per-tile classes.
+  // When the server withholds correct_answer (student still has tries
+  // left and didn't get it right), we deliberately skip per-tile
+  // green/red coloring — otherwise a single wrong attempt would expose
+  // which options are correct via color and the cap is pointless.
+  const revealed = correctSet.size > 0;
+
   container.querySelectorAll(".poll-tile").forEach(tile => {
     const idx = parseInt(tile.dataset.index, 10);
     tile.classList.remove("correct", "incorrect", "correct-missed");
+    if (!revealed) {
+      // Keep the picked tiles visually "selected" so the student sees
+      // what they submitted, but don't color them right/wrong.
+      return;
+    }
     const isChosen = chosenSet.has(idx);
     const isCorrect = correctSet.has(idx);
-    if (correctSet.size === 0) { /* ungraded — leave selection only */ }
-    else if (isChosen && isCorrect) tile.classList.add("correct");
+    if (isChosen && isCorrect) tile.classList.add("correct");
     else if (isChosen && !isCorrect) tile.classList.add("incorrect");
     else if (!isChosen && isCorrect) tile.classList.add("correct-missed");
-    tile.disabled = !isMulti;     // single-select locks; multi can be revised
+    tile.disabled = !isMulti;     // single-select locks once revealed
   });
 
   // Update / replace the Submit button label for multi.
   const submitBtn = container.querySelector("#poll-multi-submit");
   if (submitBtn) submitBtn.textContent = "Update answer";
 
-  // Banner.
   document.getElementById("grading-banner")?.remove();
   if (grade.is_correct === null || grade.is_correct === undefined) {
     setStatusEl("poll-status", "Answer recorded — this one isn't auto-graded.", "success");
@@ -445,11 +470,15 @@ function applyPollGrade(container, a, chosenSet, grade, isMulti) {
   const banner = document.createElement("div");
   banner.id = "grading-banner";
   banner.className = "grading-banner " + (grade.is_correct ? "grading-banner-correct" : "grading-banner-incorrect");
-  banner.innerHTML = grade.is_correct
-    ? `<span class="grading-icon">✓</span><div><strong>Correct!</strong><span>Well done. ${isMulti ? "Update if you want to change your answer." : ""}</span></div>`
-    : `<span class="grading-icon">✗</span><div><strong>Not quite.</strong><span>The correct option${correctSet.size > 1 ? "s are" : " is"} highlighted in green.</span></div>`;
+  if (grade.is_correct) {
+    banner.innerHTML = `<span class="grading-icon">✓</span><div><strong>Correct!</strong><span>Well done.${isMulti ? " Update if you want to change your answer." : ""}</span></div>`;
+  } else if (revealed) {
+    banner.innerHTML = `<span class="grading-icon">✗</span><div><strong>Not quite.</strong><span>The correct option${correctSet.size > 1 ? "s are" : " is"} highlighted in green.</span></div>`;
+  } else {
+    banner.innerHTML = `<span class="grading-icon">✗</span><div><strong>Not quite — try again.</strong><span>Use a remaining attempt to revise your answer.</span></div>`;
+  }
   container.parentNode.insertBefore(banner, container);
-  setStatusEl("poll-status", "");   // clear any old status
+  setStatusEl("poll-status", "");
 }
 
 // ----- Student-side poll results (shown after voting) -----
@@ -776,12 +805,23 @@ $("order-form").addEventListener("submit", async (e) => {
     localStorage.setItem(SUBMIT_KEY(id), "1");
     localStorage.setItem(`classpp.order.${id}`, order);   // for revisit hydration
     saveGrade(id, { is_correct: res.is_correct, correct_answer: res.correct_answer });
-    // Freeze the list and annotate each row with correctness; don't jump
-    // away — the student should SEE which positions they nailed.
-    applyOrderingGrade(list, res.is_correct);
+    // Only reveal per-slot correctness when the server actually exposed
+    // the canonical order — i.e. they're done with their attempts or
+    // they got it right. Otherwise show a "try again" banner without
+    // coloring (which would leak which positions are right).
+    const revealed = !!res.correct_answer;
+    applyOrderingGrade(list, res.is_correct, revealed);
     if (btn) {
-      btn.disabled = true;
-      btn.textContent = res.is_correct ? "Correct ✓" : res.is_correct === false ? "Submitted — see below" : "Submitted ✓";
+      // Re-enable for a retry if they haven't been locked yet and the
+      // answer is still hidden — they should be able to try again.
+      const canRetry = !revealed && res.is_correct !== true
+        && (res.max_attempts == null || (Number.isFinite(res.attempts_used) && res.attempts_used < res.max_attempts));
+      btn.disabled = !canRetry;
+      btn.textContent = res.is_correct
+        ? "Correct ✓"
+        : canRetry
+          ? "Try again"
+          : "Submitted — see below";
     }
     // Refresh attempt counter / lock when cap reached.
     if (Number.isFinite(res.attempts_used)) {
@@ -806,26 +846,35 @@ $("order-form").addEventListener("submit", async (e) => {
 
 // Annotate every dragged item with whether it ended up in the canonical
 // (correct) slot, plus inject a verdict banner above the list.
-function applyOrderingGrade(list, isCorrect) {
+//
+// `revealed` (default true) controls whether per-row right/wrong colors
+// show. When the server is withholding the right answer (attempts left),
+// we only render the banner — coloring would leak which positions are
+// correct via process-of-elimination.
+function applyOrderingGrade(list, isCorrect, revealed = true) {
   let inPlace = 0;
   const items = [...list.querySelectorAll(".order-item")];
   items.forEach((el, pos) => {
-    const origIdx = parseInt(el.dataset.originalIndex, 10);
     el.classList.remove("correct-pos", "wrong-pos");
+    if (!revealed) return;
+    const origIdx = parseInt(el.dataset.originalIndex, 10);
     if (origIdx === pos) { el.classList.add("correct-pos"); inPlace++; }
     else el.classList.add("wrong-pos");
   });
-  // Freeze drag.
-  if (orderSortable) { orderSortable.option("disabled", true); }
+  // Freeze drag only when we're showing the final verdict.
+  if (revealed && orderSortable) { orderSortable.option("disabled", true); }
 
-  // Banner.
   document.getElementById("grading-banner")?.remove();
   const banner = document.createElement("div");
   banner.id = "grading-banner";
   banner.className = "grading-banner " + (isCorrect ? "grading-banner-correct" : "grading-banner-incorrect");
-  banner.innerHTML = isCorrect
-    ? `<span class="grading-icon">✓</span><div><strong>Correct order!</strong><span>All ${items.length} items in the right place.</span></div>`
-    : `<span class="grading-icon">✗</span><div><strong>Not quite.</strong><span>${inPlace} of ${items.length} items are in the right slot (highlighted green). The rest are red.</span></div>`;
+  if (isCorrect) {
+    banner.innerHTML = `<span class="grading-icon">✓</span><div><strong>Correct order!</strong><span>All ${items.length} items in the right place.</span></div>`;
+  } else if (revealed) {
+    banner.innerHTML = `<span class="grading-icon">✗</span><div><strong>Not quite.</strong><span>${inPlace} of ${items.length} items are in the right slot (highlighted green). The rest are red.</span></div>`;
+  } else {
+    banner.innerHTML = `<span class="grading-icon">✗</span><div><strong>Not quite — try again.</strong><span>Use a remaining attempt to rearrange.</span></div>`;
+  }
   list.parentNode.insertBefore(banner, list);
 }
 

@@ -5,7 +5,7 @@ import { db } from "../db.js";
 import { config } from "../config.js";
 import { requireAuth, requireInstructor, studentIdFor } from "../auth.js";
 import { persistUpload } from "../storage.js";
-import { gradeAnswer, exposeCorrectAnswer } from "../grading.js";
+import { gradeAnswer, exposeCorrectAnswer, shouldRevealCorrect } from "../grading.js";
 import { ensureAttemptsRemaining, bumpAttempt } from "./activities.js";
 
 export const submissionsRouter = Router();
@@ -42,6 +42,9 @@ submissionsRouter.post(
       if (!activity) return res.status(404).json({ ok: false, error: "Activity not found" });
       if (activity.status !== "open") {
         return res.status(409).json({ ok: false, error: "Activity is closed" });
+      }
+      if (activity.assigned_to_email && activity.assigned_to_email !== req.user.email) {
+        return res.status(404).json({ ok: false, error: "Activity not found" });
       }
 
       try {
@@ -91,11 +94,12 @@ submissionsRouter.post(
       // correctness verdict and the canonical correct answer so the
       // student client can immediately show graded feedback.
       const isCorrect = gradeAnswer(activity, { submission: response });
+      const reveal = shouldRevealCorrect(activity, isCorrect, used);
       res.json({
         ok: true,
         submission_id: info.lastInsertRowid,
         is_correct: isCorrect,
-        correct_answer: exposeCorrectAnswer(activity),
+        correct_answer: reveal ? exposeCorrectAnswer(activity) : null,
         attempts_used: used,
         max_attempts: activity.max_attempts,
       });

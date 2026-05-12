@@ -50,3 +50,17 @@ export function exposeCorrectAnswer(activity) {
   try { return JSON.parse(activity.correct_answer); }
   catch { return null; }
 }
+
+// Decide whether to actually disclose the canonical correct answer to
+// the student RIGHT NOW. Two cases reveal it:
+//   - they got it right (no point hiding it then)
+//   - they're out of attempts (lesson is over)
+// Anything else, return null — otherwise a multi-attempt cap is
+// useless because the first wrong attempt leaks the right answer.
+export function shouldRevealCorrect(activity, isCorrect, attemptsUsed) {
+  if (isCorrect === true) return true;
+  const cap = activity.max_attempts;
+  if (cap == null || cap <= 0) return false;   // unlimited → never reveal until correct
+  return attemptsUsed >= cap;
+}
+

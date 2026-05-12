@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@600;700;800&family=Lora:wght@400;500;600&family=Ubuntu:wght@400;500;700&family=Roboto+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/styles.css?v=84" />
+  <link rel="stylesheet" href="/css/styles.css?v=85" />
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -255,6 +255,11 @@
                 <div class="field" style="margin:0;flex-basis:100%;min-width:240px;">
                   <label>Max attempts <span class="muted" style="font-weight:400;">— ∞ for unlimited</span></label>
                   <div id="max-attempts-picker"></div>
+                </div>
+                <div class="field" style="margin:0;flex-basis:100%;min-width:240px;">
+                  <label for="assign-to-email">Assign to one student <span class="muted" style="font-weight:400;">— leave blank for the whole class</span></label>
+                  <input type="email" id="assign-to-email" autocomplete="off" placeholder="student@uwyo.edu" list="assign-to-email-list" />
+                  <datalist id="assign-to-email-list"></datalist>
                 </div>
               </div>
 
@@ -518,6 +523,12 @@
           <div id="edit-max-attempts-picker"></div>
         </div>
 
+        <div class="field" style="margin-top:0.5rem;">
+          <label for="edit-assign-to-email">Assign to one student <span class="muted" style="font-weight:400;">— leave blank for the whole class</span></label>
+          <input type="email" id="edit-assign-to-email" autocomplete="off" placeholder="student@uwyo.edu" list="edit-assign-to-email-list" />
+          <datalist id="edit-assign-to-email-list"></datalist>
+        </div>
+
         <button type="submit" style="width:100%;margin-top:0.75rem;">Save changes</button>
         <div id="edit-activity-status" class="status"></div>
       </form>
@@ -556,9 +567,9 @@
 
   <div class="build-chip" data-version></div>
 
-  <script type="module" src="/js/instructor.js?v=84"></script>
+  <script type="module" src="/js/instructor.js?v=85"></script>
   <script type="module">
-    import { bootPage } from "/js/ui.js?v=84";
+    import { bootPage } from "/js/ui.js?v=85";
     bootPage();
   </script>
 </body>

@@ -794,6 +794,10 @@ function openEditActivity(a) {
     }
   }
 
+  // Per-student assignment.
+  const assignEl = $("edit-assign-to-email");
+  if (assignEl) assignEl.value = a.assigned_to_email || "";
+
   show("modal-edit-activity");
   show("modal-overlay");
   if (window.lucide) window.lucide.createIcons();
@@ -1308,6 +1312,9 @@ $("new-form").addEventListener("submit", async (e) => {
     $("max-attempts-picker")?.querySelector(".attempts-picker")
   );
 
+  // Per-student assignment. Blank = whole class.
+  const assignedTo = ($("assign-to-email")?.value || "").trim().toLowerCase() || null;
+
   let type = uiType;
   let options = [];
 
@@ -1338,9 +1345,10 @@ $("new-form").addEventListener("submit", async (e) => {
   if (btn) btn.disabled = true;
   setStatus("new-status", "Creating…");
   try {
-    const res = await api.createActivity(prompt, classId, type, options, sessionTag, releaseAt, dueAt, correctAnswer, maxAttempts);
+    const res = await api.createActivity(prompt, classId, type, options, sessionTag, releaseAt, dueAt, correctAnswer, maxAttempts, assignedTo);
     setStatus("new-status", `Launched! (#${res.activity_id})`, "success");
     $("prompt").value = "";
+    if ($("assign-to-email")) $("assign-to-email").value = "";
     // Reset Flatpickr fields too — clear the visible value and our stored ms.
     ["release-at", "due-at"].forEach(id => {
       const el = $(id);
@@ -1515,6 +1523,9 @@ function buildActivityRow(a) {
     const attemptsBadge = (a.max_attempts == null || a.max_attempts <= 0)
       ? `<span class="type-badge" title="Unlimited attempts" style="background:var(--surface-2);color:var(--muted);"><i data-lucide="infinity" style="width:11px;height:11px;"></i> ∞</span>`
       : `<span class="type-badge" title="${a.max_attempts} attempt${a.max_attempts === 1 ? "" : "s"} allowed" style="background:var(--surface-2);color:var(--text);"><i data-lucide="repeat" style="width:11px;height:11px;"></i> ${a.max_attempts}×</span>`;
+    const assignBadge = a.assigned_to_email
+      ? `<span class="type-badge" title="Only ${escapeHTML(a.assigned_to_email)} can see this" style="background:var(--brand-soft);color:var(--brand);"><i data-lucide="user" style="width:11px;height:11px;"></i> ${escapeHTML(a.assigned_to_email)}</span>`
+      : "";
     left.innerHTML = `
       <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.25rem;flex-wrap:wrap;">
         <span class="type-badge type-badge--${a.type}">
@@ -1522,6 +1533,7 @@ function buildActivityRow(a) {
         </span>
         ${sessionBadge}
         ${attemptsBadge}
+        ${assignBadge}
         <span class="status-pill ${isOpen ? "open" : "closed"}">
           ${isOpen
             ? `<i data-lucide="circle" style="width:7px;height:7px;fill:currentColor;"></i> Live`
@@ -2212,6 +2224,14 @@ async function loadAllowlist() {
   list.innerHTML = `<li class="muted">Loading…</li>`;
   try {
     const res = await api.listAllowlist();
+    // Mirror the emails into the "Assign to one student" datalists used
+    // by the new-activity form and the edit-activity modal. This gives
+    // free autocomplete with zero extra fetches.
+    const opts = (res.allowlist || []).map(r => `<option value="${escapeHTML(r.email)}">`).join("");
+    const dl1 = $("assign-to-email-list");
+    if (dl1) dl1.innerHTML = opts;
+    const dl2 = $("edit-assign-to-email-list");
+    if (dl2) dl2.innerHTML = opts;
     list.innerHTML = "";
     if (!res.allowlist.length) { list.innerHTML = `<li class="muted">Empty.</li>`; return; }
     res.allowlist.forEach((row) => {
@@ -2340,6 +2360,10 @@ $("edit-activity-form").addEventListener("submit", async (e) => {
   payload.max_attempts = readAttemptsPicker(
     $("edit-max-attempts-picker")?.querySelector(".attempts-picker")
   );
+
+  // Assignment: empty = clear (whole class), valid email = set.
+  const assignRaw = ($("edit-assign-to-email")?.value || "").trim().toLowerCase();
+  payload.assigned_to_email = assignRaw || null;
 
   // Options + correct-answer for poll-family + ordering.
   const optionTypes = new Set(["poll", "poll_pie", "poll_multi", "ordering"]);

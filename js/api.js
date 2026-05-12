@@ -146,7 +146,7 @@ export const api = {
   listOpenActivities: (classId) => get(`/activities${classId ? `?class_id=${classId}` : ""}`),
   getActivity: (id) => get(`/activities/${encodeURIComponent(id)}`),
   listAllActivities: (classId) => get(`/activities/admin/all${classId ? `?class_id=${classId}` : ""}`),
-  createActivity: (prompt, classId, type, options, sessionTag = null, releaseAt = null, dueAt = null, correctAnswer = null, maxAttempts = 1) =>
+  createActivity: (prompt, classId, type, options, sessionTag = null, releaseAt = null, dueAt = null, correctAnswer = null, maxAttempts = 1, assignedToEmail = null) =>
     postJSON("/activities/admin", {
       prompt, class_id: classId, type,
       poll_options: options,
@@ -155,6 +155,7 @@ export const api = {
       due_at: dueAt,
       correct_answer: correctAnswer,
       max_attempts: maxAttempts,
+      assigned_to_email: assignedToEmail,
     }),
   setActivityStatus: (id, status) =>
     patchJSON(`/activities/admin/${encodeURIComponent(id)}`, { status }),
