@@ -681,32 +681,61 @@ function showClassJoinQR(c) {
 }
 
 async function showClassDetail(c) {
-  const m = ensureCenterModal("modal-class-detail", 800);
+  const m = ensureCenterModal("modal-class-detail", 820);
   m.innerHTML = `<p class="muted" style="padding:1rem;">Loading…</p>`;
   show("modal-overlay");
   m.hidden = false;
   try {
     const r = await api.getClassDetail(c.id);
-    const rows = r.activities.map(a => `
-      <tr>
-        <td><span class="muted" style="font-size:0.75rem;">${a.session_tag ? escapeHTML(a.session_tag.replace(/^week/, "Wk ")) : ""}</span></td>
-        <td style="max-width:340px;">${escapeHTML(a.prompt.slice(0, 120))}${a.prompt.length > 120 ? "…" : ""}</td>
-        <td>${escapeHTML(a.type)}</td>
-        <td style="text-align:right;font-variant-numeric:tabular-nums;">${a.responders} / ${r.total_students}</td>
-        <td style="text-align:right;font-variant-numeric:tabular-nums;">${a.accuracy_pct == null ? "—" : a.accuracy_pct + "%"}</td>
-        <td style="text-align:right;font-variant-numeric:tabular-nums;">${a.correct}${a.ungraded ? ` <span class="muted">(${a.ungraded} ungraded)</span>` : ""}</td>
-      </tr>`).join("");
+    const groups = groupByWeek(r.activities);
+
+    // Per-week rollup: total responses, total correct, total gradable.
+    function weekStats(items) {
+      let resp = 0, correct = 0, gradable = 0;
+      for (const a of items) {
+        resp += a.responders;
+        correct += a.correct;
+        gradable += Math.max(0, a.responders - a.ungraded);
+      }
+      const pct = gradable > 0 ? Math.round(100 * correct / gradable) : null;
+      return { resp, correct, gradable, pct };
+    }
+
+    const sections = groups.map(g => {
+      const ws = weekStats(g.items);
+      const rows = g.items.map(a => `
+        <tr>
+          <td style="max-width:340px;">${escapeHTML(a.prompt.slice(0, 120))}${a.prompt.length > 120 ? "…" : ""}</td>
+          <td>${escapeHTML(a.type)}</td>
+          <td style="text-align:right;font-variant-numeric:tabular-nums;">${a.responders} / ${r.total_students}</td>
+          <td style="text-align:right;font-variant-numeric:tabular-nums;">${a.accuracy_pct == null ? "—" : a.accuracy_pct + "%"}</td>
+          <td style="text-align:right;font-variant-numeric:tabular-nums;">${a.correct}${a.ungraded ? ` <span class="muted">(${a.ungraded})</span>` : ""}</td>
+        </tr>`).join("");
+      return `
+        <details class="week-section">
+          <summary>
+            <span class="week-section-title">${escapeHTML(g.label)}</span>
+            <span class="week-section-meta">
+              ${g.items.length} activit${g.items.length === 1 ? "y" : "ies"}
+              · ${ws.resp} response${ws.resp === 1 ? "" : "s"}
+              · ${ws.pct == null ? "—" : ws.pct + "%"} accuracy
+            </span>
+          </summary>
+          <table style="margin:0;font-size:0.82rem;">
+            <thead><tr><th>Prompt</th><th>Type</th><th style="text-align:right;">Responders</th><th style="text-align:right;">Accuracy</th><th style="text-align:right;">Correct</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </details>`;
+    }).join("");
+
     m.innerHTML = `
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.85rem;">
         <h2 style="margin:0;">${escapeHTML(c.code || "")} ${escapeHTML(c.name)} — stats</h2>
         <button id="close-class-detail" class="icon-btn" aria-label="Close"><i data-lucide="x" style="width:16px;height:16px;"></i></button>
       </div>
-      <p class="muted" style="font-size:0.85rem;margin:0 0 0.85rem;"><strong>${r.total_students}</strong> students in class · <strong>${r.activities.length}</strong> activities</p>
-      <div style="max-height:60vh;overflow:auto;border:1px solid var(--border);border-radius:var(--radius);">
-        <table style="margin:0;font-size:0.82rem;">
-          <thead><tr><th>Week</th><th>Prompt</th><th>Type</th><th style="text-align:right;">Responders</th><th style="text-align:right;">Accuracy</th><th style="text-align:right;">Correct</th></tr></thead>
-          <tbody>${rows || `<tr><td colspan="6" class="muted">No activities yet.</td></tr>`}</tbody>
-        </table>
+      <p class="muted" style="font-size:0.85rem;margin:0 0 0.85rem;"><strong>${r.total_students}</strong> students · <strong>${r.activities.length}</strong> activities · click any week to expand</p>
+      <div style="max-height:60vh;overflow:auto;">
+        ${sections || `<p class="muted">No activities yet.</p>`}
       </div>`;
     if (window.lucide) window.lucide.createIcons();
     document.getElementById("close-class-detail").addEventListener("click", () => { hide("modal-overlay"); m.hidden = true; });
@@ -716,7 +745,7 @@ async function showClassDetail(c) {
 }
 
 async function showStudentDetail(classId, student) {
-  const m = ensureCenterModal("modal-student-detail", 760);
+  const m = ensureCenterModal("modal-student-detail", 820);
   m.innerHTML = `<p class="muted" style="padding:1rem;">Loading…</p>`;
   show("modal-overlay");
   m.hidden = false;
@@ -725,8 +754,9 @@ async function showStudentDetail(classId, student) {
     const t = r.totals;
     const pct = (t.total_answered - t.ungraded) > 0
       ? Math.round(100 * t.correct / (t.total_answered - t.ungraded)) : null;
-    const rows = r.activities.map(a => {
-      const tag = a.session_tag ? `<span class="muted" style="font-size:0.72rem;">${escapeHTML(a.session_tag.replace(/^week/, "Wk "))}</span>` : "";
+
+    // Build a single row for one activity (used inside each week section).
+    function rowFor(a) {
       let ans = "—", correct = "—";
       if (a.answered) {
         if (a.student_answer.poll_indices && a.poll_options) {
@@ -745,13 +775,44 @@ async function showStudentDetail(classId, student) {
                  : `<span class="muted">—</span>`;
       return `
         <tr>
-          <td>${tag}</td>
-          <td style="max-width:280px;">${escapeHTML(a.prompt.slice(0,100))}${a.prompt.length>100?"…":""}</td>
+          <td style="max-width:300px;">${escapeHTML(a.prompt.slice(0,100))}${a.prompt.length>100?"…":""}</td>
           <td style="font-size:0.82rem;">${ans}</td>
           <td style="font-size:0.82rem;color:var(--muted);">${correct}</td>
           <td style="text-align:center;font-weight:700;">${mark}</td>
         </tr>`;
+    }
+
+    // Per-week rollup: how many they answered + correct in that week.
+    function weekRollup(items) {
+      let ans = 0, corr = 0, ung = 0;
+      for (const a of items) {
+        if (a.answered) ans++;
+        if (a.is_correct === true) corr++;
+        if (a.answered && a.is_correct === null) ung++;
+      }
+      const gradable = ans - ung;
+      return { ans, total: items.length, corr, ung, pct: gradable > 0 ? Math.round(100 * corr / gradable) : null };
+    }
+
+    const groups = groupByWeek(r.activities);
+    const sections = groups.map(g => {
+      const w = weekRollup(g.items);
+      return `
+        <details class="week-section">
+          <summary>
+            <span class="week-section-title">${escapeHTML(g.label)}</span>
+            <span class="week-section-meta">
+              ${w.ans}/${w.total} answered ·
+              <strong style="color:var(--success);">${w.corr}</strong> correct${w.pct != null ? ` (${w.pct}%)` : ""}${w.ung ? ` · ${w.ung} ungraded` : ""}
+            </span>
+          </summary>
+          <table style="margin:0;font-size:0.82rem;">
+            <thead><tr><th>Prompt</th><th>Their answer</th><th>Correct</th><th style="text-align:center;">OK</th></tr></thead>
+            <tbody>${g.items.map(rowFor).join("")}</tbody>
+          </table>
+        </details>`;
     }).join("");
+
     m.innerHTML = `
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.85rem;">
         <h2 style="margin:0;">${escapeHTML(student.student_email)}</h2>
@@ -761,11 +822,8 @@ async function showStudentDetail(classId, student) {
         Answered <strong>${t.total_answered}</strong> of <strong>${t.total_activities}</strong> ·
         Correct <strong style="color:var(--success);">${t.correct}</strong>${pct != null ? ` (${pct}%)` : ""}${t.ungraded ? ` · <strong>${t.ungraded}</strong> ungraded` : ""}
       </p>
-      <div style="max-height:60vh;overflow:auto;border:1px solid var(--border);border-radius:var(--radius);">
-        <table style="margin:0;font-size:0.82rem;">
-          <thead><tr><th>Week</th><th>Prompt</th><th>Their answer</th><th>Correct</th><th style="text-align:center;">OK</th></tr></thead>
-          <tbody>${rows || `<tr><td colspan="5" class="muted">No activities in this class.</td></tr>`}</tbody>
-        </table>
+      <div style="max-height:60vh;overflow:auto;">
+        ${sections || `<p class="muted">No activities in this class.</p>`}
       </div>`;
     if (window.lucide) window.lucide.createIcons();
     document.getElementById("close-student-detail").addEventListener("click", () => { hide("modal-overlay"); m.hidden = true; });
@@ -1078,13 +1136,13 @@ $("new-form").addEventListener("submit", async (e) => {
 
 async function loadActivities() {
   const list = $("activities");
-  list.innerHTML = `<li class="muted">Loading…</li>`;
+  list.innerHTML = `<p class="muted" style="padding:1rem;">Loading…</p>`;
   try {
     const res = await api.listAllActivities(currentClassId);
     activitiesCache = res.activities;
     renderActivities(activitiesCache);
   } catch (err) {
-    list.innerHTML = `<li class="muted">Error: ${escapeHTML(err.message)}</li>`;
+    list.innerHTML = `<p class="muted" style="padding:1rem;color:var(--error);">Error: ${escapeHTML(err.message)}</p>`;
   }
 }
 
@@ -1095,6 +1153,56 @@ const TYPE_LABELS = {
   rating: "Rating",
   word_cloud: "Word Cloud",
 };
+
+// Topic labels for each session_tag, used as group headers when grouping
+// activities by week.
+const WEEK_LABELS = {
+  week01: "Week 01 — I/O + arithmetic",
+  week02: "Week 02 — if/else + while",
+  week03: "Week 03 — for/while/do-while",
+  week04: "Week 04 — functions + factorial",
+  week05: "Week 05 — Madhava-Leibniz series",
+  week06: "Week 06 — validation + geometry",
+  week07: "Week 07 — arrays",
+  week08: "Week 08 — 2D arrays",
+  week09: "Week 09 — references / least squares",
+  week10: "Week 10 — classes (Polynomial)",
+  week11: "Week 11 — operator overloading (String)",
+  week12: "Week 12 — new / delete / heap",
+  week13: "Week 13 — inheritance + virtual",
+  week14: "Week 14 — STL",
+};
+// Generic week-N label fallback for prog/lab legacy tags.
+function weekLabelFor(tag) {
+  if (!tag) return "Untagged";
+  if (WEEK_LABELS[tag]) return WEEK_LABELS[tag];
+  const m = /^(week|prog|lab)(\d+)$/.exec(tag);
+  if (m) return `Week ${parseInt(m[2], 10).toString().padStart(2, "0")}`;
+  return tag;
+}
+function weekSortKey(tag) {
+  const m = /(\d+)/.exec(tag || "");
+  return m ? parseInt(m[1], 10) : 9999;
+}
+
+// Group an array of objects (with session_tag) by week. Returns
+// [{ tag, label, items: [...] }, ...] sorted by week number, with
+// any untagged items appended at the end as { tag: null }.
+function groupByWeek(items) {
+  const groups = new Map();
+  for (const it of items) {
+    const tag = it.session_tag || null;
+    if (!groups.has(tag)) groups.set(tag, []);
+    groups.get(tag).push(it);
+  }
+  return [...groups.entries()]
+    .sort((a, b) => {
+      if (a[0] === null) return 1;
+      if (b[0] === null) return -1;
+      return weekSortKey(a[0]) - weekSortKey(b[0]);
+    })
+    .map(([tag, items]) => ({ tag, label: weekLabelFor(tag), items }));
+}
 const TYPE_ICONS = {
   submission: "file-text",
   poll: "bar-chart-2",
@@ -1139,14 +1247,9 @@ function fmtDate(ts) {
     " · " + d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
 }
 
-function renderActivities(list_data) {
-  const list = $("activities");
-  list.innerHTML = "";
-  if (!list_data.length) {
-    list.innerHTML = `<li class="muted" style="padding:1rem;">No activities yet — launch one above.</li>`;
-    return;
-  }
-  list_data.forEach((a) => {
+// Build a single <li> row for an activity. Extracted so renderActivities
+// can use it inside per-week <details> groupings.
+function buildActivityRow(a) {
     const li = document.createElement("li");
     li.dataset.type = a.type;
     const left = document.createElement("div");
@@ -1257,8 +1360,37 @@ function renderActivities(list_data) {
 
     actions.append(toggle, view, editBtn, qrBtn, delBtn2);
     li.append(left, actions);
-    list.appendChild(li);
-  });
+    return li;
+}
+
+// Render the activities cache grouped by week. Each week is a <details>
+// block whose <summary> shows the topic + a per-week rollup of counts.
+function renderActivities(list_data) {
+  const root = $("activities");
+  root.innerHTML = "";
+  if (!list_data.length) {
+    root.innerHTML = `<p class="muted" style="padding:1rem;">No activities yet — launch one above.</p>`;
+    return;
+  }
+  for (const g of groupByWeek(list_data)) {
+    const openCount = g.items.filter(a => a.status === "open").length;
+    const details = document.createElement("details");
+    details.className = "week-section";
+    details.open = true;
+    const summary = document.createElement("summary");
+    summary.innerHTML = `
+      <span class="week-section-title">${escapeHTML(g.label)}</span>
+      <span class="week-section-meta">
+        ${g.items.length} activit${g.items.length === 1 ? "y" : "ies"}
+        ${openCount ? `· <span style="color:var(--success);font-weight:700;">${openCount} open</span>` : ""}
+      </span>`;
+    details.appendChild(summary);
+    const ul = document.createElement("ul");
+    ul.className = "activity-list";
+    g.items.forEach(a => ul.appendChild(buildActivityRow(a)));
+    details.appendChild(ul);
+    root.appendChild(details);
+  }
   if (window.lucide) window.lucide.createIcons();
 }
 
