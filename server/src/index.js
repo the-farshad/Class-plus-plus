@@ -75,6 +75,7 @@ app.use((err, _req, res, _next) => {
   res.status(500).json({ ok: false, error: "Internal error" });
 });
 
-app.listen(config.port, "127.0.0.1", () => {
-  console.log(`classpp-api listening on http://127.0.0.1:${config.port}`);
+// Bind all interfaces — behind a platform router (Render) or reverse proxy.
+app.listen(config.port, "0.0.0.0", () => {
+  console.log(`classpp-api listening on :${config.port}`);
 });

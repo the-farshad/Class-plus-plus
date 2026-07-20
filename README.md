@@ -2,7 +2,7 @@
 
 **Class++** is a lightweight classroom engagement tool for live check-ins, short activities, response collection, and participation tracking.
 
-The frontend is a static site on GitHub Pages. The backend is a small Node.js + SQLite API on a DigitalOcean droplet, with large file uploads (videos, big images) routed to Google Drive. Sign-in is Google OAuth, restricted to a configured email domain plus an allowlist.
+The frontend is a static site on GitHub Pages. The backend is a small, stateless Node.js API on Render (free tier) with its data in Turso (managed libSQL) and file uploads routed to Google Drive — so it needs no server of its own. Sign-in is Google OAuth, restricted to a configured email domain plus an allowlist.
 
 The project is designed to make attendance more meaningful by turning class check-ins into quick learning checkpoints. While it can be used for general classroom activities, it also works well for programming courses with prompts such as predicting C++ output, finding bugs, tracing code, or explaining errors.
 
@@ -12,8 +12,8 @@ The project is designed to make attendance more meaningful by turning class chec
 - Google Sign-In (domain-restricted + allowlist)
 - Short in-class activities, opened/closed by the instructor
 - Optional file attachments per submission (image, PDF, or video)
-- Auto-routing: small files on the API server, big files to Google Drive
-- Timestamped submissions in SQLite
+- File attachments uploaded to Google Drive (service account)
+- Timestamped submissions in libSQL (Turso)
 - Easy review and CSV export of participation records
 - Built-in Markdown notes / blog section
 
@@ -34,8 +34,9 @@ Class++ includes a simple blog/notes section where instructors can publish expla
 
 - **Frontend**: HTML, CSS, JavaScript (no build step), Google Identity Services
 - **Hosting (frontend)**: GitHub Pages at `cpp.thefarshad.com`
-- **Backend**: Node.js + Express + better-sqlite3
-- **Hosting (backend)**: DigitalOcean droplet (`minerva-prod`) at `api.thefarshad.com`
+- **Backend**: Node.js + Express + libSQL (`libsql` driver)
+- **Hosting (backend)**: Render (free web service) at `api.thefarshad.com`
+- **Database**: Turso (managed libSQL)
 - **Large files**: Google Drive (service account)
 - **Auth**: Google OAuth (id_token verified server-side, app JWT issued)
 
@@ -52,7 +53,7 @@ Class++ includes a simple blog/notes section where instructors can publish expla
 
 ## Setup
 
-1. **Backend**: follow [`server/README.md`](server/README.md) — sets up the Google OAuth Client ID, the Drive service account + folder, and deploys the Node API to the droplet behind nginx + Let's Encrypt at `api.thefarshad.com`.
+1. **Backend**: follow [`server/README.md`](server/README.md) — sets up the Google OAuth Client ID, the Drive service account + folder, a Turso database, and deploys the Node API to Render (Blueprint in `render.yaml`) at `api.thefarshad.com`.
 2. **Frontend**: nothing to configure on a fresh deploy. `js/api.js` defaults to `https://api.thefarshad.com`. Push to `main` and GitHub Pages serves the site at the CNAME domain.
 
 ## Local Development

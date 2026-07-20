@@ -7,16 +7,23 @@ let _drive = null;
 
 function getDrive() {
   if (_drive) return _drive;
-  if (!config.driveKeyPath || !fs.existsSync(config.driveKeyPath)) {
-    throw new Error("Drive service-account key not configured (DRIVE_KEY_PATH)");
+  const scopes = ["https://www.googleapis.com/auth/drive"];
+  let auth;
+  if (config.driveServiceAccountJson) {
+    auth = new google.auth.GoogleAuth({
+      credentials: JSON.parse(config.driveServiceAccountJson),
+      scopes,
+    });
+  } else if (config.driveKeyPath && fs.existsSync(config.driveKeyPath)) {
+    auth = new google.auth.GoogleAuth({ keyFile: config.driveKeyPath, scopes });
+  } else {
+    throw new Error(
+      "Drive service account not configured (set GOOGLE_DRIVE_SA_JSON or DRIVE_KEY_PATH)"
+    );
   }
   if (!config.driveFolderId) {
     throw new Error("DRIVE_FOLDER_ID not set");
   }
-  const auth = new google.auth.GoogleAuth({
-    keyFile: config.driveKeyPath,
-    scopes: ["https://www.googleapis.com/auth/drive"],
-  });
   _drive = google.drive({ version: "v3", auth });
   return _drive;
 }

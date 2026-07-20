@@ -15,7 +15,15 @@ function safeExt(name) {
   return ext.length > 1 && ext.length <= 6 ? ext : "";
 }
 
+function driveConfigured() {
+  return Boolean(config.driveServiceAccountJson || config.driveKeyPath);
+}
+
 function shouldUseDrive(file) {
+  // On serverless hosts (e.g. Render) the filesystem is ephemeral, so whenever
+  // Drive is configured we send *everything* there. Local disk is only used as a
+  // dev / self-host fallback when no Drive credentials are set.
+  if (driveConfigured()) return true;
   if (file.mimetype.startsWith("video/")) return true;
   return file.size > config.driveThresholdBytes;
 }

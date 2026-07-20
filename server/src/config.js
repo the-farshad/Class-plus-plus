@@ -38,11 +38,20 @@ export const config = {
   allowedDomain: process.env.ALLOWED_DOMAIN || "uwyo.edu",
   jwtSecret: required("JWT_SECRET"),
 
+  // Turso (managed libSQL). When TURSO_DATABASE_URL is set the app uses the
+  // remote DB and dbPath / journal settings are ignored; leave both unset for a
+  // local ./data.db (dev / self-host on a box with a persistent disk).
+  tursoUrl: process.env.TURSO_DATABASE_URL || "",
+  tursoAuthToken: process.env.TURSO_AUTH_TOKEN || "",
+
   dbPath: path.resolve(process.env.DB_PATH || "./data.db"),
   uploadDir: path.resolve(process.env.UPLOAD_DIR || "./uploads"),
   driveThresholdBytes: int("DRIVE_THRESHOLD_BYTES", 5 * 1024 * 1024),
   maxUploadBytes: int("MAX_UPLOAD_BYTES", 200 * 1024 * 1024),
 
+  // Drive service-account credentials. Prefer the inline JSON env
+  // (serverless-friendly — no file on disk); fall back to a key file locally.
+  driveServiceAccountJson: process.env.GOOGLE_DRIVE_SA_JSON || "",
   driveKeyPath: process.env.DRIVE_KEY_PATH || "",
   driveFolderId: process.env.DRIVE_FOLDER_ID || "",
 

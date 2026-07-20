@@ -1,15 +1,24 @@
 # Class++ API — `classpp-api`
 
-Self-hosted Express + SQLite backend for Class++. Replaces the previous Apps Script setup. Deploys to the existing `minerva-prod` droplet (`164.92.118.125`, sfo3) and **must coexist with the other site already running there**.
+Express backend for Class++. Runs **serverless-friendly**: a stateless Node web
+service with all state in **Turso** (managed libSQL) and file uploads in **Google
+Drive**, so it needs no persistent disk and can run on a free host.
 
 ## Architecture
 
 - **Static frontend** stays on GitHub Pages at `https://cpp.thefarshad.com`.
-- **API** runs on the droplet, listens on `127.0.0.1:3001` only, fronted by **Caddy** (the same web server already running `minerva.thefarshad.com`) as `https://api.thefarshad.com`.
-- **SQLite** at `/var/lib/classpp/data.db`. WAL mode.
-- **Small attachments** (≤ 5 MB, non-video) under `/var/lib/classpp/uploads/`. Served gated to instructors.
-- **Large attachments** (> 5 MB or video) uploaded to a shared **Google Drive** folder via service account.
-- **Auth**: Google Sign-In on the frontend → `id_token` posted to `/auth/google` → server verifies, checks `@uwyo.edu` or allowlist/instructors → returns app JWT (HS256, 1h).
+- **API** is a Node/Express service (this dir). Deployed to **Render** (free web
+  service) and reached at `https://api.thefarshad.com`.
+- **Database**: **Turso** (managed libSQL). The app uses the `libsql` driver — a
+  synchronous drop-in for better-sqlite3 — pointed at the remote DB via
+  `TURSO_DATABASE_URL` + `TURSO_AUTH_TOKEN`. With those unset it falls back to a
+  local `./data.db` (dev / self-host on a box with a disk).
+- **Attachments**: uploaded to a shared **Google Drive** folder via a service
+  account (`GOOGLE_DRIVE_SA_JSON`). On a serverless host the filesystem is
+  ephemeral, so when Drive is configured **all** uploads go to Drive.
+- **Auth**: Google Sign-In on the frontend → `id_token` posted to `/auth/google`
+  → server verifies, checks `@uwyo.edu` or allowlist/instructors → returns app
+  JWT (HS256, 1h).
 
 ## One-time external setup
 
@@ -20,127 +29,86 @@ Cloud Console → **APIs & Services → Credentials → + Create credentials →
 - Authorized JavaScript origins:
   - `https://cpp.thefarshad.com`
   - `http://localhost:8000`
-- Save the **Client ID** → goes into `GOOGLE_CLIENT_ID`.
+- Save the **Client ID** → `GOOGLE_CLIENT_ID`.
 
 ### 2. Google Drive service account
 
-Cloud Console → **APIs & Services → Library**: enable **Google Drive API**. Then **Credentials → Create credentials → Service account**:
-- Name: `classpp-drive`
-- No roles needed at the project level.
-- After creation, open the account → **Keys → Add key → JSON**. Save the file as `drive-sa.json`.
+Cloud Console → **APIs & Services → Library**: enable **Google Drive API**. Then
+**Credentials → Create credentials → Service account** (`classpp-drive`, no
+project roles). Open it → **Keys → Add key → JSON**. You'll paste the JSON's
+*contents* into `GOOGLE_DRIVE_SA_JSON` (not a file path).
 
 ### 3. Drive folder
 
-In Drive, create a folder called e.g. `Class++ Submissions`. Right-click → **Share** → paste the service account email (looks like `classpp-drive@<project>.iam.gserviceaccount.com`) → role **Editor**. Open the folder; the URL ends in `/folders/<ID>` — that ID goes into `DRIVE_FOLDER_ID`.
+Create a Drive folder (e.g. `Class++ Submissions`). Share it with the service
+account email (`classpp-drive@<project>.iam.gserviceaccount.com`, role **Editor**).
+The folder URL ends in `/folders/<ID>` → `DRIVE_FOLDER_ID`.
 
-### 4. DNS + Cloudflare TLS
+### 4. Turso database
 
-The `thefarshad.com` zone is fronted by Cloudflare; the droplet already serves `minerva.thefarshad.com` via Caddy. **Caddy auto-manages TLS** — no certbot, no nginx, no manual cert install.
+```sh
+# https://docs.turso.tech/quickstart — install the CLI, then:
+turso db create classpp
+turso db show classpp --url          # → TURSO_DATABASE_URL (libsql://…)
+turso db tokens create classpp       # → TURSO_AUTH_TOKEN
+```
 
-1. In Cloudflare, add an A record:
-   ```
-   api.thefarshad.com   A   164.92.118.125   Proxied (orange cloud)
-   ```
-2. SSL/TLS → Overview: confirm the mode used by the rest of the zone (likely **Full** — `minerva.thefarshad.com` is currently served by a Caddy local cert, which only works under Full, not Full (strict)).
-3. On the droplet, append the contents of `caddy/api.thefarshad.com.caddy` to the existing `/etc/caddy/Caddyfile` and reload Caddy. Detailed steps below.
+The app creates its own schema on first boot (migrations run at startup). To seed
+from the archived droplet DB instead:
+
+```sh
+# from the sunset archive (better-sqlite3/SQLite file → Turso)
+turso db shell classpp < <(sqlite3 classpp-snapshot.db .dump)
+```
+
+## Deploy on Render
+
+The repo ships a **Blueprint** (`render.yaml`). In the Render dashboard:
+**New → Blueprint → pick this repo**. Render creates the `classpp-api` web
+service (root dir `server/`, `npm install` / `npm start`) and prompts for the
+`sync: false` secrets — paste the values from the setup steps above:
+`TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, `GOOGLE_CLIENT_ID`,
+`GOOGLE_DRIVE_SA_JSON`, `DRIVE_FOLDER_ID`, `INITIAL_INSTRUCTORS`.
+
+Health check: `https://<service>.onrender.com/healthz` → `{"ok":true}`.
+
+> The `libsql` driver ships prebuilt binaries for Render's Linux runtime. If a
+> native build ever fails, switch the service to a Docker deploy of `server/`.
+
+### Custom domain `api.thefarshad.com`
+
+Keep the frontend's API base unchanged by pointing the existing hostname at Render:
+
+1. Render service → **Settings → Custom Domains → Add** `api.thefarshad.com`.
+   Render shows a CNAME target (`<service>.onrender.com`).
+2. Cloudflare (`thefarshad.com` zone) → replace the old
+   `api.thefarshad.com` A record (was the droplet) with a **CNAME** to that
+   target. Proxied is fine.
+3. SSL/TLS mode **Full** (Render presents a valid cert; Full works, Full-strict
+   also works since Render's cert is real).
+
+Free services **sleep after ~15 min idle** (first request after that cold-starts
+in ~30-50s). Fine for a class tool; upgrade the plan or move to Fly.io if you want
+always-on.
 
 ## Local development
 
 ```sh
 cd server
 cp .env.example .env
-# Edit .env:
+# Edit .env — leave TURSO_* unset to use a local ./data.db:
 #   GOOGLE_CLIENT_ID=<your client id>
 #   JWT_SECRET=$(openssl rand -hex 32)
-#   DRIVE_KEY_PATH=$(pwd)/drive-sa.json   # if you want to test Drive locally
+#   DRIVE_KEY_PATH=$(pwd)/drive-sa.json    # local Drive test (or GOOGLE_DRIVE_SA_JSON)
 #   DRIVE_FOLDER_ID=<your folder id>
-#   DB_PATH=./data.db
-#   UPLOAD_DIR=./uploads
-#   INITIAL_INSTRUCTORS=you@example.com   # gets instructor role on first run
-npm ci
+#   INITIAL_INSTRUCTORS=you@example.com    # gets instructor role on first run
+npm install
 npm run dev
-# API at http://127.0.0.1:3001/healthz
+# API at http://127.0.0.1:3001/healthz  (dev binds all interfaces)
 ```
 
-For the static frontend, from the repo root:
-
-```sh
-python3 -m http.server 8000
-```
-
-Tell the frontend to use the local API by setting a global before module loads — easiest is to open DevTools and run `localStorage.setItem('classpp.api_base', 'http://localhost:3001')` then refresh.
-
-## Production deploy on `minerva-prod`
-
-The other site on this droplet uses nginx + systemd already. We **add** new files only — never edit existing config.
-
-### Discovery (run these read-only first)
-
-```sh
-ssh root@164.92.118.125
-which node && node -v                                # need ≥ 18, install via NodeSource if missing
-caddy version                                        # confirm Caddy is the web server here
-ls /etc/caddy/                                       # locate the Caddyfile (usually /etc/caddy/Caddyfile)
-ss -tlnp | grep LISTEN                               # confirm port 3001 is free
-```
-
-If Node is missing or too old:
-
-```sh
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-sudo apt-get install -y nodejs
-```
-
-### Provision
-
-```sh
-# Service user + dirs
-sudo adduser --system --group --home /var/lib/classpp classpp
-sudo mkdir -p /opt/classpp /var/lib/classpp/uploads /etc/classpp
-sudo chown -R classpp:classpp /var/lib/classpp
-sudo chmod 750 /etc/classpp
-
-# Code (run from your laptop, in the repo root)
-rsync -a --delete server/ root@164.92.118.125:/opt/classpp/server/
-ssh root@164.92.118.125 'cd /opt/classpp/server && sudo -u classpp npm ci --omit=dev'
-
-# Env file
-sudo install -m 600 -o classpp -g classpp /dev/null /etc/classpp/env
-sudo -e /etc/classpp/env       # paste your real values from .env.example
-
-# Service-account key (copy your JSON onto the droplet first)
-sudo install -m 600 -o classpp -g classpp drive-sa.json /etc/classpp/drive-sa.json
-
-# systemd unit
-sudo cp /opt/classpp/server/systemd/classpp-api.service /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl enable --now classpp-api
-sudo systemctl status classpp-api      # should be active (running)
-sudo journalctl -u classpp-api -n 50
-
-# Caddy site — append the prepared site block to the existing Caddyfile.
-# (The block lives in this repo at server/caddy/api.thefarshad.com.caddy.)
-sudo tee -a /etc/caddy/Caddyfile < /opt/classpp/server/caddy/api.thefarshad.com.caddy
-sudo caddy validate --config /etc/caddy/Caddyfile
-sudo systemctl reload caddy
-sudo journalctl -u caddy -n 30 --no-pager   # confirm clean reload, no parse errors
-```
-
-No certbot, no nginx — Caddy auto-issues and renews the cert for `api.thefarshad.com`. Cloudflare's edge handles the public-facing TLS to clients.
-
-Sanity check:
-
-```sh
-curl -sf https://api.thefarshad.com/healthz   # → {"ok":true}
-```
-
-### Updating
-
-```sh
-# From your laptop
-rsync -a --delete server/ root@164.92.118.125:/opt/classpp/server/
-ssh root@164.92.118.125 'cd /opt/classpp/server && sudo -u classpp npm ci --omit=dev && sudo systemctl restart classpp-api'
-```
+Static frontend, from the repo root: `python3 -m http.server 8000`, then in
+DevTools: `localStorage.setItem('classpp.api_base', 'http://localhost:3001')`.
 
 ## API surface
 
@@ -155,13 +123,13 @@ ssh root@164.92.118.125 'cd /opt/classpp/server && sudo -u classpp npm ci --omit
 | POST | `/activities/admin` | instructor | create open activity |
 | PATCH | `/activities/admin/:id` | instructor | set status `open`\|`closed` |
 | GET  | `/submissions/by-activity/:id` | instructor | review responses |
-| GET  | `/uploads/<file>` | instructor | download a small attachment |
-| —    | `/admin/roster`, `/admin/allowlist` | instructor | CRUD |
+| —    | `/admin/roster`, `/admin/allowlist`, `/admin/classes`, `/admin/categories`, `/admin/instructors` | instructor | CRUD |
 
 ## Operations
 
-- Logs: `journalctl -u classpp-api -f`
-- DB shell: `sudo -u classpp sqlite3 /var/lib/classpp/data.db`
-- Backup: `sqlite3 /var/lib/classpp/data.db ".backup '/var/backups/classpp-$(date +%F).db'"`
-- Rotate JWTs (invalidate sessions): change `JWT_SECRET` in `/etc/classpp/env`, `systemctl restart classpp-api`.
-- Add an instructor: insert into the `instructors` table via the sqlite shell, or extend the allowlist UI.
+- Logs: Render dashboard → the service → **Logs**.
+- DB shell: `turso db shell classpp`
+- Backup: `turso db shell classpp .dump > classpp-$(date +%F).sql`
+- Rotate JWTs (invalidate sessions): change `JWT_SECRET` in Render → redeploy.
+- Add an instructor: add the email to `INITIAL_INSTRUCTORS` (superadmin on boot),
+  or insert into the `instructors` table via `turso db shell`.

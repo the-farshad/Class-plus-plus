@@ -1,0 +1,38 @@
+# Render Blueprint — deploys the Class++ API as a free web service.
+#
+# One-time: Render dashboard → New → Blueprint → pick this repo. Render reads
+# this file, creates the service, then prompts for the `sync: false` secrets.
+# See server/README.md for the full runbook (Turso, Drive, OAuth, custom domain).
+services:
+  - type: web
+    name: classpp-api
+    runtime: node
+    plan: free            # sleeps after ~15 min idle; cold start ~30-50s
+    region: oregon
+    rootDir: server
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: ALLOWED_ORIGINS
+        value: https://cpp.thefarshad.com
+      - key: ALLOWED_DOMAIN
+        value: uwyo.edu
+      - key: JWT_SECRET
+        generateValue: true          # internal only; regen just forces re-login
+      # --- secrets: set in the Render dashboard (sync:false keeps them out of git) ---
+      - key: TURSO_DATABASE_URL       # libsql://<db>-<org>.turso.io
+        sync: false
+      - key: TURSO_AUTH_TOKEN
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_DRIVE_SA_JSON     # the service-account JSON, pasted inline
+        sync: false
+      - key: DRIVE_FOLDER_ID
+        sync: false
+      - key: INITIAL_INSTRUCTORS      # comma-separated emails → superadmin on boot
+        sync: false
